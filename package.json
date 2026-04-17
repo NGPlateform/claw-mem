@@ -1,0 +1,53 @@
+{
+  "name": "@openclaw/claw-mem",
+  "version": "0.1.0",
+  "description": "Persistent cross-session semantic memory for OpenClaw AI agents",
+  "type": "module",
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "openclaw": {
+    "extensions": ["./index.ts"],
+    "service": {
+      "id": "claw-mem",
+      "label": "Claw-Mem Semantic Memory",
+      "description": "Captures structured observations from agent sessions, compresses them into semantic memory, and injects relevant context into future sessions"
+    },
+    "install": {
+      "npmSpec": "@openclaw/claw-mem",
+      "localPath": "extensions/claw-mem"
+    }
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "test:watch": "node --experimental-strip-types --test --watch test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "openclaw",
+    "memory",
+    "ai-agent",
+    "semantic-memory",
+    "observation",
+    "context-injection"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "openclaw": "workspace:*"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "files": [
+    "index.ts",
+    "src/",
+    "openclaw.plugin.json",
+    "LICENSE"
+  ]
+}

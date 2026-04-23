@@ -65,7 +65,7 @@ COC 是 AI Agent 公链，要求每个节点至少为 P2P 网络贡献 **256 MiB
 **A. 作为 OpenClaw 扩展（推荐）**
 
 ```bash
-npm install @openclaw/claw-mem
+npm install @chainofclaw/claw-mem
 ```
 
 在 `openclaw.json` 引用：
@@ -896,7 +896,7 @@ claw-mem mem export /tmp/pre-upgrade.json
 claw-mem db migrate-status
 
 # 升级
-npm install -g @openclaw/claw-mem@latest
+npm install -g @chainofclaw/claw-mem@latest
 
 # 升级后第一次启动会自动跑 migration（ADD-only，老数据不动）
 claw-mem db migrate-status                 # 应该显示 "up to date"

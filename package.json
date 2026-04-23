@@ -1,11 +1,15 @@
 {
-  "name": "@openclaw/claw-mem",
-  "version": "1.0.0",
+  "name": "@chainofclaw/claw-mem",
+  "version": "1.0.2",
   "description": "OpenClaw super-skill: persistent memory + COC node lifecycle + soul backup",
   "type": "module",
-  "main": "index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "bin": {
     "claw-mem": "./bin/claw-mem"
@@ -20,7 +24,7 @@
       "description": "Captures structured observations from agent sessions, runs COC nodes, and (PR 4) backs up agent souls"
     },
     "install": {
-      "npmSpec": "@openclaw/claw-mem",
+      "npmSpec": "@chainofclaw/claw-mem",
       "localPath": "extensions/claw-mem"
     }
   },
@@ -28,6 +32,8 @@
     "test": "node --experimental-strip-types --test test/*.test.ts test/backup-suite/*.test.ts",
     "test:watch": "node --experimental-strip-types --test --watch test/*.test.ts test/backup-suite/*.test.ts",
     "typecheck": "tsc --noEmit",
+    "build": "rm -rf dist && tsc --project tsconfig.build.json",
+    "prepublishOnly": "npm run build",
     "claw-mem": "node --experimental-strip-types src/cli/bin.ts"
   },
   "keywords": [
@@ -54,10 +60,10 @@
     "node": ">=22.0.0"
   },
   "files": [
-    "index.ts",
-    "src/",
+    "dist/",
     "bin/",
     "openclaw.plugin.json",
+    "README.md",
     "LICENSE"
   ]
 }

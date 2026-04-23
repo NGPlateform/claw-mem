@@ -1,7 +1,26 @@
 #!/bin/sh
-# claw-mem CLI shim
-# Uses --experimental-strip-types so we can import the TypeScript entry directly
-# (matches the rest of the OpenClaw / COC ecosystem on Node 22+).
+# claw-mem CLI shim.
+#
+# When installed from npm (node_modules/.bin/claw-mem), Node's experimental
+# type-stripping refuses to transform files under node_modules, so we must
+# ship pre-compiled JavaScript (dist/). When developing locally (before
+# running `npm run build`), we fall back to the .ts source + --experimental-
+# strip-types so the bin still works in-repo without a build step.
 
-DIR="$(cd "$(dirname "$0")" && pwd)"
-exec node --experimental-strip-types --no-warnings "$DIR/../src/cli/bin.ts" "$@"
+# Resolve symlinks manually — npm installs this bin as a symlink in
+# node_modules/.bin/, so dirname($0) alone would point to the wrong dir.
+SCRIPT="$0"
+while [ -h "$SCRIPT" ]; do
+  TARGET=$(readlink "$SCRIPT")
+  case "$TARGET" in
+    /*) SCRIPT="$TARGET" ;;
+    *)  SCRIPT="$(dirname "$SCRIPT")/$TARGET" ;;
+  esac
+done
+DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
+
+if [ -f "$DIR/../dist/src/cli/bin.js" ]; then
+  exec node --no-warnings "$DIR/../dist/src/cli/bin.js" "$@"
+else
+  exec node --experimental-strip-types --no-warnings "$DIR/../src/cli/bin.ts" "$@"
+fi

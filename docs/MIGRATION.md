@@ -2,7 +2,7 @@
 
 claw-mem 1.0 absorbs both `coc-nodeops` and `coc-backup` into a single
 OpenClaw skill. The old packages still exist as thin compatibility shims
-that re-export `activate` from `@openclaw/claw-mem`, so existing
+that re-export `activate` from `claw-mem`, so existing
 OpenClaw configs keep working without changes.
 
 This guide covers what has moved, what has been renamed, and what is
@@ -14,13 +14,13 @@ still pending.
 # old
 openclaw extension install @openclaw/coc-nodeops
 openclaw extension install @openclaw/coc-backup
-openclaw extension install @openclaw/claw-mem
+openclaw extension install claw-mem
 
 openclaw coc init
 openclaw coc-backup create
 
 # new
-openclaw extension install @openclaw/claw-mem
+openclaw extension install claw-mem
 
 openclaw node install
 openclaw backup create
@@ -147,7 +147,7 @@ You can edit this file directly, or use `claw-mem config set <path> <value>`.
   follow-up that wires `contracts/deploy/*.ts` in).
 
 If your workflow depends on any of the above, keep
-`@openclaw/coc-backup` installed alongside `@openclaw/claw-mem` for now —
+`@openclaw/coc-backup` installed alongside `claw-mem` for now —
 the shim will not interfere with claw-mem's own `backup` commands.
 
 ## Verifying the upgrade

@@ -25,7 +25,7 @@ artifact.
 ## Install
 
 ```bash
-npm install @openclaw/claw-mem
+npm install @chainofclaw/claw-mem
 ```
 
 Or, in an OpenClaw extension folder, point at it locally:

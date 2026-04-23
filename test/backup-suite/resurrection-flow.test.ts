@@ -303,10 +303,8 @@ describe("resurrection-flow (carrier role model)", () => {
     })
 
     assert.equal(result.state, "failed")
-    // Current resurrection-flow.ts reports only "shutting down" in this path
-    // (see services/carrier/resurrection-flow.ts line ~181). The original
-    // vitest version expected both tokens; accepting current behaviour.
     assert.ok((result.error ?? "").includes("shutting down"))
+    assert.ok((result.error ?? "").includes("health check"))
     assert.equal(stopReason, "stopped")
 
     await rm(targetDir, { recursive: true, force: true })

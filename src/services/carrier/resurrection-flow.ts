@@ -173,12 +173,14 @@ export async function executeResurrectionFlow(
 
     const healthy = await doHealth(ctx.spawnConfig, ctx.logger, ctx.shutdownSignal)
     if (!healthy) {
-      // Distinguish shutdown from actual health failure
+      // Distinguish shutdown from actual health failure. Both messages mention
+      // "health check" so callers (tests, logs) can tell the root cause apart
+      // from the bare "shutting down" that fires earlier in the pipeline.
       if (ctx.shutdownSignal?.aborted) {
         ctx.logger.warn("[resurrection] Health check interrupted by shutdown, stopping spawned process")
         doStop(spawnResult.pid, ctx.logger)
         record.agentPid = null
-        throw new Error("Resurrection aborted: daemon shutting down")
+        throw new Error("Resurrection aborted: daemon shutting down during health check")
       }
       ctx.logger.warn("[resurrection] Agent health check failed, stopping spawned process")
       doStop(spawnResult.pid, ctx.logger)

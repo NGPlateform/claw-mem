@@ -37,7 +37,14 @@ export interface BootstrapServicesOptions {
 
 export function bootstrapServicesSync(opts: BootstrapServicesOptions = {}): CliServices {
   const logger = opts.logger ?? createConsoleLogger()
-  const rawConfig = opts.configOverride ?? loadConfigFileSync(opts.configPath)
+  const diskConfig = loadConfigFileSync(opts.configPath)
+  // Deep-merge so OpenClaw's pluginConfig (passed via configOverride) can layer
+  // on top of user-persisted ~/.claw-mem/config.json. Prior behavior used `??`,
+  // which skipped the disk file entirely whenever configOverride was defined
+  // (even `{}`), so `coc config set` writes were invisible to the next process.
+  const rawConfig = opts.configOverride
+    ? deepMerge(diskConfig, opts.configOverride)
+    : diskConfig
   const config = ClawMemConfigSchema.parse(rawConfig)
 
   const dataDir = resolveDataDir(config)
@@ -142,6 +149,28 @@ function loadConfigFileSync(explicit?: string): Record<string, unknown> {
     }
   }
   return {}
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false
+  const proto = Object.getPrototypeOf(value)
+  return proto === Object.prototype || proto === null
+}
+
+function deepMerge(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...target }
+  for (const [key, value] of Object.entries(source)) {
+    const existing = out[key]
+    if (isPlainObject(existing) && isPlainObject(value)) {
+      out[key] = deepMerge(existing, value)
+    } else {
+      out[key] = value
+    }
+  }
+  return out
 }
 
 function createConsoleLogger(): PluginLogger {

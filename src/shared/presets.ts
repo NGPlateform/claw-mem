@@ -12,6 +12,10 @@ export interface NetworkPreset {
   bootstrapPeers: Array<{ id: string; url: string }>
   dhtBootstrapPeers: Array<{ id: string; address: string; port: number }>
   validators: string[]
+  // Genesis prefund — required to match the upstream chain's genesis stateRoot.
+  // Without this, a fullnode joining an existing network fails block signature
+  // verification after snap sync, because its initial state diverges.
+  prefund?: Array<{ address: string; balanceEth: string }>
   rpcPort: number
   p2pPort: number
   wirePort: number
@@ -20,17 +24,33 @@ export interface NetworkPreset {
 }
 
 export const NETWORK_PRESETS: Record<Exclude<NetworkId, "custom">, NetworkPreset> = {
+  // Live testnet at server1.clawchain.io (199.192.16.79). The node cluster
+  // runs under docker, so external ports are remapped: the coc-sync-node
+  // container's internal 19780/19781 are reachable on 19880/19881, and each
+  // coc-node-{1,2,3} occupies 29780-29785 on the host.
   testnet: {
     chainId: 18780,
     bootstrapPeers: [
-      { id: "boot-1", url: "http://testnet-boot1.coc.network:19780" },
-      { id: "boot-2", url: "http://testnet-boot2.coc.network:19780" },
+      { id: "coc-sync-node", url: "http://199.192.16.79:19880" },
+      { id: "coc-node-1", url: "http://199.192.16.79:29780" },
+      { id: "coc-node-2", url: "http://199.192.16.79:29782" },
+      { id: "coc-node-3", url: "http://199.192.16.79:29784" },
     ],
     dhtBootstrapPeers: [
-      { id: "boot-1", address: "testnet-boot1.coc.network", port: 19781 },
-      { id: "boot-2", address: "testnet-boot2.coc.network", port: 19781 },
+      { id: "coc-sync-node", address: "199.192.16.79", port: 19881 },
+      { id: "coc-node-1", address: "199.192.16.79", port: 29781 },
+      { id: "coc-node-2", address: "199.192.16.79", port: 29783 },
+      { id: "coc-node-3", address: "199.192.16.79", port: 29785 },
     ],
-    validators: [],
+    validators: [
+      "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+      "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+      "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
+    ],
+    prefund: [
+      { address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", balanceEth: "10000" },
+      { address: "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65", balanceEth: "10000" },
+    ],
     rpcPort: 18780,
     p2pPort: 19780,
     wirePort: 19781,

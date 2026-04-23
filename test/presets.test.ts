@@ -33,6 +33,34 @@ describe("network-presets", () => {
     assert.ok(t.dhtBootstrapPeers.length > 0)
   })
 
+  it("testnet points at real endpoints, not placeholder domains", () => {
+    const t = NETWORK_PRESETS.testnet
+    // Guard against regression to the fake testnet-boot{1,2}.coc.network
+    // placeholders that never resolved.
+    for (const p of t.bootstrapPeers) {
+      assert.ok(!p.url.includes("testnet-boot"), `stale placeholder in peer url: ${p.url}`)
+    }
+    for (const p of t.dhtBootstrapPeers) {
+      assert.ok(!p.address.includes("testnet-boot"), `stale placeholder in dht addr: ${p.address}`)
+    }
+  })
+
+  it("testnet declares validators and prefund for fullnode joins", () => {
+    const t = NETWORK_PRESETS.testnet
+    // Needed so fullnodes can verify upstream-signed blocks.
+    assert.ok(Array.isArray(t.validators) && t.validators.length >= 1)
+    for (const v of t.validators) {
+      assert.match(v, /^0x[0-9a-fA-F]{40}$/)
+    }
+    // Needed so genesis stateRoot matches upstream — otherwise every post-
+    // genesis block fails stateRoot verification.
+    assert.ok(Array.isArray(t.prefund) && (t.prefund?.length ?? 0) >= 1)
+    for (const entry of t.prefund ?? []) {
+      assert.match(entry.address, /^0x[0-9a-fA-F]{40}$/)
+      assert.ok(typeof entry.balanceEth === "string")
+    }
+  })
+
   it("local has localhost defaults", () => {
     const l = NETWORK_PRESETS.local
     assert.strictEqual(l.chainId, 18780)

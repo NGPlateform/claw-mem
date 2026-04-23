@@ -290,6 +290,17 @@ export class NodeManager {
 
     if (opts.type === "validator" || opts.type === "dev") {
       nodeConfig.validators = [opts.name]
+    } else if (networkPreset?.validators?.length) {
+      // Non-validator nodes joining an existing network need the upstream's
+      // validator set to verify incoming blocks.
+      nodeConfig.validators = networkPreset.validators
+    }
+
+    // Genesis prefund: if the network preset declares one and the node-type
+    // preset didn't already set one (dev has a hardcoded prefund), propagate
+    // it into node-config.json. Required to match upstream genesis stateRoot.
+    if (networkPreset?.prefund?.length && !("prefund" in nodeConfig)) {
+      nodeConfig.prefund = networkPreset.prefund
     }
 
     if (opts.configOverrides) {

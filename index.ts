@@ -11,19 +11,21 @@
 
 import type { Command } from "commander"
 
-import { bootstrapServices } from "./src/cli/bootstrap-services.ts"
+import { bootstrapServicesSync } from "./src/cli/bootstrap-services.ts"
 import { registerAllCommands } from "./src/cli/register-all.ts"
 import { registerHooks } from "./src/hooks/index.ts"
 import { registerAllTools } from "./src/tools/index.ts"
 import type { PluginApi } from "./src/types.ts"
 
-export async function activate(api: PluginApi): Promise<void> {
+// OpenClaw requires `activate()` to register hooks/tools synchronously, so
+// we use the sync bootstrap path and let errors bubble into the plugin host.
+export function activate(api: PluginApi): void {
   const logger = api.logger
   logger.info("[claw-mem] Loading...")
 
   let services
   try {
-    services = await bootstrapServices({
+    services = bootstrapServicesSync({
       configOverride: api.pluginConfig ?? {},
       logger,
     })
@@ -46,20 +48,24 @@ export async function activate(api: PluginApi): Promise<void> {
   // Register agent-callable tools.
   registerAllTools(api, services)
 
-  // Register CLI subcommands inside OpenClaw, sharing the same commander
-  // definitions used by the standalone `claw-mem` binary.
+  // Register CLI subcommands inside OpenClaw.
+  //
+  // To avoid clashes with OpenClaw's built-in `node` / `backup` / `doctor` /
+  // `status` / `init` / `bootstrap` / `uninstall` top-level commands, we
+  // nest **all** of our subcommands under one `openclaw coc …` prefix. The
+  // standalone `claw-mem` binary keeps the flat top-level layout — there's
+  // no collision outside of OpenClaw.
   if (api.registerCli) {
     api.registerCli(
       async ({ program }) => {
-        registerAllCommands(program as Command, services)
+        const coc = (program as Command)
+          .command("coc")
+          .description(
+            "claw-mem — persistent memory + COC node lifecycle + soul backup",
+          )
+        registerAllCommands(coc, services)
       },
-      {
-        commands: [
-          "status", "doctor", "init", "version", "tools", "uninstall",
-          "mem", "node", "backup", "carrier", "guardian", "recovery", "did",
-          "bootstrap", "db", "config",
-        ],
-      },
+      { commands: ["coc"] },
     )
   }
 

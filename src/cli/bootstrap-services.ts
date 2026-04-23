@@ -1,15 +1,16 @@
 // Construct the full claw-mem service graph. Used by both the standalone CLI
-// (`bin/claw-mem`) and by future programmatic entry points (e.g. tests).
+// (`bin/claw-mem`) and by the OpenClaw plugin `activate()` path.
 //
-// The OpenClaw plugin path uses a parallel constructor that takes the
-// PluginApi-supplied logger and config; see `index.ts` for that wiring.
+// `bootstrapServices` is **synchronous** so it can run inside a plugin host
+// that requires `activate()` to register hooks/tools before returning. The
+// async wrapper is retained for API compatibility with callers that used to
+// await it.
 
-import { mkdir, readFile } from "node:fs/promises"
-import { existsSync } from "node:fs"
+import { mkdirSync, existsSync, readFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { join } from "node:path"
 
-import { ClawMemConfigSchema, resolveDataDir, resolveDbPath, type ClawMemConfig } from "../config.ts"
+import { ClawMemConfigSchema, resolveDataDir, resolveDbPath } from "../config.ts"
 import type { PluginLogger } from "../types.ts"
 import { Database } from "../db/database.ts"
 import { ObservationStore } from "../db/observation-store.ts"
@@ -34,17 +35,17 @@ export interface BootstrapServicesOptions {
   logger?: PluginLogger
 }
 
-export async function bootstrapServices(opts: BootstrapServicesOptions = {}): Promise<CliServices> {
+export function bootstrapServicesSync(opts: BootstrapServicesOptions = {}): CliServices {
   const logger = opts.logger ?? createConsoleLogger()
-  const rawConfig = opts.configOverride ?? (await loadConfigFile(opts.configPath))
+  const rawConfig = opts.configOverride ?? loadConfigFileSync(opts.configPath)
   const config = ClawMemConfigSchema.parse(rawConfig)
 
   const dataDir = resolveDataDir(config)
-  await mkdir(dataDir, { recursive: true })
+  mkdirSync(dataDir, { recursive: true })
 
   const dbPath = resolveDbPath(config)
   const db = new Database(dbPath)
-  await db.open()
+  db.openSync()
 
   const observationStore = new ObservationStore(db)
   const summaryStore = new SummaryStore(db)
@@ -118,18 +119,23 @@ export async function bootstrapServices(opts: BootstrapServicesOptions = {}): Pr
   }
 }
 
-async function loadConfigFile(explicit?: string): Promise<Record<string, unknown>> {
+/** Async wrapper for legacy callers. Prefer `bootstrapServicesSync`. */
+// eslint-disable-next-line @typescript-eslint/require-await
+export async function bootstrapServices(opts: BootstrapServicesOptions = {}): Promise<CliServices> {
+  return bootstrapServicesSync(opts)
+}
+
+function loadConfigFileSync(explicit?: string): Record<string, unknown> {
   const candidates = explicit
     ? [explicit]
     : [
         join(homedir(), ".claw-mem", "config.json"),
         join(homedir(), ".clawdbot", "claw-mem.json"),
       ]
-
   for (const path of candidates) {
     if (!existsSync(path)) continue
     try {
-      const raw = await readFile(path, "utf-8")
+      const raw = readFileSync(path, "utf-8")
       return JSON.parse(raw) as Record<string, unknown>
     } catch (error) {
       throw new Error(`Failed to read config ${path}: ${String(error)}`)

@@ -184,9 +184,13 @@ export function registerHooks(
     api.on("agent_end", onAgentEnd)
     api.on("session_end", onSessionEnd)
   } else if (api.registerHook) {
-    // Legacy hook registration
+    // Legacy hook registration: legacy API expects Promise<void>; wrap to discard
+    // the structured return value of before_prompt_build (only the new `on()` API
+    // can read it, but the hook's side effects still run).
     api.registerHook("session_start", onSessionStart)
-    api.registerHook("before_prompt_build", onBeforePromptBuild)
+    api.registerHook("before_prompt_build", async (event: unknown) => {
+      await onBeforePromptBuild(event)
+    })
     api.registerHook("after_tool_call", onAfterToolCall)
     api.registerHook("agent_end", onAgentEnd)
     api.registerHook("session_end", onSessionEnd)

@@ -68,7 +68,7 @@ export class SummaryStore {
          ORDER BY created_at_epoch DESC
          LIMIT ?`,
       )
-      .all(agentId, limit) as RawSummary[]
+      .all(agentId, limit) as unknown as RawSummary[]
 
     return rows.map(mapRow)
   }

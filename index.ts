@@ -1,196 +1,148 @@
-// claw-mem: Persistent cross-session semantic memory for OpenClaw AI agents
+// claw-mem: OpenClaw super-skill = persistent semantic memory + COC node
+// lifecycle + (PR 4) soul backup/recovery.
 //
-// Captures structured observations from tool usage, compresses them into
-// session summaries, and injects relevant context into future sessions.
-//
-// Architecture:
-//   Hook: session_start       → Track session lifecycle
-//   Hook: before_prompt_build → Inject memory context (token-budgeted)
-//   Hook: after_tool_call     → Capture observations (heuristic extraction)
-//   Hook: agent_end           → Generate session summary
-//   Hook: session_end         → Finalize session
-//   Tool: mem-search          → Search past observations
-//   Tool: mem-status          → View memory statistics
-//   Tool: mem-forget          → Delete session memories
+// activate() is now a thin assembly layer:
+//   1. bootstrapServices(api.pluginConfig, api.logger) — builds the full
+//      service graph (db + stores + node manager + ...).
+//   2. registerHooks(api, db, config, logger) — session lifecycle hooks.
+//   3. registerAllTools(api, services) — agent-callable tools.
+//   4. api.registerCli(...)  — same commander commands as `bin/claw-mem`.
+//   5. gateway_stop hook for graceful shutdown.
 
-import { ClawMemConfigSchema, resolveDbPath } from "./src/config.ts"
-import type { ClawMemConfig } from "./src/config.ts"
-import { Database } from "./src/db/database.ts"
-import { ObservationStore } from "./src/db/observation-store.ts"
-import { SummaryStore } from "./src/db/summary-store.ts"
-import { SessionStore } from "./src/db/session-store.ts"
-import { SearchEngine } from "./src/search/search.ts"
+import type { Command } from "commander"
+
+import { bootstrapServices } from "./src/cli/bootstrap-services.ts"
+import { registerAllCommands } from "./src/cli/register-all.ts"
 import { registerHooks } from "./src/hooks/index.ts"
+import { registerAllTools } from "./src/tools/index.ts"
 import type { PluginApi } from "./src/types.ts"
 
 export async function activate(api: PluginApi): Promise<void> {
   const logger = api.logger
   logger.info("[claw-mem] Loading...")
 
-  // Parse configuration
-  let config: ClawMemConfig
+  let services
   try {
-    config = ClawMemConfigSchema.parse(api.pluginConfig ?? {})
+    services = await bootstrapServices({
+      configOverride: api.pluginConfig ?? {},
+      logger,
+    })
   } catch (error) {
-    logger.error(`[claw-mem] Config parse failed: ${String(error)}`)
+    logger.error(`[claw-mem] Bootstrap failed: ${String(error)}`)
     return
   }
 
-  if (!config.enabled) {
+  if (!services.config.enabled) {
     logger.info("[claw-mem] Disabled via config")
+    services.db.close()
     return
   }
 
-  // Open database
-  const dbPath = resolveDbPath(config)
-  const db = new Database(dbPath)
+  logger.info(`[claw-mem] Database opened: ${services.dbPath}`)
+
+  // Register session lifecycle hooks (memory capture/injection).
+  registerHooks(api, services.db, services.config, logger)
+
+  // Register agent-callable tools.
+  registerAllTools(api, services)
+
+  // Register CLI subcommands inside OpenClaw, sharing the same commander
+  // definitions used by the standalone `claw-mem` binary.
+  if (api.registerCli) {
+    api.registerCli(
+      async ({ program }) => {
+        registerAllCommands(program as Command, services)
+      },
+      {
+        commands: [
+          "status", "doctor", "init", "version", "tools", "uninstall",
+          "mem", "node", "backup", "carrier", "guardian", "recovery", "did",
+          "bootstrap", "db", "config",
+        ],
+      },
+    )
+  }
+
+  // Auto-backup scheduler (no-op when not configured).
   try {
-    await db.open()
+    services.backupManager.start()
   } catch (error) {
-    logger.error(`[claw-mem] Database open failed: ${String(error)}`)
-    return
+    logger.warn(`[claw-mem] backup auto-start failed: ${String(error)}`)
   }
 
-  logger.info(`[claw-mem] Database opened: ${dbPath}`)
+  // Carrier daemon (no-op when carrier mode not enabled).
+  try {
+    services.carrierManager.start()
+  } catch (error) {
+    logger.warn(`[claw-mem] carrier auto-start failed: ${String(error)}`)
+  }
 
-  // Register hooks (session lifecycle, context injection, observation capture)
-  registerHooks(api, db, config, logger)
-
-  // ──────────────────────────────────────────────────────
-  // Tool: mem-search
-  // ──────────────────────────────────────────────────────
-  const search = new SearchEngine(db)
-
-  api.registerTool({
-    name: "mem-search",
-    description: "Search the agent's semantic memory across all past sessions. " +
-      "Finds observations by keyword, concept, or natural language query.",
-    parameters: {
-      type: "object",
-      properties: {
-        query: { type: "string", description: "Search query text" },
-        limit: { type: "number", description: "Max results (default: 10)" },
-        type: {
-          type: "string",
-          description: "Filter by observation type: discovery, decision, pattern, learning, issue, change",
-        },
-      },
-      required: ["query"],
-    },
-    async execute(params: Record<string, unknown>) {
+  // Session-end backup hook.
+  if (services.config.backup.enabled && services.config.backup.backupOnSessionEnd && api.registerHook) {
+    api.registerHook("session_end", async () => {
+      if (!services.backupManager.isConfigured()) return
       try {
-        const result = search.search({
-          query: String(params.query),
-          limit: Number(params.limit ?? 10),
-          type: params.type ? String(params.type) : undefined,
-        })
-        return {
-          success: true,
-          source: result.source,
-          count: result.totalCount,
-          results: result.results.map((r) => ({
-            id: r.id,
-            type: r.type,
-            title: r.title,
-            narrative: r.narrative,
-            facts: r.facts,
-            concepts: r.concepts,
-            createdAt: r.createdAt,
-          })),
-        }
+        await services.backupManager.runBackup(false)
       } catch (error) {
-        return { success: false, error: String(error) }
+        logger.error(`[claw-mem] session_end backup failed: ${String(error)}`)
       }
-    },
-  })
-
-  // ──────────────────────────────────────────────────────
-  // Tool: mem-status
-  // ──────────────────────────────────────────────────────
-  const obsStore = new ObservationStore(db)
-  const sumStore = new SummaryStore(db)
-
-  api.registerTool({
-    name: "mem-status",
-    description: "View claw-mem memory statistics: total observations, summaries, and database info.",
-    parameters: { type: "object", properties: {} },
-    async execute() {
-      try {
-        // Count across all agents (empty string agent_id = count all)
-        const totalObs = db.connection
-          .prepare("SELECT COUNT(*) as c FROM observations").get() as { c: number }
-        const totalSums = db.connection
-          .prepare("SELECT COUNT(*) as c FROM session_summaries").get() as { c: number }
-        const totalSessions = db.connection
-          .prepare("SELECT COUNT(*) as c FROM sessions").get() as { c: number }
-        const agents = db.connection
-          .prepare("SELECT DISTINCT agent_id FROM observations").all() as { agent_id: string }[]
-
-        return {
-          success: true,
-          observations: totalObs.c,
-          summaries: totalSums.c,
-          sessions: totalSessions.c,
-          agents: agents.map((a) => a.agent_id),
-          database: dbPath,
-          tokenBudget: config.tokenBudget,
-        }
-      } catch (error) {
-        return { success: false, error: String(error) }
-      }
-    },
-  })
-
-  // ──────────────────────────────────────────────────────
-  // Tool: mem-forget
-  // ──────────────────────────────────────────────────────
-  api.registerTool({
-    name: "mem-forget",
-    description: "Delete memories from a specific session. Use with caution.",
-    parameters: {
-      type: "object",
-      properties: {
-        sessionId: { type: "string", description: "Session ID to forget" },
-      },
-      required: ["sessionId"],
-    },
-    async execute(params: Record<string, unknown>) {
-      try {
-        const sessionId = String(params.sessionId)
-        const deleted = obsStore.deleteBySession(sessionId)
-        return {
-          success: true,
-          sessionId,
-          observationsDeleted: deleted,
-        }
-      } catch (error) {
-        return { success: false, error: String(error) }
-      }
-    },
-  })
-
-  // ──────────────────────────────────────────────────────
-  // Graceful shutdown
-  // ──────────────────────────────────────────────────────
-  if (api.registerHook) {
-    api.registerHook("gateway_stop", async () => {
-      logger.info("[claw-mem] Shutting down...")
-      db.close()
     })
   }
 
-  logger.info("[claw-mem] Loaded successfully")
+  // Graceful shutdown.
+  if (api.registerHook) {
+    api.registerHook("gateway_stop", async () => {
+      logger.info("[claw-mem] Shutting down...")
+      services.backupManager.stop()
+      await services.carrierManager.stop()
+      services.db.close()
+    })
+  }
+
+  logger.info(
+    `[claw-mem] Loaded successfully ` +
+      `(memory + ${services.nodeStore.count()} node(s) tracked + ` +
+      `backup ${services.backupManager.isConfigured() ? "configured" : "not configured"})`,
+  )
 }
 
-// Re-export core modules for external use (e.g., coc-backup integration)
+// Re-export core modules for external use (e.g. coc-backup integration shim).
 export { Database } from "./src/db/database.ts"
 export { ObservationStore } from "./src/db/observation-store.ts"
 export { SummaryStore } from "./src/db/summary-store.ts"
 export { SessionStore } from "./src/db/session-store.ts"
+export { NodeStore } from "./src/db/node-store.ts"
+export { ArchiveStore } from "./src/db/archive-store.ts"
+export { ArtifactStore } from "./src/db/artifact-store.ts"
 export { SearchEngine } from "./src/search/search.ts"
 export { buildContext } from "./src/context/builder.ts"
 export { extractObservation } from "./src/observer/extractor.ts"
 export { summarizeSession } from "./src/observer/summarizer.ts"
-export { ClawMemConfigSchema, resolveDbPath, resolveDataDir } from "./src/config.ts"
-export type { ClawMemConfig } from "./src/config.ts"
+export { NodeManager } from "./src/services/node-manager.ts"
+export { ProcessManager } from "./src/services/process-manager.ts"
+export { StorageQuotaManager } from "./src/services/storage-quota-manager.ts"
+export { BackupManager } from "./src/services/backup-manager.ts"
+export { RecoveryManager } from "./src/services/recovery-manager.ts"
+export { SoulClient } from "./src/services/soul-client.ts"
+export { IpfsClient } from "./src/services/ipfs-client.ts"
+export { bootstrapServices } from "./src/cli/bootstrap-services.ts"
+export { registerAllCommands } from "./src/cli/register-all.ts"
+export {
+  ClawMemConfigSchema,
+  resolveDbPath,
+  resolveDataDir,
+  resolveNodesDir,
+  resolveBackupDir,
+  resolveArchivesDir,
+  resolveLogsDir,
+  resolveKeysDir,
+} from "./src/config.ts"
+export type {
+  ClawMemConfig,
+  StorageConfig,
+  NodeConfig,
+  BackupConfig,
+  BootstrapConfig,
+  CarrierConfig,
+} from "./src/config.ts"
 export type * from "./src/types.ts"

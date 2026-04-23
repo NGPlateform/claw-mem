@@ -1,0 +1,7 @@
+#!/bin/sh
+# claw-mem CLI shim
+# Uses --experimental-strip-types so we can import the TypeScript entry directly
+# (matches the rest of the OpenClaw / COC ecosystem on Node 22+).
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+exec node --experimental-strip-types --no-warnings "$DIR/../src/cli/bin.ts" "$@"

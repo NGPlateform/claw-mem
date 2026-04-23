@@ -1,8 +1,8 @@
 {
   "id": "claw-mem",
-  "name": "Claw-Mem Semantic Memory",
-  "version": "0.1.0",
-  "description": "Persistent cross-session semantic memory for OpenClaw AI agents. Captures observations from tool usage, compresses into summaries, injects relevant context on session start.",
+  "name": "Claw-Mem: Memory + Node + Backup",
+  "version": "1.0.0",
+  "description": "OpenClaw super-skill: persistent semantic memory, COC node lifecycle, and soul backup/recovery — all-in-one.",
   "main": "index.ts",
   "configSchema": {
     "type": "object",
@@ -11,7 +11,73 @@
       "dataDir": { "type": "string", "default": "" },
       "tokenBudget": { "type": "number", "default": 8000 },
       "maxObservations": { "type": "number", "default": 50 },
-      "maxSummaries": { "type": "number", "default": 10 }
+      "maxSummaries": { "type": "number", "default": 10 },
+      "dedupWindowMs": { "type": "number", "default": 30000 },
+      "skipTools": {
+        "type": "array",
+        "items": { "type": "string" },
+        "default": ["TodoWrite", "AskUserQuestion", "Skill"]
+      },
+      "storage": {
+        "type": "object",
+        "properties": {
+          "quotaBytes": { "type": "number", "default": 268435456 },
+          "advertisedBytes": { "type": "number", "default": 268435456 },
+          "reservedBytes": { "type": "number", "default": 268435456 },
+          "enforceQuota": { "type": "boolean", "default": true },
+          "reserveFile": { "type": "string", "default": ".quota.reserved" }
+        }
+      },
+      "node": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean", "default": true },
+          "runtimeDir": { "type": "string" },
+          "defaultType": {
+            "type": "string",
+            "enum": ["validator", "fullnode", "archive", "gateway", "dev"],
+            "default": "dev"
+          },
+          "defaultNetwork": {
+            "type": "string",
+            "enum": ["testnet", "mainnet", "local", "custom"],
+            "default": "local"
+          },
+          "port": { "type": "number", "default": 18780 },
+          "bind": { "type": "string", "default": "127.0.0.1" },
+          "autoAdvertiseStorage": { "type": "boolean", "default": true }
+        }
+      },
+      "backup": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean", "default": true },
+          "rpcUrl": { "type": "string", "default": "http://127.0.0.1:18780" },
+          "ipfsUrl": { "type": "string", "default": "http://127.0.0.1:5001" },
+          "contractAddress": { "type": "string" },
+          "didRegistryAddress": { "type": "string" },
+          "privateKey": { "type": "string" },
+          "autoBackup": { "type": "boolean", "default": true },
+          "autoBackupIntervalMs": { "type": "number", "default": 3600000 },
+          "encryptMemory": { "type": "boolean", "default": false },
+          "backupOnSessionEnd": { "type": "boolean", "default": true }
+        }
+      },
+      "bootstrap": {
+        "type": "object",
+        "properties": {
+          "mode": { "type": "string", "enum": ["none", "dev", "prod"], "default": "none" },
+          "hardhatPort": { "type": "number", "default": 8545 },
+          "autoFundEther": { "type": "string", "default": "0.1" },
+          "operatorKeyPath": { "type": "string" },
+          "cocRepoPath": { "type": "string" },
+          "skipIfReady": { "type": "boolean", "default": true }
+        }
+      }
     }
+  },
+  "requirements": {
+    "node": ">=22.0.0",
+    "minStorageBytes": 268435456
   }
 }

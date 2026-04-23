@@ -1,273 +1,197 @@
 # claw-mem
 
-Persistent cross-session semantic memory for [OpenClaw](https://github.com/openclaw/openclaw) AI agents.
+OpenClaw super-skill: **persistent semantic memory + COC node lifecycle + soul backup**, in one extension.
 
-claw-mem silently observes what your agent does — reading files, editing code, running commands, searching the web — and distills each action into a structured **observation**. At the end of every session it compresses those observations into a **summary**. On the next session start it **injects** the most relevant memories back into the agent's prompt, so the agent picks up where it left off without you having to explain the context again.
+claw-mem absorbs and replaces three previously-independent extensions:
+- the original `claw-mem` (semantic memory)
+- `@openclaw/coc-nodeops` (COC node install/start/stop/status)
+- `@openclaw/coc-backup` (agent soul backup → IPFS + on-chain anchoring)
 
-## How it works
+## Why
 
-```
-Session N                                      Session N+1
-─────────                                      ───────────
-User prompt                                    User prompt
-    │                                              │
-    ▼                                              ▼
-┌─────────────────┐                         ┌─────────────────┐
-│ before_prompt_   │◄── inject context ──── │ SQLite DB       │
-│ build hook       │    (token-budgeted)    │ observations +  │
-└────────┬────────┘                         │ summaries       │
-         │                                  └────────▲────────┘
-    Agent works...                                   │
-         │                                      on agent_end:
-    ┌────▼────┐                                 compress into
-    │ after_  │── extract observation ──►        session summary
-    │ tool_   │   (heuristic, no LLM)
-    │ call    │
-    └─────────┘
-```
+OpenClaw agents need three things to operate inside the COC P2P network:
 
-**Zero configuration required.** Install it, and memory just works.
+1. **Memory** that survives restarts and compaction.
+2. **A COC node** that contributes ≥256 MiB of P2P storage and earns rewards.
+3. **A backup pipeline** that anchors the agent's identity, configuration,
+   and memory on-chain so the agent can be restored on any carrier.
+
+These used to be three separate extensions that each held their own SQLite,
+config, CLI, and lifecycle — and `coc-backup` had to reach into
+`claw-mem`'s database directly to capture semantic snapshots. Now they
+share a single store, single config schema, single CLI, and single skill
+artifact.
 
 ## Install
-
-### As an OpenClaw workspace extension
-
-```bash
-# From your OpenClaw workspace root
-cd extensions
-git clone https://github.com/NGPlateform/claw-mem.git
-cd claw-mem && npm install
-```
-
-Then add to your `openclaw.json`:
-
-```jsonc
-{
-  "extensions": {
-    "claw-mem": {
-      "enabled": true
-      // all other options are optional — see Configuration below
-    }
-  }
-}
-```
-
-### As an npm package (when published)
 
 ```bash
 npm install @openclaw/claw-mem
 ```
 
-## What it captures
-
-Every time the agent calls a tool, claw-mem extracts a lightweight **observation**:
-
-| Tool | Observation type | What's captured |
-|------|-----------------|-----------------|
-| `Read` | discovery | File name, line count, path, language |
-| `Write` | change | File name, lines written |
-| `Edit` | change | File name, lines added/removed |
-| `Bash` | change | Command, error/pass detection, domain concepts |
-| `Grep` | discovery | Search pattern, match count |
-| `WebSearch` | discovery | Query, result summary |
-| Any other | discovery | Tool name, parameter keys, output excerpt |
-
-Each observation is a structured record:
-
-```json
-{
-  "type": "decision",
-  "title": "Added Redis caching layer",
-  "facts": ["Reduced DB queries by 60%"],
-  "narrative": "Implemented Redis to reduce database load...",
-  "concepts": ["redis", "performance", "caching"],
-  "filesModified": ["src/cache.ts"]
-}
-```
-
-Observations are **deduplicated** within a 30-second window (same title + narrative = same observation).
-
-Tools that produce no meaningful signal (`TodoWrite`, `AskUserQuestion`, `Skill`) are skipped by default.
-
-## What it injects
-
-On every `before_prompt_build` event, claw-mem assembles a **token-budgeted context block** from recent summaries and observations, formatted as Markdown:
-
-```xml
-<claw-mem-context>
-Agent: main | 3 summaries, 12 observations | 2400/8000 tokens
-
-## Recent Sessions
-
-### Apr 17, 2026
-- **Request**: Optimize database performance
-- **Learned**: Redis + connection pool reduced latency 40%
-- **Completed**: Implemented caching in production
-- **Next Steps**: Monitor metrics, consider distributed caching
-
-## Recent Observations
-
-| Time  | Type      | Title                           | Facts                  |
-|-------|-----------|---------------------------------|------------------------|
-| 09:30 | decision  | Added Redis caching layer       | Reduced queries by 60% |
-| 08:15 | discovery | Found N+1 query in dashboard    | 200 queries per page   |
-
-</claw-mem-context>
-```
-
-**Packing strategy:** Summaries first (higher information density per token), then observations. Stops when the token budget is exhausted.
-
-## Agent tools
-
-claw-mem registers three tools that the agent can call:
-
-### `mem-search`
-
-Search past observations by keyword or concept.
-
-```
-query:  "Redis caching"          # required
-limit:  10                       # optional, default 10
-type:   "decision"               # optional filter
-```
-
-Uses SQLite FTS5 full-text search. Falls back to LIKE queries if FTS is unavailable.
-
-### `mem-status`
-
-View memory statistics.
-
-```json
-{
-  "observations": 142,
-  "summaries": 12,
-  "sessions": 15,
-  "agents": ["main", "helper"],
-  "database": "/home/user/.claw-mem/claw-mem.db",
-  "tokenBudget": 8000
-}
-```
-
-### `mem-forget`
-
-Delete all observations from a specific session.
-
-```
-sessionId: "abc-123-def"         # required
-```
-
-## Configuration
-
-All settings go in `openclaw.json` under the `claw-mem` extension key:
+Or, in an OpenClaw extension folder, point at it locally:
 
 ```jsonc
-{
-  "extensions": {
-    "claw-mem": {
-      "enabled": true,                    // default: true
-      "dataDir": "",                      // default: ~/.claw-mem
-      "tokenBudget": 8000,               // max tokens for context injection
-      "maxObservations": 50,             // max observations to consider
-      "maxSummaries": 10,                // max summaries to consider
-      "dedupWindowMs": 30000,            // dedup window (ms)
-      "skipTools": [                     // tools to ignore
-        "TodoWrite",
-        "AskUserQuestion",
-        "Skill"
-      ]
-    }
-  }
-}
+// openclaw.json
+{ "extensions": ["claw-mem"] }
 ```
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `enabled` | `true` | Enable/disable the extension |
-| `dataDir` | `~/.claw-mem` | Where to store the SQLite database |
-| `tokenBudget` | `8000` | Max tokens injected into the agent's prompt |
-| `maxObservations` | `50` | Recent observations to read from DB |
-| `maxSummaries` | `10` | Recent summaries to read from DB |
-| `dedupWindowMs` | `30000` | Time window for duplicate detection (ms) |
-| `skipTools` | `["TodoWrite", ...]` | Tool names that don't generate observations |
+## CLI
 
-## Lifecycle hooks
+The standalone `claw-mem` binary and the `openclaw …` subcommands share the same commander definitions:
 
-claw-mem registers five OpenClaw lifecycle hooks:
-
-| Hook | When | What it does |
-|------|------|-------------|
-| `session_start` | New session begins | Creates session record in DB |
-| `before_prompt_build` | Before each LLM call | Injects token-budgeted memory context |
-| `after_tool_call` | After every tool execution | Extracts and stores observation |
-| `agent_end` | Agent run completes | Generates session summary from observations |
-| `session_end` | Session closes | Marks session as completed |
-
-All hooks are **non-blocking** — errors are logged but never interrupt the agent's workflow.
-
-## Observation types
-
-| Type | Meaning | Typical source |
-|------|---------|---------------|
-| `discovery` | New information learned | Read, Grep, WebSearch |
-| `decision` | Architecture or approach choice | *(LLM-powered extractors)* |
-| `pattern` | Recurring code/design pattern | *(LLM-powered extractors)* |
-| `learning` | Lesson or insight | *(LLM-powered extractors)* |
-| `issue` | Bug found or problem diagnosed | *(LLM-powered extractors)* |
-| `change` | Code or file modification | Write, Edit, Bash |
-| `explanation` | How something works | *(LLM-powered extractors)* |
-
-The built-in heuristic extractor produces `discovery` and `change` types. The `decision`, `pattern`, `learning`, `issue`, and `explanation` types are available for LLM-powered extractors or manual insertion.
-
-## Database
-
-claw-mem uses a single SQLite database (via Node.js 22+ built-in `node:sqlite`):
-
-- **Location**: `~/.claw-mem/claw-mem.db` (configurable)
-- **Mode**: WAL (Write-Ahead Logging) for concurrent read/write
-- **Search**: FTS5 full-text index on `title`, `narrative`, `facts`, `concepts`
-- **Migrations**: Automatic, versioned, idempotent
-
-### Tables
-
-| Table | Purpose |
-|-------|---------|
-| `observations` | Structured observations from tool calls |
-| `session_summaries` | Compressed session summaries |
-| `sessions` | Session lifecycle tracking |
-| `observations_fts` | FTS5 full-text search index |
-| `schema_version` | Migration tracking |
-
-## Integration with coc-backup
-
-claw-mem is designed to work with the [COC coc-backup](https://github.com/NGPlateform/coc-dev) extension's semantic memory layer. The coc-backup `semantic-snapshot.ts` module reads claw-mem's SQLite database to capture observations and summaries before each backup, enabling semantic context injection after agent resurrection.
-
-claw-mem re-exports all core modules for programmatic access:
-
-```typescript
-import {
-  Database,
-  ObservationStore,
-  SummaryStore,
-  SearchEngine,
-  buildContext,
-  extractObservation,
-} from "@openclaw/claw-mem"
+```text
+claw-mem
+├── status                # one-screen overview (memory + nodes + backup + bootstrap + storage)
+├── doctor                # environment health checks (Node / COC repo / hardhat / ports / disk / quota / backup)
+├── init                  # interactive first-time setup — writes ~/.claw-mem/config.json
+├── version               # claw-mem version + schema version + Node / COC repo path
+├── tools list            # list every agent tool the skill exposes (--with-schema for params)
+├── uninstall             # selective cleanup of ~/.claw-mem (keeps keys by default)
+│
+├── mem
+│   ├── search <q>        # FTS5 search over past observations
+│   ├── status            # row counts and DB path
+│   ├── forget <sid>      # delete observations for one session
+│   ├── peek              # show what would be injected into the next prompt
+│   ├── prune             # delete observations older than --older-than <days>
+│   ├── export <file>     # dump observations + summaries + sessions to JSON
+│   └── import <file>     # restore from a `mem export` file (idempotent)
+│
+├── node
+│   ├── install           # init wizard (or non-interactive with --type/--network)
+│   ├── list / status     # inspect tracked nodes
+│   ├── start/stop/restart
+│   ├── remove <name>
+│   ├── config show|edit
+│   └── logs <name>       # --service node|agent|relayer  --all  -f
+│
+├── backup
+│   ├── configure         # interactive RPC / IPFS / contract / privateKey setup
+│   ├── create [--full]
+│   ├── restore           # by manifestCid / package / latestLocal
+│   ├── list / history    # local archive index
+│   ├── status / doctor
+│   ├── prune             # drop old local archive entries (does NOT unpin IPFS)
+│   └── find-recoverable  # local + (--on-chain) SoulRegistry latest CID
+│
+├── carrier               # carrier daemon: register / list (event-walk) / submit-request / start / stop / status / info / availability / deregister
+├── guardian              # guardian-side resurrection + guardian set management
+├── recovery              # social recovery (guardian-initiated owner migration)
+├── did                   # DID identity management (DIDRegistry) — 14 subcommands
+│
+├── bootstrap
+│   ├── dev               # spawn hardhat + deploy contracts + install + start + first backup
+│   ├── prod              # interactive wizard for an existing chain (validates RPC + contract bytecode)
+│   ├── status / teardown
+│   └── logs              # tail ~/.claw-mem/logs/hardhat.log
+│
+├── db
+│   ├── vacuum            # reclaim space after pruning
+│   ├── migrate-status    # current vs latest schema version
+│   └── size              # main / wal / shm bytes
+│
+└── config
+    ├── get <path>        # dot-path read
+    ├── set <path> <value>
+    ├── list              # dump effective config
+    └── path              # print ~/.claw-mem/config.json
 ```
 
-## Requirements
+## Memory layer (semantic memory)
 
-- **Node.js 22+** (uses `node:sqlite` built-in module)
-- **OpenClaw** with plugin API support
+claw-mem silently observes what your agent does — reading files, editing
+code, running commands, searching the web — and distills each action into
+a structured **observation**. At the end of every session it compresses
+those observations into a **summary**. On the next session start it
+**injects** the most relevant memories back into the agent's prompt, so
+the agent picks up where it left off without you having to explain the
+context again.
 
-## Development
+```text
+Session N                                      Session N+1
+─────────                                     ─────────────
+[after_tool_call]   →  Observation            [session_start]   ←  Memory ctx
+[after_tool_call]   →  Observation            [before_prompt]   ←  injected!
+       …
+[agent_end]         →  Summary
+```
+
+All of this lives in `~/.claw-mem/claw-mem.db` (SQLite + FTS5).
+
+## The 256 MiB minimum
+
+The COC P2P network requires every node to contribute at least 256 MiB of
+storage. claw-mem enforces this in two places:
+
+1. `storage.advertisedBytes` (default `268_435_456`) is written into every
+   node-config.json under `advertisedStorageBytes`. The COC node layer
+   doesn't yet broadcast this field; future versions will.
+2. `storage.quotaBytes` (default `268_435_456`) is enforced locally. New
+   node installs are rejected if they would push the data directory over
+   the quota; a fallocate-based reservation file prevents the OS from
+   filling the disk first.
+
+## Bootstrap dev
 
 ```bash
-git clone https://github.com/NGPlateform/claw-mem.git
-cd claw-mem
-npm install
-npm test                    # 27 tests
+claw-mem bootstrap dev
 ```
 
-## License
+Brings up a local hardhat L1, generates an operator key, funds it with 0.1
+ETH from hardhat account #0, generates a node-config (with
+advertisedStorageBytes=256 MiB), installs and starts a `dev` COC node, and
+prints a summary. Contract deployment, agent self-registration, and the
+first backup are stubs in this initial version — see the in-source TODOs.
 
-MIT
+## Architecture
+
+See `.claude/plans/clawbot-claw-mem-openclaw-skills-coc-25-rustling-feigenbaum.md`
+for the full integration design — every file path, schema, and PR plan.
+
+## Documentation
+
+- 📘 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — full user manual (~1200 lines): concepts, every command, workflows, troubleshooting, FAQ, appendix
+- 🔄 [`docs/MIGRATION.md`](docs/MIGRATION.md) — migrating from `@openclaw/coc-nodeops` and `@openclaw/coc-backup`
+
+## Status
+
+PRs in this revision (1.0.0):
+
+- ✅ PR 1 — config + DB schema v2 + node/archive/artifact stores
+- ✅ PR 2 — `coc-nodeops` migration: NodeManager, ProcessManager, RpcClient, init wizard, `node` CLI, 10 agent tools
+- ✅ PR 3 — StorageQuotaManager + 256 MiB enforcement, integrated with NodeManager.install
+- ✅ PR 4 — `coc-backup` migration: BackupManager / RecoveryManager facades, 5 agent tools, `backup` CLI
+- ✅ PR 5 — BootstrapManager + `bootstrap dev|status|teardown`
+- ✅ PR 6 — `config get/set/list/path`, COC compatibility shims, docs, migration guide
+
+UX revision (post-1.0):
+
+- ✅ `status` / `doctor` / `init` / `version` / `tools list` / `uninstall`
+- ✅ `mem peek` / `mem prune` / `mem export` / `mem import`
+- ✅ `node logs --all`
+- ✅ `bootstrap logs`
+- ✅ `backup configure` / `backup prune` / `backup find-recoverable`
+- ✅ `db vacuum` / `db migrate-status` / `db size`
+- ✅ `bootstrap dev` step 16 now persists operator key to disk
+- ✅ `node install` warns about missing COC repo; `node start` hard-fails with a clear message
+- ✅ shared `config-persistence` helpers reused across config / init / configure / bootstrap
+
+Round 4 (carrier / guardian / DID / bootstrap completion):
+
+- ✅ `carrier { register | deregister | availability | info | submit-request | start | stop | status }` + auto-start in `activate()` if `backup.carrier.enabled`
+- ✅ `guardian { initiate | approve | status | add | remove | list }`
+- ✅ `recovery { initiate | approve | complete | cancel | status }`
+- ✅ `did` — 14 subcommands covering all DIDRegistry operations
+- ✅ `backup { init | register | heartbeat | configure-resurrection | resurrection { start | status | confirm | complete | cancel } }`
+- ✅ 8 additional agent tools: `soul-auto-restore`, `soul-resurrection`, `soul-carrier-request`, `soul-guardian-initiate`, `soul-guardian-approve`, `soul-guardian-manage`, `soul-recovery-initiate`, `soul-recovery-approve` (total now 26)
+- ✅ `bootstrap dev` step 10 — real contract deployment via ethers + compiled artifacts (PoSeManagerV2, SoulRegistry, CidRegistry, DIDRegistry); auto-runs `npx hardhat compile` if artifacts missing
+- ✅ `bootstrap dev` step 15 — agent self-registration polled via `coc-agent.log` (45s timeout)
+- ✅ vitest → node:test rewrite of all 4 deferred backup tests (`test/backup-suite/{binary-handler,change-detector-extended,lifecycle,scheduler}.test.ts`)
+
+Round 5 (final):
+
+- ✅ `bootstrap prod` — interactive @clack/prompts wizard validating RPC + each contract address (eth_getCode), supports `--non-interactive` flag-driven mode for scripts/CI; persists everything to `~/.claw-mem/config.json` and the artifact store under the resolved network name (mainnet / sepolia / coc-testnet / local / chain-N)
+- ✅ `carrier list` — walks `CarrierRegistered` / `CarrierDeregistered` events on-chain (`--from-block`, `--include-inactive`), no external indexer required
+- ✅ `SoulClient.listCarriers()` exposed for programmatic use
+
+All deferred items now closed.

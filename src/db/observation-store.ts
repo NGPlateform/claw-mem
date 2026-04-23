@@ -83,7 +83,7 @@ export class ObservationStore {
          ORDER BY created_at_epoch DESC
          LIMIT ?`,
       )
-      .all(agentId, limit) as RawObservation[]
+      .all(agentId, limit) as unknown as RawObservation[]
 
     return rows.map(mapRow)
   }
@@ -95,7 +95,7 @@ export class ObservationStore {
          WHERE session_id = ?
          ORDER BY created_at_epoch ASC`,
       )
-      .all(sessionId) as RawObservation[]
+      .all(sessionId) as unknown as RawObservation[]
 
     return rows.map(mapRow)
   }
@@ -111,7 +111,7 @@ export class ObservationStore {
     const result = this.db.connection
       .prepare("DELETE FROM observations WHERE session_id = ?")
       .run(sessionId)
-    return result.changes
+    return Number(result.changes)
   }
 }
 

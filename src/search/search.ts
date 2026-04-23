@@ -51,7 +51,7 @@ export class SearchEngine {
     sql += " ORDER BY rank LIMIT ?"
     params.push(limit)
 
-    const rows = this.db.connection.prepare(sql).all(...params) as RawObsRow[]
+    const rows = this.db.connection.prepare(sql).all(...(params as never[])) as unknown as RawObsRow[]
 
     return {
       source: "fts",
@@ -81,7 +81,7 @@ export class SearchEngine {
     sql += " ORDER BY created_at_epoch DESC LIMIT ?"
     params.push(limit)
 
-    const rows = this.db.connection.prepare(sql).all(...params) as RawObsRow[]
+    const rows = this.db.connection.prepare(sql).all(...(params as never[])) as unknown as RawObsRow[]
 
     return {
       source: "like",

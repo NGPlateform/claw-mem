@@ -84,7 +84,82 @@ const MIGRATIONS: Array<{ version: number; sql: string }> = [
       END;
     `,
   },
+  {
+    version: 2,
+    // Adds tables for COC node lifecycle, backup history, contract artifacts,
+    // and carrier resurrection requests. ADD-only — does not modify v1 schema.
+    sql: `
+      CREATE TABLE IF NOT EXISTS coc_nodes (
+        name TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        network TEXT NOT NULL,
+        data_dir TEXT NOT NULL,
+        services TEXT NOT NULL DEFAULT '[]',
+        advertised_bytes INTEGER NOT NULL DEFAULT 268435456,
+        rpc_port INTEGER NOT NULL,
+        config_path TEXT,
+        created_at TEXT NOT NULL,
+        created_at_epoch INTEGER NOT NULL,
+        updated_at TEXT,
+        updated_at_epoch INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_coc_nodes_created
+        ON coc_nodes(created_at_epoch DESC);
+      CREATE INDEX IF NOT EXISTS idx_coc_nodes_network
+        ON coc_nodes(network);
+
+      CREATE TABLE IF NOT EXISTS backup_archives (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        agent_id TEXT NOT NULL,
+        manifest_cid TEXT NOT NULL UNIQUE,
+        backup_type INTEGER NOT NULL DEFAULT 0,
+        file_count INTEGER NOT NULL DEFAULT 0,
+        total_bytes INTEGER NOT NULL DEFAULT 0,
+        data_merkle_root TEXT NOT NULL DEFAULT '',
+        tx_hash TEXT,
+        anchored_at TEXT,
+        anchored_at_epoch INTEGER,
+        semantic_snapshot_included INTEGER NOT NULL DEFAULT 0,
+        parent_cid TEXT,
+        created_at TEXT NOT NULL,
+        created_at_epoch INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_backup_agent_epoch
+        ON backup_archives(agent_id, created_at_epoch DESC);
+      CREATE INDEX IF NOT EXISTS idx_backup_parent
+        ON backup_archives(parent_cid);
+
+      CREATE TABLE IF NOT EXISTS coc_artifacts (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        network TEXT NOT NULL DEFAULT 'local',
+        chain_id INTEGER,
+        created_at TEXT NOT NULL,
+        created_at_epoch INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_artifacts_network
+        ON coc_artifacts(network);
+
+      CREATE TABLE IF NOT EXISTS carrier_requests (
+        request_id TEXT PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        carrier_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        created_at_epoch INTEGER NOT NULL,
+        updated_at TEXT,
+        updated_at_epoch INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_carrier_agent
+        ON carrier_requests(agent_id);
+      CREATE INDEX IF NOT EXISTS idx_carrier_status
+        ON carrier_requests(status);
+    `,
+  },
 ]
+
+export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version
 
 export function runMigrations(db: DatabaseSync): void {
   // Ensure schema_version table exists

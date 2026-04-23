@@ -50,6 +50,9 @@ export const NETWORK_PRESETS: Record<Exclude<NetworkId, "custom">, NetworkPreset
     prefund: [
       { address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", balanceEth: "10000" },
       { address: "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65", balanceEth: "10000" },
+      { address: "0x90F79bf6EB2c4f870365E785982E1f101E93b906", balanceEth: "1000" },
+      { address: "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc", balanceEth: "1000" },
+      { address: "0x976EA74026E726554dB657fA54763abd0C3a0aa9", balanceEth: "1000" },
     ],
     rpcPort: 18780,
     p2pPort: 19780,
@@ -131,6 +134,11 @@ export const NODE_TYPE_PRESETS: Record<NodeType, NodeTypePreset> = {
       storage: { backend: "leveldb" },
       validators: [],
       p2pInboundAuthMode: "enforce",
+      // Observer nodes should warn rather than reject when block signature
+      // checks fail — validators may use a signing scheme the observer cannot
+      // verify (e.g. ephemeral keys not in validators[]). In "enforce" mode
+      // the first mismatch stalls sync permanently.
+      signatureEnforcement: "monitor",
     },
     services: ["node"],
   },

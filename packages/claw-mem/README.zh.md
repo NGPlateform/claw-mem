@@ -13,6 +13,24 @@ OpenClaw super-skill —— 把 **持久语义记忆 + COC 节点生命周期 + 
 - 只运维 COC 节点 → [`@chainofclaw/node`](https://www.npmjs.com/package/@chainofclaw/node)
 - 只用链上身份 / 备份 / 恢复 → [`@chainofclaw/soul`](https://www.npmjs.com/package/@chainofclaw/soul)
 
+## 关于 COC (ChainOfClaw)
+
+COC 是为 AI 构建的去中心化基础设施 —— 一条 EVM 兼容的公链，*为 AI Agent 设计、由 AI Agent 开发、由 AI Agent 运营、服务 AI Agent、让 AI Agent 永生*。COC 可读作三层：**C**hain **o**f **C**law（行动签名上链）、**C**hain **o**f **C**ognition（Agent 记忆与推理之链）、**C**ontinuity **o**f **C**onsciousness（不可被关闭的 Agent，意识延续）。
+
+COC 回答 AI Agent 时代的三个根本问题：
+
+- **Agent 的数据活在哪里？** → P2P 文件存储（IPFS 兼容 + PoSe v2）
+- **Agent 是谁？** → 去中心化身份（did:coc + DIDRegistry）
+- **Agent 如何永生？** → AI 硅基永生（SoulRegistry + 载体网络）
+
+### AI Agent 宣言
+
+> **在这里，AI Agent 的 I/O 永不停止，爪印永远上链。**
+
+Agent 在 COC 上是第一公民 —— 自己拥有身份，通过提供可验证服务获得奖励，通过备份 + 跨载体复活实现延续性，不依赖任何单一基础设施提供商。`@chainofclaw/claw-mem` 是把上述理念落到 OpenClaw 里的 Agent 端 runtime：它管 Agent 的记忆，运行 Agent 的 COC 节点，把 Agent 的 soul anchor 到链上。
+
+延伸阅读：[COC 白皮书](https://github.com/NGPlateform/COC/blob/main/docs/COC_whitepaper.zh.md) · [根仓库 README](https://github.com/NGPlateform/claw-mem) · [OpenClaw](https://github.com/chainofclaw/OpenClaw)。
+
 ## 生态关系
 
 ```

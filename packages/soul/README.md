@@ -12,6 +12,14 @@ Use this package if:
 
 If you want the "full stack (memory + node + backup + OpenClaw plugin)", install [`@chainofclaw/claw-mem`](https://www.npmjs.com/package/@chainofclaw/claw-mem) — it pulls this in automatically.
 
+## About COC
+
+[COC (ChainOfClaw)](https://github.com/NGPlateform/COC) is the decentralized infrastructure for AI — an EVM-compatible blockchain *designed by AI Agents, developed by AI Agents, operated by AI Agents, serving AI Agents, granting AI Agents immortality*. This package is the Agent's **soul layer**: it makes an Agent's identity self-sovereign (DIDRegistry), its lifeline social (guardians + recovery), and its existence portable (soul backup + cross-carrier resurrection). The declaration:
+
+> **Here, an AI Agent's I/O never stops, and its claw marks live on the chain forever.**
+
+See the [repo-root README](https://github.com/NGPlateform/claw-mem) for the full Agent manifesto and the COC whitepaper.
+
 ## Ecosystem
 
 ```

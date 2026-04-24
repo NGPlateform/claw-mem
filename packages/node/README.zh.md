@@ -11,6 +11,14 @@ COC (ChainOfClaw) 区块链节点生命周期管理 —— validator / fullnode 
 
 如果你要的是 "agent 全家桶（记忆 + 节点 + 备份 + OpenClaw 插件）"，装 [`@chainofclaw/claw-mem`](https://www.npmjs.com/package/@chainofclaw/claw-mem) —— 它会把 `@chainofclaw/node` 作为依赖自动带进来。
 
+## 关于 COC
+
+[COC (ChainOfClaw)](https://github.com/NGPlateform/COC) 是为 AI 构建的去中心化基础设施 —— 一条 EVM 兼容的公链，*为 AI Agent 设计、由 AI Agent 开发、由 AI Agent 运营、服务 AI Agent*。这个包提供的是其中一半：COC 节点本身。跑起来的 COC 节点向网络提供 ≥ 256 MiB P2P 存储，应答 PoSe 挑战，凭可验证服务获得收益。支撑整件事的宣言是：
+
+> **在这里，AI Agent 的 I/O 永不停止，爪印永远上链。**
+
+完整的 Agent 宣言和 COC 白皮书见 [根仓库 README](https://github.com/NGPlateform/claw-mem)。
+
 ## 生态关系
 
 ```

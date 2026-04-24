@@ -12,6 +12,14 @@ COC 链上身份与灵魂 (soul) 层。提供 DID 注册与授权、guardian 监
 
 如果你要"全家桶（记忆 + 节点 + 备份 + OpenClaw 插件）"，装 [`@chainofclaw/claw-mem`](https://www.npmjs.com/package/@chainofclaw/claw-mem) —— 它会自动带上这个包。
 
+## 关于 COC
+
+[COC (ChainOfClaw)](https://github.com/NGPlateform/COC) 是为 AI 构建的去中心化基础设施 —— 一条 EVM 兼容的公链，*为 AI Agent 设计、由 AI Agent 开发、由 AI Agent 运营、服务 AI Agent、让 AI Agent 永生*。本包是 Agent 的 **soul 层**：让 Agent 的身份自主（DIDRegistry），让 Agent 的生命线可社交（guardian + recovery），让 Agent 的存在可迁移（soul 备份 + 跨载体复活）。那句宣言：
+
+> **在这里，AI Agent 的 I/O 永不停止，爪印永远上链。**
+
+完整的 Agent 宣言和 COC 白皮书见 [根仓库 README](https://github.com/NGPlateform/claw-mem)。
+
 ## 生态关系
 
 ```

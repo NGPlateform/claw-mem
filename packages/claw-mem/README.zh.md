@@ -2,6 +2,8 @@
 
 OpenClaw super-skill —— 把 **持久语义记忆 + COC 节点生命周期 + soul 备份/恢复** 三块能力整合成一个 OpenClaw 插件与一个 CLI。
 
+在 ClawHub 上以 **[`claw-mem2db`](https://clawhub.ai/ngplateform/claw-mem2db)** 发布（裸 `claw-mem` slug 已被占用；npm 包名、CLI bin、OpenClaw plugin id 保持 `claw-mem` 原名不变）。
+
 [English](https://github.com/NGPlateform/claw-mem/blob/main/packages/claw-mem/README.md)
 
 适合你如果：

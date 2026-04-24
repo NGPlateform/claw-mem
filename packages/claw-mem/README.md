@@ -2,6 +2,8 @@
 
 OpenClaw super-skill — **persistent semantic memory + COC node lifecycle + soul backup/recovery** combined into a single OpenClaw plugin and a single CLI.
 
+Published on ClawHub as **[`claw-mem2db`](https://clawhub.ai/ngplateform/claw-mem2db)** (the bare `claw-mem` slug was taken on the hub; the npm package, CLI binary, and OpenClaw plugin id all keep the original `claw-mem` name).
+
 [中文](https://github.com/NGPlateform/claw-mem/blob/main/packages/claw-mem/README.zh.md)
 
 Use this package if:

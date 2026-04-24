@@ -1,7 +1,7 @@
 ---
 name: coc-soul
 description: Give an AI agent a persistent on-chain soul on COC — register and manage the agent's decentralized identity (DID), anchor encrypted backups to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the original host goes offline. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, or inspect an agent's on-chain identity state.
-version: 1.1.0
+version: 1.1.1
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/soul
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/soul"
-        version: "1.1.0"
+        version: "1.1.1"
         bins:
           - coc-soul
 ---
@@ -71,8 +71,8 @@ openclaw coc-soul backup status
 
 ## When NOT to use this skill
 
-- Running a COC chain node yourself — use [coc-node](https://clawhub.ai/skill/coc-node).
-- Local semantic memory (non-chain) — use [claw-mem](https://clawhub.ai/skill/claw-mem).
+- Running a COC chain node yourself — use [coc-node](https://clawhub.ai/ngplateform/coc-node).
+- Local semantic memory (non-chain) — use [claw-mem2db](https://clawhub.ai/ngplateform/claw-mem2db).
 - Smart contract deployment — that lives in the [COC source repo](https://github.com/NGPlateform/COC) `contracts/` tree.
 
 ## Reference

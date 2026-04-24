@@ -40,11 +40,13 @@ COC 提供三项基础服务，对应 AI Agent 时代的三个根本问题：
 
 ## 包
 
-| 包 | 功能 | npm | README |
-|---|---|---|---|
-| [`@chainofclaw/claw-mem`](./packages/claw-mem) | 全家桶：持久语义记忆 + COC 节点 + soul 备份 + OpenClaw 插件 | [npm](https://www.npmjs.com/package/@chainofclaw/claw-mem) | [packages/claw-mem/README.zh.md](./packages/claw-mem/README.zh.md) |
-| [`@chainofclaw/node`](./packages/node) | 独立的 COC 节点生命周期（install/start/stop/status） | [npm](https://www.npmjs.com/package/@chainofclaw/node) | [packages/node/README.zh.md](./packages/node/README.zh.md) |
-| [`@chainofclaw/soul`](./packages/soul) | 链上 DID + guardian + recovery + resurrection + carrier + soul 备份 | [npm](https://www.npmjs.com/package/@chainofclaw/soul) | [packages/soul/README.zh.md](./packages/soul/README.zh.md) |
+| 包 | 功能 | npm | ClawHub skill | README |
+|---|---|---|---|---|
+| [`@chainofclaw/claw-mem`](./packages/claw-mem) | 全家桶：持久语义记忆 + COC 节点 + soul 备份 + OpenClaw 插件 | [npm](https://www.npmjs.com/package/@chainofclaw/claw-mem) | [`claw-mem2db`](https://clawhub.ai/ngplateform/claw-mem2db) † | [packages/claw-mem/README.zh.md](./packages/claw-mem/README.zh.md) |
+| [`@chainofclaw/node`](./packages/node) | 独立的 COC 节点生命周期（install/start/stop/status） | [npm](https://www.npmjs.com/package/@chainofclaw/node) | [`coc-node`](https://clawhub.ai/ngplateform/coc-node) | [packages/node/README.zh.md](./packages/node/README.zh.md) |
+| [`@chainofclaw/soul`](./packages/soul) | 链上 DID + guardian + recovery + resurrection + carrier + soul 备份 | [npm](https://www.npmjs.com/package/@chainofclaw/soul) | [`coc-soul`](https://clawhub.ai/ngplateform/coc-soul) | [packages/soul/README.zh.md](./packages/soul/README.zh.md) |
+
+† claw-mem 在 ClawHub 上用 slug `claw-mem2db` 发布（裸 `claw-mem` 被占用）。npm 包名、CLI bin、OpenClaw plugin id 保持 `claw-mem` 原名不变。
 
 ```
 @chainofclaw/claw-mem ──▶ @chainofclaw/node

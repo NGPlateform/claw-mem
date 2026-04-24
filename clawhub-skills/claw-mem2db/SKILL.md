@@ -1,7 +1,7 @@
 ---
-name: claw-mem
+name: claw-mem2db
 description: Give an AI agent persistent semantic memory that survives restarts and compaction. Captures structured observations from tool calls, summarizes sessions, and injects a token-budgeted memory context into the next prompt. Use when the user wants long-lived agent memory, wants to search past observations, wants to export / import memory across machines, wants to see what memory would be injected before the next turn, or is assembling the full COC agent stack (memory + node + soul).
-version: 1.1.0
+version: 1.1.1
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/claw-mem
@@ -15,14 +15,22 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/claw-mem"
-        version: "1.1.0"
+        version: "1.1.1"
         bins:
           - claw-mem
 ---
 
-# claw-mem — persistent semantic memory for agents
+# claw-mem2db — persistent semantic memory for agents
 
-The **memory layer** for AI agents on COC. Backed by the npm package [`@chainofclaw/claw-mem`](https://www.npmjs.com/package/@chainofclaw/claw-mem) which ships a standalone `claw-mem` CLI and an OpenClaw skill (id `claw-mem`).
+The **memory layer** for AI agents on COC.
+
+> **Naming note.** This ClawHub skill is published as **`claw-mem2db`** because the bare `claw-mem` slug was taken. The underlying artifacts keep the original names:
+>
+> - **npm package:** [`@chainofclaw/claw-mem`](https://www.npmjs.com/package/@chainofclaw/claw-mem)
+> - **CLI binary:** `claw-mem`
+> - **OpenClaw plugin id:** `claw-mem`
+>
+> Only the ClawHub slug differs.
 
 ## Mental model
 
@@ -31,7 +39,7 @@ Every tool call the agent makes becomes a candidate **observation** (a typed, st
 What the agent gets in return:
 - No more "I forgot what we were doing" between sessions
 - Searchable history of decisions and their rationale
-- Structured snapshots for soul-backup (via the [coc-soul](https://clawhub.ai/skill/coc-soul) skill)
+- Structured snapshots for soul-backup (via the [coc-soul](https://clawhub.ai/ngplateform/coc-soul) skill)
 
 ## Full-stack role
 
@@ -39,8 +47,8 @@ claw-mem is the **memory third** of the three COC agent-side skills:
 
 | Skill | Owns |
 |---|---|
-| [coc-node](https://clawhub.ai/skill/coc-node) | Running a COC blockchain node |
-| [coc-soul](https://clawhub.ai/skill/coc-soul) | On-chain identity, backup, recovery, resurrection |
+| [coc-node](https://clawhub.ai/ngplateform/coc-node) | Running a COC blockchain node |
+| [coc-soul](https://clawhub.ai/ngplateform/coc-soul) | On-chain identity, backup, recovery, resurrection |
 | **claw-mem** | Local persistent memory, observation capture, session hooks |
 
 Installing all three gives an agent that: runs its own infrastructure, remembers across restarts, and can resurrect on a different device if the current host dies.
@@ -79,7 +87,7 @@ Edit with `claw-mem config set <path> <value>`.
 
 - You want ephemeral agent sessions with no persistent history — don't install claw-mem; OpenClaw's in-session context is enough.
 - You want memory-like search *only for code* — tools like grep / ripgrep / `codebase_search` serve that need without the persistence overhead.
-- You want on-chain / cross-device backup — add [coc-soul](https://clawhub.ai/skill/coc-soul) on top; claw-mem only persists locally.
+- You want on-chain / cross-device backup — add [coc-soul](https://clawhub.ai/ngplateform/coc-soul) on top; claw-mem only persists locally.
 
 ## Reference
 

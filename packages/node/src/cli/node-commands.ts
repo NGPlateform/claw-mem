@@ -1,16 +1,21 @@
-// `claw-mem node ...` subcommand group.
+// `coc node ...` subcommand group (claw-mem also mounts this via its register-all).
 // Migrated from COC/extensions/coc-nodeops/src/cli/commands.ts.
 
 import { execSync } from "node:child_process"
 import { readFile } from "node:fs/promises"
 import type { Command } from "commander"
 
-import type { CliServices } from "../register-all.ts"
-import type { NodeStatus } from "../../services/node-manager.ts"
-import { runInitWizard } from "../init-wizard.ts"
+import type { Logger } from "../types.ts"
+import type { NodeManager, NodeStatus } from "../node-manager.ts"
+import { runInitWizard } from "./init-wizard.ts"
 
-export function registerNodeCommands(program: Command, services: CliServices): void {
-  const { nodeManager, logger } = services
+export interface NodeCommandDeps {
+  nodeManager: NodeManager
+  logger: Logger
+}
+
+export function registerNodeCommands(program: Command, deps: NodeCommandDeps): void {
+  const { nodeManager, logger } = deps
   const node = program.command("node").description("Manage COC blockchain nodes")
 
   // ─── claw-mem node install ─────────────────────────────────
@@ -80,7 +85,7 @@ export function registerNodeCommands(program: Command, services: CliServices): v
     .action(async (name?: string) => {
       try {
         await nodeManager.init()
-        await iterateNodes(name, services, "start", async (n) => {
+        await iterateNodes(name, nodeManager, "start", async (n) => {
           await nodeManager.startNode(n.name)
           console.log(`Node "${n.name}" started`)
         })
@@ -96,7 +101,7 @@ export function registerNodeCommands(program: Command, services: CliServices): v
     .action(async (name?: string) => {
       try {
         await nodeManager.init()
-        await iterateNodes(name, services, "stop", async (n) => {
+        await iterateNodes(name, nodeManager, "stop", async (n) => {
           await nodeManager.stopNode(n.name)
           console.log(`Node "${n.name}" stopped`)
         })
@@ -112,7 +117,7 @@ export function registerNodeCommands(program: Command, services: CliServices): v
     .action(async (name?: string) => {
       try {
         await nodeManager.init()
-        await iterateNodes(name, services, "restart", async (n) => {
+        await iterateNodes(name, nodeManager, "restart", async (n) => {
           await nodeManager.restartNode(n.name)
           console.log(`Node "${n.name}" restarted`)
         })
@@ -194,7 +199,7 @@ export function registerNodeCommands(program: Command, services: CliServices): v
     .action(async (name?: string) => {
       try {
         await nodeManager.init()
-        const target = await pickSingleNode(name, services)
+        const target = await pickSingleNode(name, nodeManager)
         if (!target) return
         const cfg = await nodeManager.getNodeConfig(target)
         console.log(JSON.stringify(cfg, null, 2))
@@ -278,7 +283,7 @@ function quote(s: string): string {
 
 async function iterateNodes(
   name: string | undefined,
-  services: CliServices,
+  nodeManager: NodeManager,
   action: string,
   fn: (n: { name: string }) => Promise<void>,
 ): Promise<void> {
@@ -286,7 +291,7 @@ async function iterateNodes(
     await fn({ name })
     return
   }
-  const all = services.nodeManager.listNodes()
+  const all = nodeManager.listNodes()
   if (all.length === 0) {
     console.log(`No nodes configured. Run "claw-mem node install" first.`)
     return
@@ -297,10 +302,10 @@ async function iterateNodes(
 
 async function pickSingleNode(
   name: string | undefined,
-  services: CliServices,
+  nodeManager: NodeManager,
 ): Promise<string | undefined> {
   if (name) return name
-  const all = services.nodeManager.listNodes()
+  const all = nodeManager.listNodes()
   if (all.length === 1) return all[0].name
   if (all.length === 0) {
     console.log("No nodes configured")

@@ -3,8 +3,7 @@
 
 import type { CliServices } from "../cli/register-all.ts"
 import type { PluginApi } from "../types.ts"
-import { runInitWizard } from "../cli/init-wizard.ts"
-import { safeRpcQuery } from "../services/rpc-client.ts"
+import { runInitWizard, safeRpcQuery } from "@chainofclaw/node"
 
 export function registerNodeTools(api: PluginApi, services: CliServices): void {
   const { nodeManager } = services

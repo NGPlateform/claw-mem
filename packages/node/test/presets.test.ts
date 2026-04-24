@@ -12,7 +12,7 @@ import {
   isValidNodeType,
   type NetworkId,
   type NodeType,
-} from "../src/shared/presets.ts"
+} from "../src/presets.ts"
 
 describe("network-presets", () => {
   it("defines testnet, mainnet, local presets", () => {

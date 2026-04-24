@@ -14,7 +14,7 @@ import {
   patchConfigFile,
   readConfigFile,
 } from "../../services/config-persistence.ts"
-import { checkCocRepo } from "../../shared/paths.ts"
+import { checkCocRepo } from "@chainofclaw/node"
 
 export function registerInitCommand(program: Command, _services: CliServices): void {
   program

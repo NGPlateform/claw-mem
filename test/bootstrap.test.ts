@@ -13,9 +13,7 @@ import { Database } from "../src/db/database.ts"
 import { NodeStore } from "../src/db/node-store.ts"
 import { ArchiveStore } from "../src/db/archive-store.ts"
 import { ArtifactStore } from "../src/db/artifact-store.ts"
-import { NodeManager } from "../src/services/node-manager.ts"
-import { ProcessManager } from "../src/services/process-manager.ts"
-import { StorageQuotaManager } from "../src/services/storage-quota-manager.ts"
+import { NodeManager, ProcessManager, StorageQuotaManager } from "@chainofclaw/node"
 import { BackupManager } from "../src/services/backup-manager.ts"
 import { BootstrapManager } from "../src/services/bootstrap-manager.ts"
 import type { PluginLogger } from "../src/types.ts"
@@ -47,7 +45,7 @@ async function buildHarness(): Promise<Harness> {
   const processManager = new ProcessManager(logger)
   const storageQuotaManager = new StorageQuotaManager({ config: config.storage, logger, dataDir })
   const nodeManager = new NodeManager({
-    nodeStore, processManager, config, logger, baseDir: dataDir, storageQuotaManager,
+    nodeRegistry: nodeStore, processManager, config, logger, baseDir: dataDir, storageQuotaManager,
   })
   await nodeManager.init()
   const backupManager = new BackupManager({ config: config.backup, archiveStore, logger })

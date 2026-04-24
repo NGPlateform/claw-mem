@@ -3,12 +3,12 @@
   "version": "1.0.7",
   "description": "COC blockchain node lifecycle — install / start / stop / status for validator, fullnode, archive, gateway, dev nodes.",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./src/index.ts",
+      "default": "./dist/src/index.js"
     }
   },
   "bin": {
@@ -34,6 +34,7 @@
   "files": [
     "dist/",
     "bin/",
+    "src/",
     "README.md",
     "LICENSE"
   ]

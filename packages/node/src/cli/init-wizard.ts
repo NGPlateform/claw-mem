@@ -14,8 +14,8 @@ import {
   isValidNodeType,
   type NetworkId,
   type NodeType,
-} from "../shared/presets.ts"
-import type { InstallOptions, InstallResult, NodeManager } from "../services/node-manager.ts"
+} from "../presets.ts"
+import type { InstallOptions, InstallResult, NodeManager } from "../node-manager.ts"
 
 export interface InitWizardOptions {
   type?: string

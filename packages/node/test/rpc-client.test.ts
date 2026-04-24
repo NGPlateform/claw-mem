@@ -7,7 +7,7 @@ import { writeFile, mkdir, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 
-import { ALLOWED_RPC_METHODS, resolveNodeRpcUrl, rpcCall, safeRpcQuery } from "../src/services/rpc-client.ts"
+import { ALLOWED_RPC_METHODS, resolveNodeRpcUrl, rpcCall, safeRpcQuery } from "../src/rpc-client.ts"
 
 function createMockRpcServer(handler: (method: string, params: unknown[]) => unknown) {
   const server = createServer((req, res) => {

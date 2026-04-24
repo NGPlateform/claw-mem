@@ -7,8 +7,8 @@ import type { ChildProcess } from "node:child_process"
 import { access, mkdir, open, readFile, unlink, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 
-import type { PluginLogger } from "../types.ts"
-import { resolveNodeEntryScript, resolveRuntimeDir, type CocRepoLocator } from "../shared/paths.ts"
+import type { Logger } from "./types.ts"
+import { resolveNodeEntryScript, resolveRuntimeDir, type CocRepoLocator } from "./paths.ts"
 
 export type CocProcessKind = "node" | "agent" | "relayer"
 
@@ -32,9 +32,9 @@ export interface ProcessStatus {
 }
 
 export class ProcessManager {
-  private readonly logger: PluginLogger
+  private readonly logger: Logger
 
-  constructor(logger: PluginLogger) {
+  constructor(logger: Logger) {
     this.logger = logger
   }
 

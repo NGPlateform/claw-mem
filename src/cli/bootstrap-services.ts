@@ -20,9 +20,7 @@ import { NodeStore } from "../db/node-store.ts"
 import { ArchiveStore } from "../db/archive-store.ts"
 import { ArtifactStore } from "../db/artifact-store.ts"
 import { SearchEngine } from "../search/search.ts"
-import { NodeManager } from "../services/node-manager.ts"
-import { ProcessManager } from "../services/process-manager.ts"
-import { StorageQuotaManager } from "../services/storage-quota-manager.ts"
+import { NodeManager, ProcessManager, StorageQuotaManager } from "@chainofclaw/node"
 import { BackupManager } from "../services/backup-manager.ts"
 import { RecoveryManager } from "../services/recovery-manager.ts"
 import { CarrierManager } from "../services/carrier-manager.ts"
@@ -69,7 +67,7 @@ export function bootstrapServicesSync(opts: BootstrapServicesOptions = {}): CliS
     dataDir,
   })
   const nodeManager = new NodeManager({
-    nodeStore,
+    nodeRegistry: nodeStore,
     processManager,
     config,
     logger,

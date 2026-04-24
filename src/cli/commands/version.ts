@@ -7,7 +7,7 @@ import type { Command } from "commander"
 
 import type { CliServices } from "../register-all.ts"
 import { SCHEMA_VERSION } from "../../db/migrations.ts"
-import { checkCocRepo, describeCocRepoCheck } from "../../shared/paths.ts"
+import { checkCocRepo, describeCocRepoCheck } from "@chainofclaw/node"
 
 // Walk up from this module looking for package.json. Works both in the dev
 // tree (src/cli/commands/ — 3 levels up) and after compile to

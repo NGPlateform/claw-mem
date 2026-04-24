@@ -4,21 +4,21 @@ import { mkdtemp, rm, writeFile, mkdir, stat } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 
-import { ClawMemConfigSchema, type StorageConfig } from "../src/config.ts"
-import { Database } from "../src/db/database.ts"
-import { NodeStore } from "../src/db/node-store.ts"
-import { NodeManager } from "../src/services/node-manager.ts"
-import { ProcessManager } from "../src/services/process-manager.ts"
-import { QuotaExceededError, StorageQuotaManager } from "../src/services/storage-quota-manager.ts"
-import type { PluginLogger } from "../src/types.ts"
+import { JsonNodeRegistry } from "../src/json-registry.ts"
+import { NodeManager } from "../src/node-manager.ts"
+import { ProcessManager } from "../src/process-manager.ts"
+import { QuotaExceededError, StorageQuotaManager } from "../src/storage-quota-manager.ts"
+import type {
+  Logger,
+  NodeLifecycleConfig,
+  NodeStorageLifecycleConfig,
+} from "../src/types.ts"
 
-function silentLogger(): PluginLogger {
+function silentLogger(): Logger {
   return { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} }
 }
 
-function makeConfig(overrides: Partial<StorageConfig>): StorageConfig {
-  // Schema rejects advertisedBytes < 256 MiB; for unit tests we bypass that
-  // by going through the type only — quota manager doesn't validate the field.
+function makeStorageConfig(overrides: Partial<NodeStorageLifecycleConfig>): NodeStorageLifecycleConfig {
   return {
     quotaBytes: 1024,
     advertisedBytes: 268_435_456,
@@ -26,6 +26,24 @@ function makeConfig(overrides: Partial<StorageConfig>): StorageConfig {
     enforceQuota: true,
     reserveFile: ".quota.reserved",
     ...overrides,
+  }
+}
+
+function makeLifecycleConfig(storage: NodeStorageLifecycleConfig): NodeLifecycleConfig {
+  return {
+    node: {
+      enabled: true,
+      runtimeDir: undefined,
+      defaultType: "dev",
+      defaultNetwork: "local",
+      port: 18780,
+      bind: "127.0.0.1",
+      agent: { enabled: true, intervalMs: 60_000, batchSize: 5, sampleSize: 2 },
+      relayer: { enabled: false, intervalMs: 60_000 },
+      autoAdvertiseStorage: true,
+    },
+    storage,
+    bootstrap: {},
   }
 }
 
@@ -41,7 +59,7 @@ describe("StorageQuotaManager — reservation", () => {
 
   it("ensureReserved skips when reservedBytes=0", async () => {
     const m = new StorageQuotaManager({
-      config: makeConfig({ reservedBytes: 0 }),
+      config: makeStorageConfig({ reservedBytes: 0 }),
       logger: silentLogger(),
       dataDir,
     })
@@ -53,7 +71,7 @@ describe("StorageQuotaManager — reservation", () => {
   it("ensureReserved creates a placeholder of the expected size", async () => {
     const target = 4096
     const m = new StorageQuotaManager({
-      config: makeConfig({ reservedBytes: target }),
+      config: makeStorageConfig({ reservedBytes: target }),
       logger: silentLogger(),
       dataDir,
     })
@@ -65,7 +83,7 @@ describe("StorageQuotaManager — reservation", () => {
 
   it("ensureReserved is idempotent (does not shrink existing reservation)", async () => {
     const m = new StorageQuotaManager({
-      config: makeConfig({ reservedBytes: 4096 }),
+      config: makeStorageConfig({ reservedBytes: 4096 }),
       logger: silentLogger(),
       dataDir,
     })
@@ -77,7 +95,7 @@ describe("StorageQuotaManager — reservation", () => {
 
   it("releaseReserved removes the placeholder", async () => {
     const m = new StorageQuotaManager({
-      config: makeConfig({ reservedBytes: 4096 }),
+      config: makeStorageConfig({ reservedBytes: 4096 }),
       logger: silentLogger(),
       dataDir,
     })
@@ -103,7 +121,7 @@ describe("StorageQuotaManager — usage and quota", () => {
     await writeFile(join(dataDir, "sub", "b.bin"), Buffer.alloc(200))
 
     const m = new StorageQuotaManager({
-      config: makeConfig({ quotaBytes: 10_000, reservedBytes: 0 }),
+      config: makeStorageConfig({ quotaBytes: 10_000, reservedBytes: 0 }),
       logger: silentLogger(),
       dataDir,
     })
@@ -113,7 +131,7 @@ describe("StorageQuotaManager — usage and quota", () => {
   it("getUsage excludes the reservation file from the total", async () => {
     await writeFile(join(dataDir, "real-data.bin"), Buffer.alloc(50))
     const m = new StorageQuotaManager({
-      config: makeConfig({ reservedBytes: 4096 }),
+      config: makeStorageConfig({ reservedBytes: 4096 }),
       logger: silentLogger(),
       dataDir,
     })
@@ -125,7 +143,7 @@ describe("StorageQuotaManager — usage and quota", () => {
   it("assertCanAdd allows additions within quota", async () => {
     await writeFile(join(dataDir, "x.bin"), Buffer.alloc(400))
     const m = new StorageQuotaManager({
-      config: makeConfig({ quotaBytes: 1000 }),
+      config: makeStorageConfig({ quotaBytes: 1000 }),
       logger: silentLogger(),
       dataDir,
     })
@@ -135,7 +153,7 @@ describe("StorageQuotaManager — usage and quota", () => {
   it("assertCanAdd throws QuotaExceededError when over quota", async () => {
     await writeFile(join(dataDir, "x.bin"), Buffer.alloc(900))
     const m = new StorageQuotaManager({
-      config: makeConfig({ quotaBytes: 1000 }),
+      config: makeStorageConfig({ quotaBytes: 1000 }),
       logger: silentLogger(),
       dataDir,
     })
@@ -148,7 +166,7 @@ describe("StorageQuotaManager — usage and quota", () => {
   it("assertCanAdd is bypassed when enforceQuota=false", async () => {
     await writeFile(join(dataDir, "x.bin"), Buffer.alloc(900))
     const m = new StorageQuotaManager({
-      config: makeConfig({ quotaBytes: 1000, enforceQuota: false }),
+      config: makeStorageConfig({ quotaBytes: 1000, enforceQuota: false }),
       logger: silentLogger(),
       dataDir,
     })
@@ -158,7 +176,7 @@ describe("StorageQuotaManager — usage and quota", () => {
   it("invalidateCache forces fresh disk scan", async () => {
     await writeFile(join(dataDir, "x.bin"), Buffer.alloc(100))
     const m = new StorageQuotaManager({
-      config: makeConfig({ quotaBytes: 10_000, reservedBytes: 0 }),
+      config: makeStorageConfig({ quotaBytes: 10_000, reservedBytes: 0 }),
       logger: silentLogger(),
       dataDir,
     })
@@ -175,22 +193,17 @@ describe("StorageQuotaManager — usage and quota", () => {
 
 describe("NodeManager + StorageQuotaManager integration", () => {
   let dataDir: string
-  let db: Database
   let manager: NodeManager
   let quota: StorageQuotaManager
 
   beforeEach(async () => {
     dataDir = await mkdtemp(join(tmpdir(), "claw-nm-quota-test-"))
-    db = new Database(join(dataDir, "claw-mem.db"))
-    await db.open()
 
-    const cfg = ClawMemConfigSchema.parse({
-      // Narrow quota so we can trip it intentionally; reserve nothing.
-      storage: { quotaBytes: 100, reservedBytes: 0, advertisedBytes: 268_435_456, enforceQuota: true, reserveFile: ".quota.reserved" },
-    })
+    const storage = makeStorageConfig({ quotaBytes: 100, reservedBytes: 0, enforceQuota: true })
+    const cfg = makeLifecycleConfig(storage)
     quota = new StorageQuotaManager({ config: cfg.storage, logger: silentLogger(), dataDir })
     manager = new NodeManager({
-      nodeStore: new NodeStore(db),
+      nodeRegistry: new JsonNodeRegistry({ baseDir: dataDir }),
       processManager: new ProcessManager(silentLogger()),
       config: cfg,
       logger: silentLogger(),
@@ -201,7 +214,6 @@ describe("NodeManager + StorageQuotaManager integration", () => {
   })
 
   afterEach(async () => {
-    db.close()
     await rm(dataDir, { recursive: true, force: true })
   })
 
@@ -231,18 +243,12 @@ describe("NodeManager + StorageQuotaManager integration", () => {
   it("install writes advertisedStorageBytes=256MiB into node-config.json", async () => {
     // The suite-level quota is intentionally tiny (100 B) for the rejection
     // tests; for this happy-path test rebuild a manager with the quota off.
-    const cfg = ClawMemConfigSchema.parse({
-      storage: {
-        quotaBytes: 100, reservedBytes: 0, advertisedBytes: 268_435_456,
-        enforceQuota: false, reserveFile: ".quota.reserved",
-      },
-    })
+    const storage = makeStorageConfig({ quotaBytes: 100, reservedBytes: 0, enforceQuota: false })
+    const cfg = makeLifecycleConfig(storage)
     const happyDir = await mkdtemp(join(tmpdir(), "claw-nm-happy-"))
-    const happyDb = new Database(join(happyDir, "claw-mem.db"))
-    await happyDb.open()
     const happyQuota = new StorageQuotaManager({ config: cfg.storage, logger: silentLogger(), dataDir: happyDir })
     const happyManager = new NodeManager({
-      nodeStore: new NodeStore(happyDb),
+      nodeRegistry: new JsonNodeRegistry({ baseDir: happyDir }),
       processManager: new ProcessManager(silentLogger()),
       config: cfg,
       logger: silentLogger(),
@@ -257,7 +263,6 @@ describe("NodeManager + StorageQuotaManager integration", () => {
       const nodeCfg = await happyManager.getNodeConfig("ok-node")
       assert.equal(nodeCfg.advertisedStorageBytes, 268_435_456)
     } finally {
-      happyDb.close()
       await rm(happyDir, { recursive: true, force: true })
     }
   })

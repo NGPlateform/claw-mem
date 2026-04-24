@@ -14,8 +14,7 @@ import { stat, mkdir, rm, readdir, truncate } from "node:fs/promises"
 import { existsSync, statfsSync } from "node:fs"
 import { dirname, join } from "node:path"
 
-import type { StorageConfig } from "../config.ts"
-import type { PluginLogger } from "../types.ts"
+import type { Logger, NodeStorageLifecycleConfig } from "./types.ts"
 
 export class QuotaExceededError extends Error {
   readonly currentBytes: number
@@ -44,14 +43,14 @@ interface CachedUsage {
 const USAGE_CACHE_TTL_MS = 500
 
 export interface StorageQuotaManagerOptions {
-  config: StorageConfig
-  logger: PluginLogger
+  config: NodeStorageLifecycleConfig
+  logger: Logger
   dataDir: string
 }
 
 export class StorageQuotaManager {
-  private readonly config: StorageConfig
-  private readonly logger: PluginLogger
+  private readonly config: NodeStorageLifecycleConfig
+  private readonly logger: Logger
   private readonly dataDir: string
   private readonly usageCache = new Map<string, CachedUsage>()
 

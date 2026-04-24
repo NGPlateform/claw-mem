@@ -13,16 +13,14 @@ import type { NodeStore } from "../db/node-store.ts"
 import type { ArchiveStore } from "../db/archive-store.ts"
 import type { ArtifactStore } from "../db/artifact-store.ts"
 import type { SearchEngine } from "../search/search.ts"
-import type { NodeManager } from "../services/node-manager.ts"
-import type { ProcessManager } from "../services/process-manager.ts"
-import type { StorageQuotaManager } from "../services/storage-quota-manager.ts"
+import type { NodeManager, ProcessManager, StorageQuotaManager } from "@chainofclaw/node"
 import type { BackupManager } from "../services/backup-manager.ts"
 import type { RecoveryManager } from "../services/recovery-manager.ts"
 import type { CarrierManager } from "../services/carrier-manager.ts"
 import type { BootstrapManager } from "../services/bootstrap-manager.ts"
 import type { PluginLogger } from "../types.ts"
 import { registerMemCommands } from "./commands/mem.ts"
-import { registerNodeCommands } from "./commands/node.ts"
+import { registerNodeCommands } from "@chainofclaw/node"
 import { registerBackupCommands } from "./commands/backup.ts"
 import { registerBootstrapCommands } from "./commands/bootstrap.ts"
 import { registerConfigCommands } from "./commands/config.ts"
@@ -77,7 +75,7 @@ export function registerAllCommands(program: Command, services: CliServices): vo
   registerUninstallCommand(program, services)
 
   registerMemCommands(program, services)
-  registerNodeCommands(program, services)
+  registerNodeCommands(program, { nodeManager: services.nodeManager, logger: services.logger })
   registerBackupCommands(program, services)
   registerCarrierCommands(program, services)
   registerGuardianCommands(program, services)

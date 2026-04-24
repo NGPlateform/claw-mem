@@ -1,5 +1,6 @@
 // Adapted from COC/extensions/coc-nodeops/src/runtime/node-manager.test.ts.
-// NodeManager now uses NodeStore (SQLite) instead of a JSON registry.
+// NodeManager now talks to a NodeRegistry port; this suite uses the default
+// JSON-file-backed registry shipped with @chainofclaw/node.
 
 import { describe, it, beforeEach, afterEach } from "node:test"
 import assert from "node:assert/strict"
@@ -7,14 +8,12 @@ import { mkdtemp, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 
-import { ClawMemConfigSchema } from "../src/config.ts"
-import { Database } from "../src/db/database.ts"
-import { NodeStore } from "../src/db/node-store.ts"
-import { NodeManager } from "../src/services/node-manager.ts"
-import { ProcessManager } from "../src/services/process-manager.ts"
-import type { PluginLogger } from "../src/types.ts"
+import { JsonNodeRegistry } from "../src/json-registry.ts"
+import { NodeManager } from "../src/node-manager.ts"
+import { ProcessManager } from "../src/process-manager.ts"
+import type { Logger, NodeLifecycleConfig } from "../src/types.ts"
 
-function silentLogger(): PluginLogger {
+function silentLogger(): Logger {
   return {
     info: () => {},
     warn: () => {},
@@ -23,32 +22,53 @@ function silentLogger(): PluginLogger {
   }
 }
 
+function defaultLifecycleConfig(): NodeLifecycleConfig {
+  return {
+    node: {
+      enabled: true,
+      runtimeDir: undefined,
+      defaultType: "dev",
+      defaultNetwork: "local",
+      port: 18780,
+      bind: "127.0.0.1",
+      agent: { enabled: true, intervalMs: 60_000, batchSize: 5, sampleSize: 2 },
+      relayer: { enabled: false, intervalMs: 60_000 },
+      autoAdvertiseStorage: true,
+    },
+    storage: {
+      quotaBytes: 268_435_456,
+      advertisedBytes: 268_435_456,
+      reservedBytes: 268_435_456,
+      enforceQuota: true,
+      reserveFile: ".quota.reserved",
+    },
+    bootstrap: {},
+  }
+}
+
 interface Harness {
   tempDir: string
-  db: Database
+  registry: JsonNodeRegistry
   manager: NodeManager
 }
 
 async function buildHarness(): Promise<Harness> {
   const tempDir = await mkdtemp(join(tmpdir(), "claw-nm-test-"))
-  const db = new Database(join(tempDir, "claw-mem.db"))
-  await db.open()
-  const config = ClawMemConfigSchema.parse({})
-  const nodeStore = new NodeStore(db)
+  const config = defaultLifecycleConfig()
+  const registry = new JsonNodeRegistry({ baseDir: tempDir })
   const processManager = new ProcessManager(silentLogger())
   const manager = new NodeManager({
-    nodeStore,
+    nodeRegistry: registry,
     processManager,
     config,
     logger: silentLogger(),
     baseDir: tempDir,
   })
   await manager.init()
-  return { tempDir, db, manager }
+  return { tempDir, registry, manager }
 }
 
 async function teardown(h: Harness): Promise<void> {
-  h.db.close()
   await rm(h.tempDir, { recursive: true, force: true })
 }
 
@@ -139,13 +159,13 @@ describe("NodeManager", () => {
     assert.ok(dir.endsWith("/nodes/my-node"))
   })
 
-  it("persists across NodeManager instances (via SQLite)", async () => {
+  it("persists across NodeManager instances (via JsonNodeRegistry)", async () => {
     await h.manager.install({ type: "validator", network: "testnet", name: "persist-test" })
 
-    const config = ClawMemConfigSchema.parse({})
-    const nodeStore2 = new NodeStore(h.db)
+    const config = defaultLifecycleConfig()
+    const registry2 = new JsonNodeRegistry({ baseDir: h.tempDir })
     const manager2 = new NodeManager({
-      nodeStore: nodeStore2,
+      nodeRegistry: registry2,
       processManager: new ProcessManager(silentLogger()),
       config,
       logger: silentLogger(),

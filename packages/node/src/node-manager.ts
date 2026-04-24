@@ -1,18 +1,21 @@
 // Multi-node lifecycle manager for COC blockchain instances.
 //
 // Migrated from COC/extensions/coc-nodeops/src/runtime/node-manager.ts.
-// The on-disk JSON registry has been replaced by SQLite persistence via
-// NodeStore (claw-mem v2 schema). The `install()` entry point is split out
-// from the legacy init-wizard so the bootstrap flow can drive it directly.
+// Persistence goes through a small NodeRegistry port — the umbrella
+// @chainofclaw/claw-mem package injects its SQLite-backed NodeStore; the
+// shipped JsonNodeRegistry default is used by the standalone coc-node CLI.
 
 import crypto from "node:crypto"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { Wallet } from "ethers"
 
-import type { PluginLogger } from "../types.ts"
-import type { ClawMemConfig } from "../config.ts"
-import type { NodeStore, NodeEntry as StoredNode } from "../db/node-store.ts"
+import type {
+  Logger,
+  NodeEntry,
+  NodeLifecycleConfig,
+  NodeRegistry,
+} from "./types.ts"
 import { ProcessManager, type CocProcessConfig } from "./process-manager.ts"
 import { rpcCall } from "./rpc-client.ts"
 import type { StorageQuotaManager } from "./storage-quota-manager.ts"
@@ -21,12 +24,10 @@ import {
   type NodeType,
   NETWORK_PRESETS,
   NODE_TYPE_PRESETS,
-} from "../shared/presets.ts"
-import { checkCocRepo, describeCocRepoCheck } from "../shared/paths.ts"
+} from "./presets.ts"
+import { checkCocRepo, describeCocRepoCheck } from "./paths.ts"
 
-export type { NodeType, NetworkId }
-
-export interface NodeEntry extends StoredNode {}
+export type { NodeType, NetworkId, NodeEntry }
 
 export interface NodeStatus {
   name: string
@@ -64,25 +65,26 @@ export interface InstallResult {
 }
 
 export interface NodeManagerOptions {
-  nodeStore: NodeStore
+  /** CRUD port for node records. SQLite-backed in claw-mem; JSON-backed in standalone coc-node. */
+  nodeRegistry: NodeRegistry
   processManager: ProcessManager
-  config: ClawMemConfig
-  logger: PluginLogger
+  config: NodeLifecycleConfig
+  logger: Logger
   baseDir: string
   /** Optional. When provided, install enforces the storage quota and refreshes the reservation. */
   storageQuotaManager?: StorageQuotaManager
 }
 
 export class NodeManager {
-  private readonly nodeStore: NodeStore
+  private readonly nodeRegistry: NodeRegistry
   private readonly processManager: ProcessManager
-  private readonly config: ClawMemConfig
-  private readonly logger: PluginLogger
+  private readonly config: NodeLifecycleConfig
+  private readonly logger: Logger
   private readonly baseDir: string
   private readonly quotaManager?: StorageQuotaManager
 
   constructor(opts: NodeManagerOptions) {
-    this.nodeStore = opts.nodeStore
+    this.nodeRegistry = opts.nodeRegistry
     this.processManager = opts.processManager
     this.config = opts.config
     this.logger = opts.logger
@@ -93,6 +95,9 @@ export class NodeManager {
   async init(): Promise<void> {
     await mkdir(this.baseDir, { recursive: true })
     await mkdir(join(this.baseDir, "nodes"), { recursive: true })
+    if (this.nodeRegistry.init) {
+      await this.nodeRegistry.init()
+    }
     if (this.quotaManager) {
       try {
         await this.quotaManager.ensureReserved()
@@ -107,11 +112,11 @@ export class NodeManager {
   // ────────────────────────────────────────────────────────────
 
   listNodes(): readonly NodeEntry[] {
-    return this.nodeStore.list()
+    return this.nodeRegistry.list()
   }
 
   getNode(name: string): NodeEntry | undefined {
-    return this.nodeStore.get(name) ?? undefined
+    return this.nodeRegistry.get(name) ?? undefined
   }
 
   nodeDir(name: string): string {
@@ -134,7 +139,7 @@ export class NodeManager {
       ? opts.name
       : generateDefaultName(opts.type, this.listNodes())
 
-    if (this.nodeStore.get(name)) {
+    if (this.nodeRegistry.get(name)) {
       throw new Error(`Node "${name}" already exists`)
     }
     if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
@@ -211,7 +216,7 @@ export class NodeManager {
     await mkdir(join(nodeDir, "logs"), { recursive: true })
 
     // Persist to NodeStore
-    this.nodeStore.upsert({
+    this.nodeRegistry.upsert({
       name,
       type: opts.type,
       network: opts.network,
@@ -390,7 +395,7 @@ export class NodeManager {
   }
 
   async removeNode(name: string, deleteData: boolean): Promise<boolean> {
-    const node = this.nodeStore.get(name)
+    const node = this.nodeRegistry.get(name)
     if (!node) return false
 
     await this.stopNode(name).catch(() => {})
@@ -403,7 +408,7 @@ export class NodeManager {
       }
     }
 
-    return this.nodeStore.delete(name)
+    return this.nodeRegistry.delete(name)
   }
 
   async getNodeLogs(
@@ -438,7 +443,7 @@ export class NodeManager {
   // ────────────────────────────────────────────────────────────
 
   private requireNode(name: string): NodeEntry {
-    const node = this.nodeStore.get(name)
+    const node = this.nodeRegistry.get(name)
     if (!node) throw new Error(`Node "${name}" not found`)
     return node
   }

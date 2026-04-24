@@ -46,7 +46,11 @@
   ],
   "author": "",
   "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
   "dependencies": {
+    "@chainofclaw/node": "1.0.7",
     "@clack/prompts": "^0.10.0",
     "commander": "^12.1.0",
     "ethers": "^6.16.0",

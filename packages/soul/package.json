@@ -1,6 +1,6 @@
 {
   "name": "@chainofclaw/soul",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "COC soul layer — on-chain DID, guardian recovery, agent resurrection, soul backup, and carrier operations.",
   "type": "module",
   "main": "./dist/src/index.js",

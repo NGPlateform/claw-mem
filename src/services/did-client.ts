@@ -14,7 +14,7 @@ const DID_REGISTRY_ABI = [
   "function anchorCredential(bytes32 credentialHash, bytes32 issuerAgentId, bytes32 subjectAgentId, bytes32 credentialCid, uint64 expiresAt, bytes calldata sig) external",
   "function revokeCredential(bytes32 credentialId) external",
   "function revokeAllDelegations(bytes32 agentId) external",
-  "function recordLineage(bytes32 agentId, bytes32 parentAgentId, uint256 forkHeight, uint16 generation) external",
+  "function recordLineage(bytes32 agentId, bytes32 parentAgentId, uint64 forkHeight, uint8 generation) external",
   "function updateCapabilities(bytes32 agentId, uint16 capabilities) external",
   "function deactivateEphemeralIdentity(bytes32 ephemeralId) external",
   // Read

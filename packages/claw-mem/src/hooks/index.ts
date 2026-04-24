@@ -9,7 +9,7 @@ import { SummaryStore } from "../db/summary-store.ts"
 import { SessionStore } from "../db/session-store.ts"
 import { SearchEngine } from "../search/search.ts"
 import { extractObservation } from "../observer/extractor.ts"
-import { summarizeSession } from "../observer/summarizer.ts"
+import { createSummarizer } from "../observer/index.ts"
 import { buildContext } from "../context/builder.ts"
 
 export function registerHooks(
@@ -21,6 +21,10 @@ export function registerHooks(
   const observations = new ObservationStore(db)
   const summaries = new SummaryStore(db)
   const sessions = new SessionStore(db)
+  const summarizer = createSummarizer(config.summarizer)
+  if (config.summarizer.mode === "llm") {
+    logger.info(`[claw-mem] summarizer mode=llm (model=${config.summarizer.llm.model}, fallback=${config.summarizer.llm.fallbackOnError})`)
+  }
 
   // Track current session per agent (in-memory)
   const activeSessions = new Map<string, { sessionId: string; agentId: string; promptCount: number; userPrompt?: string }>()
@@ -138,7 +142,7 @@ export function registerHooks(
       const sessionObs = observations.getBySession(sessionId)
       if (sessionObs.length === 0) return
 
-      const summary = summarizeSession(
+      const summary = await summarizer(
         sessionId,
         agentId,
         sessionObs,

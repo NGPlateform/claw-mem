@@ -115,6 +115,25 @@ export const BackupConfigSchema = z.object({
 })
 
 // ──────────────────────────────────────────────────────────────────────────
+// Summarizer (optional LLM-powered session summarizer override)
+// ──────────────────────────────────────────────────────────────────────────
+
+export const SummarizerLLMConfigSchema = z.object({
+  provider: z.enum(["anthropic"]).default("anthropic"),
+  model: z.string().default("claude-sonnet-4-6").describe("Anthropic model ID"),
+  apiKey: z.string().optional().describe("Anthropic API key; falls back to ANTHROPIC_API_KEY env"),
+  baseURL: z.string().optional().describe("Override API base URL (e.g. a proxy)"),
+  maxTokens: z.number().int().min(64).max(8192).default(1024),
+  timeoutMs: z.number().int().min(1000).default(30_000),
+  fallbackOnError: z.boolean().default(true).describe("Fall back to heuristic summary on LLM failure"),
+})
+
+export const SummarizerConfigSchema = z.object({
+  mode: z.enum(["heuristic", "llm"]).default("heuristic"),
+  llm: SummarizerLLMConfigSchema.default({}),
+})
+
+// ──────────────────────────────────────────────────────────────────────────
 // Bootstrap (dev-mode auto stack)
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -152,6 +171,7 @@ export const ClawMemConfigSchema = z.object({
   node: NodeConfigSchema.default({}),
   backup: BackupConfigSchema.default({}),
   bootstrap: BootstrapConfigSchema.default({}),
+  summarizer: SummarizerConfigSchema.default({}),
 })
 
 export type ClawMemConfig = z.infer<typeof ClawMemConfigSchema>
@@ -160,6 +180,8 @@ export type NodeConfig = z.infer<typeof NodeConfigSchema>
 export type BackupConfig = z.infer<typeof BackupConfigSchema>
 export type BootstrapConfig = z.infer<typeof BootstrapConfigSchema>
 export type CarrierConfig = z.infer<typeof CarrierConfigSchema>
+export type SummarizerConfig = z.infer<typeof SummarizerConfigSchema>
+export type SummarizerLLMConfig = z.infer<typeof SummarizerLLMConfigSchema>
 
 // ──────────────────────────────────────────────────────────────────────────
 // Path resolvers

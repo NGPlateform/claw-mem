@@ -54,7 +54,7 @@ export function registerNodeCommands(program: Command, deps: NodeCommandDeps): v
       await nodeManager.init()
       const nodes = nodeManager.listNodes()
       if (nodes.length === 0) {
-        console.log('No nodes configured. Run "claw-mem node install" to create one.')
+        console.log('No nodes configured. Run "node install" to create one.')
         return
       }
       if (opts.json) {
@@ -143,7 +143,7 @@ export function registerNodeCommands(program: Command, deps: NodeCommandDeps): v
         }
         const nodes = nodeManager.listNodes()
         if (nodes.length === 0) {
-          console.log('No nodes configured. Run "claw-mem node install" first.')
+          console.log('No nodes configured. Run "node install" first.')
           return
         }
         const statuses = await Promise.all(nodes.map((n) => nodeManager.getNodeStatus(n.name)))
@@ -293,7 +293,7 @@ async function iterateNodes(
   }
   const all = nodeManager.listNodes()
   if (all.length === 0) {
-    console.log(`No nodes configured. Run "claw-mem node install" first.`)
+    console.log(`No nodes configured. Run "node install" first.`)
     return
   }
   const ordered = action === "stop" ? [...all].reverse() : all

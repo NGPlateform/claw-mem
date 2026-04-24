@@ -407,25 +407,35 @@ export class SoulClient {
 
   /**
    * Discover carriers by walking CarrierRegistered/CarrierDeregistered events.
-   * No external indexer required, but range-limited by the RPC provider's
-   * eth_getLogs cap. For long-running networks pass `fromBlock` near the
-   * latest registry deployment block.
+   * Queries are automatically chunked to fit within the provider's eth_getLogs
+   * block-range cap (default 10000, override via `chunkSize`).
    */
   async listCarriers(opts: {
     fromBlock?: number | "earliest"
     toBlock?: number | "latest"
     includeInactive?: boolean
+    chunkSize?: number
   } = {}): Promise<CarrierInfo[]> {
-    const fromBlock = opts.fromBlock ?? "earliest"
-    const toBlock = opts.toBlock ?? "latest"
+    const toBlockResolved =
+      typeof opts.toBlock === "number" ? opts.toBlock : await this.provider.getBlockNumber()
+    const fromBlockResolved =
+      typeof opts.fromBlock === "number" ? opts.fromBlock : 0
     const includeInactive = opts.includeInactive ?? false
+    const chunkSize = Math.max(1, opts.chunkSize ?? 10000)
 
     const regFilter = this.contract.filters.CarrierRegistered()
     const deregFilter = this.contract.filters.CarrierDeregistered()
-    const [regEvents, deregEvents] = await Promise.all([
-      this.contract.queryFilter(regFilter, fromBlock, toBlock),
-      this.contract.queryFilter(deregFilter, fromBlock, toBlock),
-    ])
+    const regEvents: Awaited<ReturnType<typeof this.contract.queryFilter>> = []
+    const deregEvents: typeof regEvents = []
+    for (let start = fromBlockResolved; start <= toBlockResolved; start += chunkSize) {
+      const end = Math.min(start + chunkSize - 1, toBlockResolved)
+      const [reg, dereg] = await Promise.all([
+        this.contract.queryFilter(regFilter, start, end),
+        this.contract.queryFilter(deregFilter, start, end),
+      ])
+      regEvents.push(...reg)
+      deregEvents.push(...dereg)
+    }
 
     const seen = new Map<string, void>()
     for (const ev of regEvents) {

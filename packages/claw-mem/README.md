@@ -1,197 +1,259 @@
-# claw-mem
+# @chainofclaw/claw-mem
 
-OpenClaw super-skill: **persistent semantic memory + COC node lifecycle + soul backup**, in one extension.
+OpenClaw super-skill —— 把 **持久语义记忆 + COC 节点生命周期 + soul 备份/恢复** 三块能力整合成一个 OpenClaw 插件与一个 CLI。
 
-claw-mem absorbs and replaces three previously-independent extensions:
-- the original `claw-mem` (semantic memory)
-- `@openclaw/coc-nodeops` (COC node install/start/stop/status)
-- `@openclaw/coc-backup` (agent soul backup → IPFS + on-chain anchoring)
+适合你如果：
+- 用 [OpenClaw](https://github.com/chainofclaw/OpenClaw) 跑 AI agent，想一次性拿到记忆、节点、身份、备份。
+- 希望装一个包就能跑完整栈（不用手动组合 `@chainofclaw/node` + `@chainofclaw/soul`）。
+- 想要 session hook 自动捕获 observation / 自动注入记忆到下一轮 prompt 的行为。
 
-## Why
+如果你只需要其中一块，按需装更瘦的子包：
+- 只运维 COC 节点 → [`@chainofclaw/node`](https://www.npmjs.com/package/@chainofclaw/node)
+- 只用链上身份 / 备份 / 恢复 → [`@chainofclaw/soul`](https://www.npmjs.com/package/@chainofclaw/soul)
 
-OpenClaw agents need three things to operate inside the COC P2P network:
+## 生态关系
 
-1. **Memory** that survives restarts and compaction.
-2. **A COC node** that contributes ≥256 MiB of P2P storage and earns rewards.
-3. **A backup pipeline** that anchors the agent's identity, configuration,
-   and memory on-chain so the agent can be restored on any carrier.
+```
+@chainofclaw/claw-mem (umbrella: memory + OpenClaw plugin + bootstrap)
+       │                                ◀── 就是这个包
+       ├──▶ @chainofclaw/node           (独立 node 生命周期)
+       │
+       └──▶ @chainofclaw/soul           (DID / backup / recovery / carrier)
+```
 
-These used to be three separate extensions that each held their own SQLite,
-config, CLI, and lifecycle — and `coc-backup` had to reach into
-`claw-mem`'s database directly to capture semantic snapshots. Now they
-share a single store, single config schema, single CLI, and single skill
-artifact.
+claw-mem 自己的"本地层"只剩：
+- SQLite 存储（observations / summaries / sessions / nodes / archives / artifacts）
+- FTS 全文搜索 + 语义 context builder
+- OpenClaw session hook（捕获 observation、注入记忆 context）
+- 跨层 `bootstrap dev/prod` 流程（起 hardhat + 部合约 + 装节点 + 首次备份）
+- 统一 CLI（挂载 node + soul 的子命令）
 
-## Install
+## 安装
 
 ```bash
 npm install @chainofclaw/claw-mem
 ```
 
-Or, in an OpenClaw extension folder, point at it locally:
+会自动拉入 `@chainofclaw/node` 和 `@chainofclaw/soul`。装完有三个 bin：
+- `claw-mem` — 完整 CLI
+- `coc-node` — 只 node 的 CLI（透传）
+- `coc-soul` — 只 soul 的 CLI（透传）
 
-```jsonc
-// openclaw.json
-{ "extensions": ["claw-mem"] }
-```
+需要 Node.js ≥ 22。
 
-## CLI
-
-The standalone `claw-mem` binary and the `openclaw …` subcommands share the same commander definitions:
-
-```text
-claw-mem
-├── status                # one-screen overview (memory + nodes + backup + bootstrap + storage)
-├── doctor                # environment health checks (Node / COC repo / hardhat / ports / disk / quota / backup)
-├── init                  # interactive first-time setup — writes ~/.claw-mem/config.json
-├── version               # claw-mem version + schema version + Node / COC repo path
-├── tools list            # list every agent tool the skill exposes (--with-schema for params)
-├── uninstall             # selective cleanup of ~/.claw-mem (keeps keys by default)
-│
-├── mem
-│   ├── search <q>        # FTS5 search over past observations
-│   ├── status            # row counts and DB path
-│   ├── forget <sid>      # delete observations for one session
-│   ├── peek              # show what would be injected into the next prompt
-│   ├── prune             # delete observations older than --older-than <days>
-│   ├── export <file>     # dump observations + summaries + sessions to JSON
-│   └── import <file>     # restore from a `mem export` file (idempotent)
-│
-├── node
-│   ├── install           # init wizard (or non-interactive with --type/--network)
-│   ├── list / status     # inspect tracked nodes
-│   ├── start/stop/restart
-│   ├── remove <name>
-│   ├── config show|edit
-│   └── logs <name>       # --service node|agent|relayer  --all  -f
-│
-├── backup
-│   ├── configure         # interactive RPC / IPFS / contract / privateKey setup
-│   ├── create [--full]
-│   ├── restore           # by manifestCid / package / latestLocal
-│   ├── list / history    # local archive index
-│   ├── status / doctor
-│   ├── prune             # drop old local archive entries (does NOT unpin IPFS)
-│   └── find-recoverable  # local + (--on-chain) SoulRegistry latest CID
-│
-├── carrier               # carrier daemon: register / list (event-walk) / submit-request / start / stop / status / info / availability / deregister
-├── guardian              # guardian-side resurrection + guardian set management
-├── recovery              # social recovery (guardian-initiated owner migration)
-├── did                   # DID identity management (DIDRegistry) — 14 subcommands
-│
-├── bootstrap
-│   ├── dev               # spawn hardhat + deploy contracts + install + start + first backup
-│   ├── prod              # interactive wizard for an existing chain (validates RPC + contract bytecode)
-│   ├── status / teardown
-│   └── logs              # tail ~/.claw-mem/logs/hardhat.log
-│
-├── db
-│   ├── vacuum            # reclaim space after pruning
-│   ├── migrate-status    # current vs latest schema version
-│   └── size              # main / wal / shm bytes
-│
-└── config
-    ├── get <path>        # dot-path read
-    ├── set <path> <value>
-    ├── list              # dump effective config
-    └── path              # print ~/.claw-mem/config.json
-```
-
-## Memory layer (semantic memory)
-
-claw-mem silently observes what your agent does — reading files, editing
-code, running commands, searching the web — and distills each action into
-a structured **observation**. At the end of every session it compresses
-those observations into a **summary**. On the next session start it
-**injects** the most relevant memories back into the agent's prompt, so
-the agent picks up where it left off without you having to explain the
-context again.
-
-```text
-Session N                                      Session N+1
-─────────                                     ─────────────
-[after_tool_call]   →  Observation            [session_start]   ←  Memory ctx
-[after_tool_call]   →  Observation            [before_prompt]   ←  injected!
-       …
-[agent_end]         →  Summary
-```
-
-All of this lives in `~/.claw-mem/claw-mem.db` (SQLite + FTS5).
-
-## The 256 MiB minimum
-
-The COC P2P network requires every node to contribute at least 256 MiB of
-storage. claw-mem enforces this in two places:
-
-1. `storage.advertisedBytes` (default `268_435_456`) is written into every
-   node-config.json under `advertisedStorageBytes`. The COC node layer
-   doesn't yet broadcast this field; future versions will.
-2. `storage.quotaBytes` (default `268_435_456`) is enforced locally. New
-   node installs are rejected if they would push the data directory over
-   the quota; a fallocate-based reservation file prevents the OS from
-   filling the disk first.
-
-## Bootstrap dev
+## 作为 OpenClaw 插件
 
 ```bash
-claw-mem bootstrap dev
+openclaw plugins install @chainofclaw/claw-mem
 ```
 
-Brings up a local hardhat L1, generates an operator key, funds it with 0.1
-ETH from hardhat account #0, generates a node-config (with
-advertisedStorageBytes=256 MiB), installs and starts a `dev` COC node, and
-prints a summary. Contract deployment, agent self-registration, and the
-first backup are stubs in this initial version — see the in-source TODOs.
+或从本地源：
 
-## Architecture
+```bash
+openclaw plugins install --link /path/to/claw-mem
+```
 
-See `.claude/plans/clawbot-claw-mem-openclaw-skills-coc-25-rustling-feigenbaum.md`
-for the full integration design — every file path, schema, and PR plan.
+装上后 OpenClaw 会调用 `activate()`，完成：
+1. 打开 SQLite 数据库（`~/.claw-mem/claw-mem.db`）
+2. 注册 session hook —— 捕获 tool 调用成 observation、session 结束做总结
+3. 注册 agent-callable tools —— `search_memory`, `node_status`, `soul_backup_status` 等
+4. 注册 `openclaw coc ...` 子命令集
+5. 启动 backup scheduler（如果 `backup.enabled` 且 `autoBackup: true`）
+6. 启动 carrier daemon（如果 `backup.carrier.enabled`）
 
-## Documentation
+## CLI 快速开始
 
-- 📘 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — full user manual (~1200 lines): concepts, every command, workflows, troubleshooting, FAQ, appendix
-- 🔄 [`docs/MIGRATION.md`](docs/MIGRATION.md) — migrating from `@openclaw/coc-nodeops` and `@openclaw/coc-backup`
+```bash
+# 第一次交互式配置（写 ~/.claw-mem/config.json）
+claw-mem init
 
-## Status
+# 环境诊断 + 状态汇总
+claw-mem doctor
+claw-mem status
 
-PRs in this revision (1.0.0):
+# 本地装一个 dev 节点
+claw-mem node install --type dev --network local --name dev-1
 
-- ✅ PR 1 — config + DB schema v2 + node/archive/artifact stores
-- ✅ PR 2 — `coc-nodeops` migration: NodeManager, ProcessManager, RpcClient, init wizard, `node` CLI, 10 agent tools
-- ✅ PR 3 — StorageQuotaManager + 256 MiB enforcement, integrated with NodeManager.install
-- ✅ PR 4 — `coc-backup` migration: BackupManager / RecoveryManager facades, 5 agent tools, `backup` CLI
-- ✅ PR 5 — BootstrapManager + `bootstrap dev|status|teardown`
-- ✅ PR 6 — `config get/set/list/path`, COC compatibility shims, docs, migration guide
+# 在 testnet 上注册 soul + 首次备份
+claw-mem backup init
 
-UX revision (post-1.0):
+# 看 DID keys / delegations / guardian
+AGENT=0x...
+claw-mem did keys --agent-id $AGENT
+claw-mem guardian list --agent-id $AGENT
 
-- ✅ `status` / `doctor` / `init` / `version` / `tools list` / `uninstall`
-- ✅ `mem peek` / `mem prune` / `mem export` / `mem import`
-- ✅ `node logs --all`
-- ✅ `bootstrap logs`
-- ✅ `backup configure` / `backup prune` / `backup find-recoverable`
-- ✅ `db vacuum` / `db migrate-status` / `db size`
-- ✅ `bootstrap dev` step 16 now persists operator key to disk
-- ✅ `node install` warns about missing COC repo; `node start` hard-fails with a clear message
-- ✅ shared `config-persistence` helpers reused across config / init / configure / bootstrap
+# 查本地记忆
+claw-mem mem status
+claw-mem mem search "checkpoint"
+```
 
-Round 4 (carrier / guardian / DID / bootstrap completion):
+## CLI 顶层结构
 
-- ✅ `carrier { register | deregister | availability | info | submit-request | start | stop | status }` + auto-start in `activate()` if `backup.carrier.enabled`
-- ✅ `guardian { initiate | approve | status | add | remove | list }`
-- ✅ `recovery { initiate | approve | complete | cancel | status }`
-- ✅ `did` — 14 subcommands covering all DIDRegistry operations
-- ✅ `backup { init | register | heartbeat | configure-resurrection | resurrection { start | status | confirm | complete | cancel } }`
-- ✅ 8 additional agent tools: `soul-auto-restore`, `soul-resurrection`, `soul-carrier-request`, `soul-guardian-initiate`, `soul-guardian-approve`, `soul-guardian-manage`, `soul-recovery-initiate`, `soul-recovery-approve` (total now 26)
-- ✅ `bootstrap dev` step 10 — real contract deployment via ethers + compiled artifacts (PoSeManagerV2, SoulRegistry, CidRegistry, DIDRegistry); auto-runs `npx hardhat compile` if artifacts missing
-- ✅ `bootstrap dev` step 15 — agent self-registration polled via `coc-agent.log` (45s timeout)
-- ✅ vitest → node:test rewrite of all 4 deferred backup tests (`test/backup-suite/{binary-handler,change-detector-extended,lifecycle,scheduler}.test.ts`)
+```
+claw-mem
+├── status              综合状态（memory + nodes + backup + bootstrap + storage）
+├── doctor              环境诊断（13 条检查）
+├── init                首次配置向导
+├── version             版本 / schema / COC 仓位置 / DB 路径
+├── tools               列出暴露给 agent 的 tools
+├── uninstall           清除 ~/.claw-mem
+│
+├── mem …               本地记忆：search / status / forget / peek / prune / export / import
+├── db …                DB 管理：size / vacuum / migrate-status
+├── config …            config 读写：get / set / list / path
+│
+├── node …              (透传 @chainofclaw/node)
+├── backup …            (透传 @chainofclaw/soul backup)
+├── did …               (透传 @chainofclaw/soul did)
+├── guardian …          (透传 @chainofclaw/soul guardian)
+├── recovery …          (透传 @chainofclaw/soul recovery)
+├── carrier …           (透传 @chainofclaw/soul carrier)
+│
+└── bootstrap …         跨层流水线：dev / prod / status / logs / teardown
+```
 
-Round 5 (final):
+透传子命令的完整清单见 [@chainofclaw/node](https://www.npmjs.com/package/@chainofclaw/node) 与 [@chainofclaw/soul](https://www.npmjs.com/package/@chainofclaw/soul) 各自 README。
 
-- ✅ `bootstrap prod` — interactive @clack/prompts wizard validating RPC + each contract address (eth_getCode), supports `--non-interactive` flag-driven mode for scripts/CI; persists everything to `~/.claw-mem/config.json` and the artifact store under the resolved network name (mainnet / sepolia / coc-testnet / local / chain-N)
-- ✅ `carrier list` — walks `CarrierRegistered` / `CarrierDeregistered` events on-chain (`--from-block`, `--include-inactive`), no external indexer required
-- ✅ `SoulClient.listCarriers()` exposed for programmatic use
+## 配置文件 `~/.claw-mem/config.json`
 
-All deferred items now closed.
+完整 schema 是 `@chainofclaw/claw-mem` 的 `ClawMemConfigSchema`，等价于 `nodeConfigSchema × soulConfigSchema + memory 元字段`。最小跑通示例：
+
+```json
+{
+  "enabled": true,
+  "dataDir": "~/.claw-mem",
+  "tokenBudget": 8000,
+  "maxObservations": 50,
+  "maxSummaries": 10,
+  "dedupWindowMs": 30000,
+  "skipTools": ["TodoWrite", "AskUserQuestion", "Skill"],
+
+  "storage": {
+    "quotaBytes": 268435456,
+    "advertisedBytes": 268435456,
+    "reservedBytes": 268435456,
+    "enforceQuota": true,
+    "reserveFile": ".quota.reserved"
+  },
+
+  "node": {
+    "enabled": true,
+    "defaultType": "dev",
+    "defaultNetwork": "local",
+    "port": 18780,
+    "bind": "127.0.0.1",
+    "autoAdvertiseStorage": true
+  },
+
+  "backup": {
+    "enabled": true,
+    "rpcUrl": "http://127.0.0.1:18780",
+    "ipfsUrl": "http://127.0.0.1:5001",
+    "contractAddress": "0x...SoulRegistry...",
+    "didRegistryAddress": "0x...DIDRegistry...",
+    "privateKey": "0x....",
+    "autoBackup": true,
+    "autoBackupIntervalMs": 3600000,
+    "encryptMemory": false,
+    "backupOnSessionEnd": true
+  },
+
+  "bootstrap": {
+    "mode": "none",
+    "cocRepoPath": "/path/to/COC"
+  }
+}
+```
+
+用 `claw-mem config set <path> <value>` 改字段，例如：
+
+```bash
+claw-mem config set backup.autoBackupIntervalMs 1800000
+claw-mem config set node.defaultType fullnode
+```
+
+## 编程 API（库用法）
+
+claw-mem 的顶级 export 按 bucket 划分。
+
+### 记忆层（本地 SQLite + FTS）
+
+```ts
+import {
+  Database, ObservationStore, SummaryStore, SessionStore,
+  SearchEngine, buildContext, extractObservation, summarizeSession,
+} from "@chainofclaw/claw-mem";
+
+const db = new Database("/home/you/.claw-mem/claw-mem.db");
+db.open();
+
+const obs = new ObservationStore(db);
+obs.insert({
+  sessionId: "demo", agentId: "me", type: "discovery",
+  title: "hello memory layer",
+  facts: ["claw-mem exposes Database, Store, Search for direct use"],
+  narrative: null, concepts: ["api"], filesRead: [], filesModified: [],
+  toolName: null, promptNumber: 1,
+});
+
+const search = new SearchEngine(db);
+const hits = search.search({ query: "memory", limit: 5 });
+console.log(hits.totalCount, "hits");
+
+db.close();
+```
+
+### 节点层 —— 从 umbrella 透传
+
+```ts
+import { NodeManager, ProcessManager, StorageQuotaManager } from "@chainofclaw/claw-mem";
+// 等价于 import { ... } from "@chainofclaw/node"
+```
+
+### Soul 层 —— 从 umbrella 透传
+
+```ts
+import { BackupManager, RecoveryManager, SoulClient, IpfsClient } from "@chainofclaw/claw-mem";
+// 等价于 from "@chainofclaw/soul"
+```
+
+### 从零启动完整服务图（bootstrap helper）
+
+```ts
+import { bootstrapServices, ClawMemConfigSchema } from "@chainofclaw/claw-mem";
+
+const config = ClawMemConfigSchema.parse({ /* 见上 */ });
+const services = bootstrapServices({
+  configOverride: config,
+  logger: console,
+});
+
+// services 里有：db, nodeStore, nodeManager, backupManager,
+//   recoveryManager, carrierManager, bootstrapManager, ...
+await services.backupManager.start();
+```
+
+这跟 OpenClaw `activate()` 走的是同一条路。
+
+## 首次使用的推荐流程
+
+1. `claw-mem init` —— 写 config.json（或用上面示例手工写）。
+2. `claw-mem doctor` —— 确认 Node 版本、DB、磁盘空间、端口、COC 仓都 OK。
+3. `claw-mem bootstrap dev`（本地开发）或手动组合：`claw-mem node install` + `claw-mem node start` + `claw-mem backup init`。
+4. `claw-mem status` —— 确认节点在跑、备份已注册。
+
+## 常见问题
+
+**OpenClaw 无法发现插件**：确认 `openclaw.plugin.json` 随包一起发布（`files` 里有它），且 `openclaw plugins install` 后有 `Loaded successfully` 日志。用 `--link` 做开发链接时需要先 `npm run build --workspaces`，因为 OpenClaw 只认 `dist/index.js`。
+
+**session hook 没捕到 observation**：确认 `config.enabled: true`，且工具名不在 `skipTools` 列表里。
+
+**`bootstrap dev` 部分步骤 TODO**：合约部署、agent 自注册、首次备份三步目前是 stub，等待后续版本接通 COC 的 deploy 脚本；`node install` + `node start` 这两步现在已经完整。
+
+**mem import / mem export 字段格式**：export 写的是 SQLite 直出的 snake_case（`session_id`, `created_at_epoch` 等），import 也按这个读。未来会统一为 camelCase，目前手写 JSON 请用 snake_case。
+
+**节点列表"Run `node install`" 文案在 standalone 下不一致**：1.0.7 有此 bug，1.0.8 已修。
+
+## License
+
+MIT

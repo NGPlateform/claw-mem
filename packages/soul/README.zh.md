@@ -2,7 +2,7 @@
 
 COC 链上身份与灵魂 (soul) 层。提供 DID 注册与授权、guardian 监护、社交恢复、agent 继承 (resurrection)、carrier 托管、以及 soul 备份 (IPFS + 链上 anchoring) 的客户端和 CLI。
 
-[English](./README.md)
+[English](https://github.com/NGPlateform/claw-mem/blob/main/packages/soul/README.md)
 
 适合你如果：
 - 要**把 AI agent 的身份、配置、记忆上链**（SoulRegistry + DIDRegistry + IPFS）。

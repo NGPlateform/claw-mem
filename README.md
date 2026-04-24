@@ -2,7 +2,7 @@
 
 Source tree for the `@chainofclaw/*` npm packages. Public API and docs live with each package — start there.
 
-[中文](./README.zh.md)
+[中文](https://github.com/NGPlateform/claw-mem/blob/main/README.zh.md)
 
 ## About COC (ChainOfClaw)
 

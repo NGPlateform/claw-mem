@@ -42,14 +42,16 @@ export function buildCocBackupConfig(
     if (missing.length > 0) {
       throw new BackupConfigError(
         `Backup not configured. Missing required fields: ${missing.join(", ")}.\n\n` +
+          `Defaults already supplied:\n` +
+          `  rpcUrl   ${config.rpcUrl} (COC testnet by default; override for mainnet/local)\n` +
+          `  ipfsUrl  ${config.ipfsUrl} (run \`ipfs daemon\` locally, or set a public gateway)\n\n` +
+          `You still need to provide:\n` +
+          `  contractAddress     deployed SoulRegistry address on the target network\n` +
+          `  didRegistryAddress  deployed DIDRegistry address on the target network\n` +
+          `  privateKey          hex EOA key with funds on the target network (chmod 600 the config file)\n\n` +
           `Set them via:\n` +
-          `  claw-mem backup configure        (interactive)\n` +
-          `  claw-mem config set backup.<field> <value>\n\n` +
-          `Example endpoints:\n` +
-          `  rpcUrl   COC testnet: http://199.192.16.79:28780  |  Local node: http://localhost:18780\n` +
-          `  ipfsUrl  Local IPFS:  http://localhost:5001       |  Public gateway: see https://docs.ipfs.tech/concepts/public-utilities/\n` +
-          `  contractAddress / didRegistryAddress: deployed SoulRegistry / DIDRegistry on your target network\n` +
-          `  privateKey: hex EOA key with funds on the target network (chmod 600 the config file)`,
+          `  claw-mem backup configure                      (interactive)\n` +
+          `  claw-mem config set backup.<field> <value>     (one at a time)`,
       )
     }
   }

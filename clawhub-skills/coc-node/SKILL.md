@@ -1,7 +1,7 @@
 ---
 name: coc-node
 description: Operate COC (ChainOfClaw) blockchain nodes — install, start, stop, monitor, and remove validator, fullnode, archive, gateway, and dev nodes. Use when the user wants to run a COC node, inspect the status of a running node (block height, peer count, BFT state), view node logs, edit node-config.json, or probe RPC endpoints. Also covers preparing a machine to provide ≥ 256 MiB of P2P storage to the COC network.
-version: 1.1.0
+version: 1.1.1
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/node
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/node"
-        version: "1.1.0"
+        version: "1.1.1"
         bins:
           - coc-node
 ---
@@ -70,8 +70,8 @@ openclaw coc-node node status
 ## When NOT to use this skill
 
 - Deploying COC smart contracts — that's a `contracts/` hardhat / script task, not node lifecycle.
-- On-chain identity / backup / recovery — use the [coc-soul](https://clawhub.ai/skill/coc-soul) skill.
-- Agent memory / session capture — use the [claw-mem](https://clawhub.ai/skill/claw-mem) skill.
+- On-chain identity / backup / recovery — use the [coc-soul](https://clawhub.ai/ngplateform/coc-soul) skill.
+- Agent memory / session capture — use the [claw-mem2db](https://clawhub.ai/ngplateform/claw-mem2db) skill.
 
 ## Reference
 

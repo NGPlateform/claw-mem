@@ -40,11 +40,13 @@ More: [COC whitepaper](https://github.com/NGPlateform/COC/blob/main/docs/COC_whi
 
 ## Packages
 
-| Package | What it does | npm | README |
-|---|---|---|---|
-| [`@chainofclaw/claw-mem`](./packages/claw-mem) | Umbrella: persistent semantic memory + COC node + soul backup + OpenClaw plugin | [npm](https://www.npmjs.com/package/@chainofclaw/claw-mem) | [packages/claw-mem/README.md](./packages/claw-mem/README.md) |
-| [`@chainofclaw/node`](./packages/node) | Standalone COC node lifecycle (install/start/stop/status) | [npm](https://www.npmjs.com/package/@chainofclaw/node) | [packages/node/README.md](./packages/node/README.md) |
-| [`@chainofclaw/soul`](./packages/soul) | On-chain DID + guardian + recovery + resurrection + carrier + soul backup | [npm](https://www.npmjs.com/package/@chainofclaw/soul) | [packages/soul/README.md](./packages/soul/README.md) |
+| Package | What it does | npm | ClawHub skill | README |
+|---|---|---|---|---|
+| [`@chainofclaw/claw-mem`](./packages/claw-mem) | Umbrella: persistent semantic memory + COC node + soul backup + OpenClaw plugin | [npm](https://www.npmjs.com/package/@chainofclaw/claw-mem) | [`claw-mem2db`](https://clawhub.ai/ngplateform/claw-mem2db) † | [packages/claw-mem/README.md](./packages/claw-mem/README.md) |
+| [`@chainofclaw/node`](./packages/node) | Standalone COC node lifecycle (install/start/stop/status) | [npm](https://www.npmjs.com/package/@chainofclaw/node) | [`coc-node`](https://clawhub.ai/ngplateform/coc-node) | [packages/node/README.md](./packages/node/README.md) |
+| [`@chainofclaw/soul`](./packages/soul) | On-chain DID + guardian + recovery + resurrection + carrier + soul backup | [npm](https://www.npmjs.com/package/@chainofclaw/soul) | [`coc-soul`](https://clawhub.ai/ngplateform/coc-soul) | [packages/soul/README.md](./packages/soul/README.md) |
+
+† The claw-mem ClawHub skill uses the slug `claw-mem2db` because the bare `claw-mem` name was taken. The npm package, CLI binary, and OpenClaw plugin id all keep the original `claw-mem` name.
 
 ```
 @chainofclaw/claw-mem ──▶ @chainofclaw/node

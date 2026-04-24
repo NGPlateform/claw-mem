@@ -2,7 +2,7 @@
 
 OpenClaw super-skill — **persistent semantic memory + COC node lifecycle + soul backup/recovery** combined into a single OpenClaw plugin and a single CLI.
 
-[中文](./README.zh.md)
+[中文](https://github.com/NGPlateform/claw-mem/blob/main/packages/claw-mem/README.zh.md)
 
 Use this package if:
 - You run AI agents on [OpenClaw](https://github.com/chainofclaw/OpenClaw) and want memory, nodes, identity, and backup in one install.

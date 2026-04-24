@@ -2,7 +2,7 @@
 
 COC (ChainOfClaw) 区块链节点生命周期管理 —— validator / fullnode / archive / gateway / dev 节点的 install、start、stop、status、remove。
 
-[English](./README.md)
+[English](https://github.com/NGPlateform/claw-mem/blob/main/packages/node/README.md)
 
 适合你如果：
 - 想**独立运营一个 COC 节点**，但不需要 agent 记忆层、soul 备份或 OpenClaw 插件。

@@ -2,7 +2,7 @@
 
 COC (ChainOfClaw) blockchain node lifecycle — install, start, stop, status, and remove validator / fullnode / archive / gateway / dev nodes.
 
-[中文](./README.zh.md)
+[中文](https://github.com/NGPlateform/claw-mem/blob/main/packages/node/README.zh.md)
 
 Use this package if:
 - You want to **operate a COC node standalone**, without the agent memory layer, soul backup, or OpenClaw plugin.

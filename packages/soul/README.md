@@ -2,7 +2,7 @@
 
 COC on-chain identity and soul layer. Provides client libraries and a CLI for DID registration and delegation, guardian custody, social recovery, agent resurrection, carrier hosting, and soul backup (IPFS + on-chain anchoring).
 
-[中文](./README.zh.md)
+[中文](https://github.com/NGPlateform/claw-mem/blob/main/packages/soul/README.zh.md)
 
 Use this package if:
 - You want to **anchor an AI agent's identity, config, and memory on-chain** (SoulRegistry + DIDRegistry + IPFS).

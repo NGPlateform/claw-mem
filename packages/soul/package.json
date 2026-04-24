@@ -1,6 +1,6 @@
 {
   "name": "@chainofclaw/soul",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "COC soul layer — on-chain DID, guardian recovery, agent resurrection, soul backup, and carrier operations.",
   "type": "module",
   "main": "./dist/src/index.js",
@@ -22,6 +22,15 @@
   },
   "keywords": ["coc", "chainofclaw", "did", "soul", "backup", "recovery", "ai-agent"],
   "license": "MIT",
+  "homepage": "https://github.com/NGPlateform/claw-mem/tree/main/packages/soul#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NGPlateform/claw-mem.git",
+    "directory": "packages/soul"
+  },
+  "bugs": {
+    "url": "https://github.com/NGPlateform/claw-mem/issues"
+  },
   "dependencies": {
     "@clack/prompts": "^0.10.0",
     "commander": "^12.1.0",

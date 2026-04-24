@@ -2,7 +2,7 @@
 
 OpenClaw super-skill —— 把 **持久语义记忆 + COC 节点生命周期 + soul 备份/恢复** 三块能力整合成一个 OpenClaw 插件与一个 CLI。
 
-[English](./README.md)
+[English](https://github.com/NGPlateform/claw-mem/blob/main/packages/claw-mem/README.md)
 
 适合你如果：
 - 用 [OpenClaw](https://github.com/chainofclaw/OpenClaw) 跑 AI agent，想一次性拿到记忆、节点、身份、备份。

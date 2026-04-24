@@ -2,7 +2,7 @@
 
 `@chainofclaw/*` npm 包的源码仓库。公开 API 和文档都在各 package 内部，请从那里开始。
 
-[English](./README.md)
+[English](https://github.com/NGPlateform/claw-mem/blob/main/README.md)
 
 ## 关于 COC (ChainOfClaw)
 

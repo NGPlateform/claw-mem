@@ -1,6 +1,6 @@
 {
   "name": "@chainofclaw/node",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "COC blockchain node lifecycle — install / start / stop / status for validator, fullnode, archive, gateway, dev nodes.",
   "type": "module",
   "main": "./dist/src/index.js",
@@ -22,6 +22,15 @@
   },
   "keywords": ["coc", "chainofclaw", "blockchain", "node", "validator"],
   "license": "MIT",
+  "homepage": "https://github.com/NGPlateform/claw-mem/tree/main/packages/node#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NGPlateform/claw-mem.git",
+    "directory": "packages/node"
+  },
+  "bugs": {
+    "url": "https://github.com/NGPlateform/claw-mem/issues"
+  },
   "dependencies": {
     "@clack/prompts": "^0.10.0",
     "commander": "^12.1.0",

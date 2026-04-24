@@ -41,9 +41,15 @@ export function buildCocBackupConfig(
     const missing = BACKUP_LIFECYCLE_KEYS.filter((k) => !config[k as keyof BackupConfig])
     if (missing.length > 0) {
       throw new BackupConfigError(
-        `Backup not configured. Missing required fields: ${missing.join(", ")}. ` +
-          `Run \`claw-mem backup configure\` for an interactive setup, or ` +
-          `\`claw-mem config set backup.<field> <value>\` to set them individually.`,
+        `Backup not configured. Missing required fields: ${missing.join(", ")}.\n\n` +
+          `Set them via:\n` +
+          `  claw-mem backup configure        (interactive)\n` +
+          `  claw-mem config set backup.<field> <value>\n\n` +
+          `Example endpoints:\n` +
+          `  rpcUrl   COC testnet: http://199.192.16.79:28780  |  Local node: http://localhost:18780\n` +
+          `  ipfsUrl  Local IPFS:  http://localhost:5001       |  Public gateway: see https://docs.ipfs.tech/concepts/public-utilities/\n` +
+          `  contractAddress / didRegistryAddress: deployed SoulRegistry / DIDRegistry on your target network\n` +
+          `  privateKey: hex EOA key with funds on the target network (chmod 600 the config file)`,
       )
     }
   }
@@ -101,5 +107,5 @@ export function buildCocBackupConfig(
 }
 
 export function isBackupConfigured(config: BackupConfig): boolean {
-  return Boolean(config.contractAddress && config.privateKey)
+  return Boolean(config.contractAddress && config.privateKey && config.rpcUrl && config.ipfsUrl)
 }

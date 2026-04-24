@@ -1,7 +1,7 @@
 ---
 name: claw-mem2db
 description: Give an AI agent persistent semantic memory that survives restarts and compaction. Captures structured observations from tool calls, summarizes sessions, and injects a token-budgeted memory context into the next prompt. Use when the user wants long-lived agent memory, wants to search past observations, wants to export / import memory across machines, wants to see what memory would be injected before the next turn, or is assembling the full COC agent stack (memory + node + soul).
-version: 1.1.3
+version: 1.1.4
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/claw-mem
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/claw-mem"
-        version: "1.1.3"
+        version: "1.1.4"
         bins:
           - claw-mem
 ---

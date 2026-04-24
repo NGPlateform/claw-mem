@@ -5,12 +5,31 @@
 
 import { describe, it, before, after } from "node:test"
 import assert from "node:assert/strict"
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import { spawnSync } from "node:child_process"
 
 const BIN = join(import.meta.dirname, "..", "bin", "claw-mem")
+
+// Force "missing required fields" by writing a config file that explicitly
+// blanks rpcUrl + contractAddress + didRegistryAddress, overriding the
+// 1.1.6+ testnet defaults so we can still test the strict-mode error path.
+async function writeBlankConfig(home: string): Promise<void> {
+  const dir = join(home, ".claw-mem")
+  await mkdir(dir, { recursive: true })
+  await writeFile(
+    join(dir, "config.json"),
+    JSON.stringify({
+      backup: {
+        rpcUrl: "",
+        contractAddress: "",
+        didRegistryAddress: "",
+        privateKey: "",
+      },
+    }),
+  )
+}
 
 function runCli(home: string, args: string[]): { stdout: string; stderr: string; code: number } {
   const res = spawnSync(BIN, args, {
@@ -55,10 +74,11 @@ describe("CLI: carrier subcommands", () => {
     }
   })
 
-  it("list fails fast when backup not configured", () => {
+  it("list fails fast when backup not configured", async () => {
+    await writeBlankConfig(home)
     const r = runCli(home, ["carrier", "list"])
     assert.notEqual(r.code, 0)
-    assert.match(r.stderr + r.stdout, /Backup not configured|backup configure/i)
+    assert.match(r.stderr + r.stdout, /Backup not configured|Missing required fields|backup configure/i)
   })
 })
 
@@ -107,10 +127,11 @@ describe("CLI: guardian subcommands", () => {
     }
   })
 
-  it("approve fails fast when backup not configured", () => {
+  it("approve fails fast when backup not configured", async () => {
+    await writeBlankConfig(home)
     const r = runCli(home, ["guardian", "approve", "--request-id", "0x" + "1".repeat(64)])
     assert.notEqual(r.code, 0, "expected non-zero exit when backup not configured")
-    assert.match(r.stderr + r.stdout, /Backup not configured|backup configure/i)
+    assert.match(r.stderr + r.stdout, /Backup not configured|Missing required fields|backup configure/i)
   })
 })
 
@@ -146,10 +167,11 @@ describe("CLI: did subcommands", () => {
     }
   })
 
-  it("operations fail fast when didRegistryAddress not set", () => {
+  it("operations fail fast when didRegistryAddress not set", async () => {
+    await writeBlankConfig(home)
     const r = runCli(home, ["did", "keys", "--agent-id", "0x" + "1".repeat(64)])
     assert.notEqual(r.code, 0)
-    assert.match(r.stderr + r.stdout, /didRegistryAddress/i)
+    assert.match(r.stderr + r.stdout, /didRegistryAddress|Missing required fields|Backup not configured/i)
   })
 })
 

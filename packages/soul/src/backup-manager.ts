@@ -19,11 +19,19 @@ import {
   isBackupConfigured,
 } from "./backup-config-adapter.ts"
 import type { CocBackupConfig } from "./backup-config-schema.ts"
+import { ensureAgentKey } from "./keystore.ts"
 
 export interface BackupManagerOptions {
   config: BackupConfig
   archiveStore: BackupArchiveRepository
   logger: Logger
+  /**
+   * If `config.privateKey` is empty, auto-create a local EOA in
+   * ~/.claw-mem/keys/agent.key and use that. Default: true.
+   * Set false to opt out (e.g. during tests, or when integrating with
+   * an external signer).
+   */
+  autoGenerateKey?: boolean
 }
 
 export class BackupManager {
@@ -37,7 +45,21 @@ export class BackupManager {
   private scheduler: BackupScheduler | null = null
 
   constructor(opts: BackupManagerOptions) {
-    this.config = opts.config
+    let cfg = opts.config
+    if (!cfg.privateKey && opts.autoGenerateKey !== false) {
+      try {
+        const key = ensureAgentKey({ logger: opts.logger })
+        cfg = { ...cfg, privateKey: key.privateKey }
+        if (key.generated) {
+          opts.logger.info(
+            `[coc-soul] using auto-generated agent address ${key.address} (override via backup.privateKey)`,
+          )
+        }
+      } catch (err) {
+        opts.logger.warn(`[coc-soul] keystore unavailable: ${String(err)}`)
+      }
+    }
+    this.config = cfg
     this.archiveStore = opts.archiveStore
     this.logger = opts.logger
   }

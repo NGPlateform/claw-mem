@@ -1,6 +1,8 @@
 # chainofclaw claw-mem monorepo
 
-This is the source tree for the `@chainofclaw/*` npm packages. The public API and docs live with each package — start there.
+Source tree for the `@chainofclaw/*` npm packages. Public API and docs live with each package — start there.
+
+[中文](./README.zh.md)
 
 | Package | What it does | npm | README |
 |---|---|---|---|

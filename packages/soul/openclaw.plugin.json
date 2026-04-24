@@ -1,0 +1,67 @@
+{
+  "id": "coc-soul",
+  "name": "COC Soul Backup & Recovery",
+  "version": "1.1.0",
+  "description": "OpenClaw skill: COC soul layer — on-chain DID, guardian recovery, agent resurrection, soul backup, and carrier operations.",
+  "main": "dist/index.js",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "backup": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean", "default": true },
+          "sourceDir": { "type": "string", "default": "~/.openclaw" },
+          "rpcUrl": { "type": "string", "default": "http://127.0.0.1:18780" },
+          "ipfsUrl": { "type": "string", "default": "http://127.0.0.1:5001" },
+          "contractAddress": { "type": "string" },
+          "didRegistryAddress": { "type": "string" },
+          "privateKey": { "type": "string" },
+          "rpcAuthToken": { "type": "string" },
+          "autoBackup": { "type": "boolean", "default": true },
+          "autoBackupIntervalMs": { "type": "number", "default": 3600000 },
+          "maxIncrementalChain": { "type": "number", "default": 10 },
+          "encryptMemory": { "type": "boolean", "default": false },
+          "encryptionPassword": { "type": "string" },
+          "backupOnSessionEnd": { "type": "boolean", "default": true },
+          "semanticSnapshot": {
+            "type": "object",
+            "properties": {
+              "enabled": { "type": "boolean", "default": true },
+              "tokenBudget": { "type": "number", "default": 8000 },
+              "maxObservations": { "type": "number", "default": 50 },
+              "maxSummaries": { "type": "number", "default": 10 }
+            }
+          },
+          "categories": {
+            "type": "object",
+            "properties": {
+              "identity": { "type": "boolean", "default": true },
+              "config": { "type": "boolean", "default": true },
+              "memory": { "type": "boolean", "default": true },
+              "chat": { "type": "boolean", "default": true },
+              "workspace": { "type": "boolean", "default": true },
+              "database": { "type": "boolean", "default": true }
+            }
+          },
+          "carrier": {
+            "type": "object",
+            "properties": {
+              "enabled": { "type": "boolean", "default": false },
+              "carrierId": { "type": "string" },
+              "agentEntryScript": { "type": "string" },
+              "workDir": { "type": "string", "default": "/tmp/coc-resurrections" },
+              "watchedAgents": { "type": "array", "items": { "type": "string" }, "default": [] },
+              "pollIntervalMs": { "type": "number", "default": 60000 },
+              "readinessTimeoutMs": { "type": "number", "default": 86400000 },
+              "readinessPollMs": { "type": "number", "default": 30000 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "requirements": {
+    "node": ">=22.0.0"
+  }
+}

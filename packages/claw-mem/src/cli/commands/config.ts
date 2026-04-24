@@ -6,7 +6,7 @@
 
 import type { Command } from "commander"
 
-import type { CliServices } from "../register-all.ts"
+import type { MemoryServices } from "../bootstrap-services.ts"
 import {
   DEFAULT_CONFIG_PATH,
   coerceScalar,
@@ -16,7 +16,7 @@ import {
   setDotPath,
 } from "@chainofclaw/soul"
 
-export function registerConfigCommands(program: Command, services: CliServices): void {
+export function registerConfigCommands(program: Command, services: MemoryServices): void {
   const { config: liveConfig } = services
   const cfg = program.command("config").description("Read and modify the persisted claw-mem config (~/.claw-mem/config.json)")
 

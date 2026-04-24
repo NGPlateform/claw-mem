@@ -4,10 +4,10 @@
 
 import { writeFile, readFile } from "node:fs/promises"
 import type { Command } from "commander"
-import type { CliServices } from "../register-all.ts"
+import type { MemoryServices } from "../bootstrap-services.ts"
 import { buildContext } from "../../context/builder.ts"
 
-export function registerMemCommands(program: Command, services: CliServices): void {
+export function registerMemCommands(program: Command, services: MemoryServices): void {
   const { searchEngine, observationStore, summaryStore, sessionStore, db, config, dbPath } = services
 
   const mem = program.command("mem").description("Semantic memory queries and maintenance")

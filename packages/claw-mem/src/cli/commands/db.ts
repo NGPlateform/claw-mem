@@ -3,10 +3,10 @@
 import { statSync } from "node:fs"
 import type { Command } from "commander"
 
-import type { CliServices } from "../register-all.ts"
+import type { MemoryServices } from "../bootstrap-services.ts"
 import { SCHEMA_VERSION } from "../../db/migrations.ts"
 
-export function registerDbCommands(program: Command, services: CliServices): void {
+export function registerDbCommands(program: Command, services: MemoryServices): void {
   const db = program.command("db").description("SQLite database maintenance")
 
   db

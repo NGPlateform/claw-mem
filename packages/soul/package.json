@@ -1,18 +1,33 @@
 {
   "name": "@chainofclaw/soul",
-  "version": "1.0.10",
-  "description": "COC soul layer — on-chain DID, guardian recovery, agent resurrection, soul backup, and carrier operations.",
+  "version": "1.1.0",
+  "description": "OpenClaw skill: COC soul layer — on-chain DID, guardian recovery, agent resurrection, soul backup, and carrier operations.",
   "type": "module",
-  "main": "./dist/src/index.js",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./index.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./dist/src/index.js"
-    }
+      "types": "./index.ts",
+      "default": "./dist/index.js"
+    },
+    "./openclaw.plugin.json": "./openclaw.plugin.json"
   },
   "bin": {
     "coc-soul": "./bin/coc-soul"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "service": {
+      "id": "coc-soul",
+      "label": "COC Soul Backup & Recovery",
+      "description": "DID, guardian recovery, agent resurrection, soul backup, and carrier operations."
+    },
+    "install": {
+      "npmSpec": "@chainofclaw/soul",
+      "localPath": "extensions/coc-soul"
+    }
   },
   "scripts": {
     "test": "node --experimental-strip-types --test test/backup-suite/*.test.ts",
@@ -20,7 +35,7 @@
     "build": "rm -rf dist && tsc --project tsconfig.build.json",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["coc", "chainofclaw", "did", "soul", "backup", "recovery", "ai-agent"],
+  "keywords": ["coc", "chainofclaw", "did", "soul", "backup", "recovery", "ai-agent", "openclaw", "openclaw-skill"],
   "license": "MIT",
   "homepage": "https://github.com/NGPlateform/claw-mem/tree/main/packages/soul#readme",
   "repository": {
@@ -44,6 +59,8 @@
     "dist/",
     "bin/",
     "src/",
+    "index.ts",
+    "openclaw.plugin.json",
     "README.md",
     "LICENSE"
   ]

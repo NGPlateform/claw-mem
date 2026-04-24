@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import type { Command } from "commander"
 
-import type { CliServices } from "../register-all.ts"
+import type { MemoryServices } from "../bootstrap-services.ts"
 import { SCHEMA_VERSION } from "../../db/migrations.ts"
 import { checkCocRepo, describeCocRepoCheck } from "@chainofclaw/node"
 
@@ -27,7 +27,7 @@ function resolvePkgJson(): string | null {
 
 const PKG_JSON_PATH = resolvePkgJson()
 
-export function registerVersionCommand(program: Command, services: CliServices): void {
+export function registerVersionCommand(program: Command, services: MemoryServices): void {
   program
     .command("version")
     .description("Print claw-mem / schema / Node / COC repo info")

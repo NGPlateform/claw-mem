@@ -4,19 +4,13 @@
 
 import type { Command } from "commander"
 
-import type { ClawMemConfig } from "../config.ts"
-import type { Database } from "../db/database.ts"
-import type { ObservationStore } from "../db/observation-store.ts"
-import type { SummaryStore } from "../db/summary-store.ts"
-import type { SessionStore } from "../db/session-store.ts"
 import type { NodeStore } from "../db/node-store.ts"
 import type { ArchiveStore } from "../db/archive-store.ts"
 import type { ArtifactStore } from "../db/artifact-store.ts"
-import type { SearchEngine } from "../search/search.ts"
 import type { NodeManager, ProcessManager, StorageQuotaManager } from "@chainofclaw/node"
 import type { BackupManager, RecoveryManager, CarrierManager } from "@chainofclaw/soul"
 import type { BootstrapManager } from "../services/bootstrap-manager.ts"
-import type { PluginLogger } from "../types.ts"
+import type { MemoryServices } from "./bootstrap-services.ts"
 import { registerMemCommands } from "./commands/mem.ts"
 import { registerNodeCommands } from "@chainofclaw/node"
 import {
@@ -36,18 +30,11 @@ import { registerToolsCommand } from "./commands/tools.ts"
 import { registerDbCommands } from "./commands/db.ts"
 import { registerUninstallCommand } from "./commands/uninstall.ts"
 
-export interface CliServices {
-  config: ClawMemConfig
-  logger: PluginLogger
-  db: Database
-  dbPath: string
-
-  // Memory layer
-  observationStore: ObservationStore
-  summaryStore: SummaryStore
-  sessionStore: SessionStore
-  searchEngine: SearchEngine
-
+/**
+ * Full service graph for the standalone `claw-mem` bin. Extends
+ * `MemoryServices` with the node + backup + bootstrap managers.
+ */
+export interface CliServices extends MemoryServices {
   // Node layer
   nodeStore: NodeStore
   archiveStore: ArchiveStore

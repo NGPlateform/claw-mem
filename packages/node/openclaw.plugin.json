@@ -1,0 +1,53 @@
+{
+  "id": "coc-node",
+  "name": "COC Node Lifecycle",
+  "version": "1.1.0",
+  "description": "OpenClaw skill: COC blockchain node lifecycle (install, start, stop, status) for validator, fullnode, archive, gateway, and dev nodes.",
+  "main": "dist/index.js",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "enabled": { "type": "boolean", "default": true },
+      "dataDir": { "type": "string", "default": "" },
+      "node": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean", "default": true },
+          "runtimeDir": { "type": "string" },
+          "defaultType": {
+            "type": "string",
+            "enum": ["validator", "fullnode", "archive", "gateway", "dev"],
+            "default": "dev"
+          },
+          "defaultNetwork": {
+            "type": "string",
+            "enum": ["testnet", "mainnet", "local", "custom"],
+            "default": "local"
+          },
+          "port": { "type": "number", "default": 18780 },
+          "bind": { "type": "string", "default": "127.0.0.1" },
+          "autoAdvertiseStorage": { "type": "boolean", "default": true }
+        }
+      },
+      "storage": {
+        "type": "object",
+        "properties": {
+          "quotaBytes": { "type": "number", "default": 268435456 },
+          "advertisedBytes": { "type": "number", "default": 268435456 },
+          "reservedBytes": { "type": "number", "default": 268435456 },
+          "enforceQuota": { "type": "boolean", "default": true },
+          "reserveFile": { "type": "string", "default": ".quota.reserved" }
+        }
+      },
+      "bootstrap": {
+        "type": "object",
+        "properties": {
+          "cocRepoPath": { "type": "string" }
+        }
+      }
+    }
+  },
+  "requirements": {
+    "node": ">=22.0.0"
+  }
+}

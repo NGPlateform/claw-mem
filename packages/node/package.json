@@ -1,6 +1,6 @@
 {
   "name": "@chainofclaw/node",
-  "version": "1.1.1",
+  "version": "1.1.3",
   "description": "OpenClaw skill: COC blockchain node lifecycle — install / start / stop / status for validator, fullnode, archive, gateway, dev nodes.",
   "type": "module",
   "main": "./dist/index.js",

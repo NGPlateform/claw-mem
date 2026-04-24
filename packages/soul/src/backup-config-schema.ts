@@ -2,8 +2,8 @@ import { z } from "zod"
 
 export const CocBackupConfigSchema = z.object({
   enabled: z.boolean().default(true).describe("Enable COC soul backup extension"),
-  rpcUrl: z.string().default("http://127.0.0.1:18780").describe("COC chain RPC URL"),
-  ipfsUrl: z.string().default("http://127.0.0.1:18790").describe("COC IPFS API URL"),
+  rpcUrl: z.string().default("").describe("COC chain RPC URL"),
+  ipfsUrl: z.string().default("").describe("COC IPFS API URL"),
   contractAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/, "Must be a valid Ethereum address (0x + 40 hex chars)").describe("SoulRegistry contract address"),
   rpcAuthToken: z.string().optional().describe("Bearer token for authenticated RPC (must match node's rpcAuthToken)"),
   privateKey: z.string().regex(/^(0x)?[0-9a-fA-F]{64}$/, "Must be a valid hex private key (64 hex chars)").describe("Ethereum private key for signing"),

@@ -1,10 +1,10 @@
 // `claw-mem guardian ...` — guardian-side resurrection + guardian set management.
 
 import type { Command } from "commander"
-import type { CliServices } from "../register-all.ts"
+import type { SoulCommandDeps } from "./deps.ts"
 
-export function registerGuardianCommands(program: Command, services: CliServices): void {
-  const { backupManager, logger } = services
+export function registerGuardianCommands(program: Command, deps: SoulCommandDeps): void {
+  const { backupManager, logger } = deps
   const guardian = program.command("guardian").description("Guardian-side resurrection operations + guardian set management")
 
   guardian

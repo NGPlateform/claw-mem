@@ -3,8 +3,8 @@ import assert from "node:assert/strict"
 import { mkdtemp, mkdir, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import { executeResurrectionFlow } from "../../src/services/carrier/resurrection-flow.ts"
-import type { ResurrectionContext } from "../../src/services/carrier/resurrection-flow.ts"
+import { executeResurrectionFlow } from "../../src/carrier/resurrection-flow.ts"
+import type { ResurrectionContext } from "../../src/carrier/resurrection-flow.ts"
 
 const AGENT_ID = "0x" + "aa".repeat(32)
 const CARRIER_ID = "0x" + "bb".repeat(32)

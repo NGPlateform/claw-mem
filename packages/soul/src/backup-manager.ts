@@ -3,12 +3,11 @@
 //
 // Owns: SoulClient + IpfsClient + BackupScheduler. Lazily constructed: nothing
 // touches the chain or IPFS unless a backup-related call is made. Records each
-// successful backup into ArchiveStore so PR 5+ can list history without
+// successful backup into BackupArchiveRepository so PR 5+ can list history without
 // re-walking IPFS.
 
-import type { BackupConfig } from "../config.ts"
-import type { ArchiveStore } from "../db/archive-store.ts"
-import type { PluginLogger } from "../types.ts"
+import type { BackupArchiveRepository, Logger } from "./types.ts"
+import type { BackupConfig } from "./backup-config-adapter.ts"
 import { SoulClient } from "./soul-client.ts"
 import { IpfsClient } from "./ipfs-client.ts"
 import { DIDClient } from "./did-client.ts"
@@ -23,14 +22,14 @@ import type { CocBackupConfig } from "./backup-config-schema.ts"
 
 export interface BackupManagerOptions {
   config: BackupConfig
-  archiveStore: ArchiveStore
-  logger: PluginLogger
+  archiveStore: BackupArchiveRepository
+  logger: Logger
 }
 
 export class BackupManager {
   private readonly config: BackupConfig
-  private readonly archiveStore: ArchiveStore
-  private readonly logger: PluginLogger
+  private readonly archiveStore: BackupArchiveRepository
+  private readonly logger: Logger
 
   private cocConfig: CocBackupConfig | null = null
   private soul: SoulClient | null = null

@@ -13,7 +13,7 @@ import {
   DEFAULT_CONFIG_PATH,
   patchConfigFile,
   readConfigFile,
-} from "../../services/config-persistence.ts"
+} from "@chainofclaw/soul"
 import { checkCocRepo } from "@chainofclaw/node"
 
 export function registerInitCommand(program: Command, _services: CliServices): void {

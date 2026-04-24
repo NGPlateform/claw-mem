@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, mkdir } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import { keccak256, toUtf8Bytes } from "ethers"
-import { createCidResolver } from "../../src/services/recovery/cid-resolver.ts"
+import { createCidResolver } from "../../src/recovery/cid-resolver.ts"
 
 function cidToBytes32(cid: string): string {
   return keccak256(toUtf8Bytes(cid))

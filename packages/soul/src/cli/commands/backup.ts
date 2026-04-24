@@ -9,24 +9,24 @@ import { Wallet, keccak256, toUtf8Bytes } from "ethers"
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import type { Command } from "commander"
-import type { CliServices } from "../register-all.ts"
+import type { SoulCommandDeps } from "./deps.ts"
 import {
   DEFAULT_CONFIG_PATH,
   patchConfigFile,
   setDotPath,
-} from "../../services/config-persistence.ts"
-import { runInitFlow } from "../../services/lifecycle.ts"
-import { patchBackupState, readBackupState } from "../../services/local-state.ts"
+} from "../../config-persistence.ts"
+import { runInitFlow } from "../../lifecycle.ts"
+import { patchBackupState, readBackupState } from "../../local-state.ts"
 import {
   ZERO_BYTES32,
   deriveDefaultAgentId,
   formatBytes,
   resolveHomePath,
-} from "../../services/backup-utils.ts"
-import type { BackupReceipt, DoctorReport } from "../../services/backup-types.ts"
+} from "../../backup-utils.ts"
+import type { BackupReceipt, DoctorReport } from "../../backup-types.ts"
 
-export function registerBackupCommands(program: Command, services: CliServices): void {
-  const { backupManager, recoveryManager, archiveStore, logger } = services
+export function registerBackupCommands(program: Command, deps: SoulCommandDeps): void {
+  const { backupManager, recoveryManager, archiveStore, logger } = deps
   const backup = program.command("backup").description("Soul backup, restore, and inspection")
 
   // ─── claw-mem backup create [--full] ──────────────────────
@@ -450,29 +450,21 @@ export function registerBackupCommands(program: Command, services: CliServices):
         process.exit(1)
       }
 
-      const { db } = services
-      const agentClause = opts.agent ? "AND agent_id = ?" : ""
-      const agentBind: unknown[] = opts.agent ? [opts.agent] : []
-
-      // Find rows that would be deleted, EXCLUDING the latest N per agent.
-      const candidates = db.connection.prepare(
-        `WITH ranked AS (
-           SELECT id, agent_id, manifest_cid, created_at_epoch, created_at,
-                  ROW_NUMBER() OVER (PARTITION BY agent_id ORDER BY created_at_epoch DESC) AS rn
-           FROM backup_archives
-           ${opts.agent ? "WHERE agent_id = ?" : ""}
-         )
-         SELECT id, manifest_cid, agent_id, created_at FROM ranked
-         WHERE created_at_epoch < ? AND rn > ?`,
-      ).all(...(agentBind as never[]), cutoffEpoch, opts.keepLatest) as Array<{
-        id: number; manifest_cid: string; agent_id: string; created_at: string
-      }>
+      // Preview via the archive repository port; the umbrella SQLite
+      // implementation runs the actual ranked-DELETE query.
+      const preview = deps.archiveStore.prune({
+        cutoffEpoch,
+        keepLatest: opts.keepLatest,
+        agent: opts.agent,
+        dryRun: true,
+      })
+      const candidates = preview.candidates
 
       console.log(`Cutoff:        ${new Date(cutoffEpoch * 1000).toISOString()}`)
       console.log(`Keep latest:   ${opts.keepLatest} per agent`)
       console.log(`Candidates:    ${candidates.length}`)
       for (const c of candidates.slice(0, 10)) {
-        console.log(`  - ${c.created_at}  ${c.manifest_cid.slice(0, 24)}…  (agent ${c.agent_id})`)
+        console.log(`  - ${c.createdAt}  ${c.manifestCid.slice(0, 24)}…  (agent ${c.agentId})`)
       }
       if (candidates.length > 10) console.log(`  ... ${candidates.length - 10} more`)
 
@@ -482,14 +474,13 @@ export function registerBackupCommands(program: Command, services: CliServices):
       }
       if (candidates.length === 0) return
 
-      const ids = candidates.map((c) => c.id)
-      const placeholders = ids.map(() => "?").join(",")
-      db.connection.prepare(`DELETE FROM backup_archives WHERE id IN (${placeholders})`)
-        .run(...(ids as never[]))
-      console.log(`Deleted ${candidates.length} local index entries.`)
+      const result = deps.archiveStore.prune({
+        cutoffEpoch,
+        keepLatest: opts.keepLatest,
+        agent: opts.agent,
+      })
+      console.log(`Deleted ${result.deleted} local index entries.`)
       console.log(`NOTE: this does not remove the underlying IPFS data — unpin via your IPFS pinning service if needed.`)
-      // help suppress unused vars warning
-      void agentClause
     })
 
   // ─── claw-mem backup find-recoverable ────────────────────
@@ -502,8 +493,8 @@ export function registerBackupCommands(program: Command, services: CliServices):
     .option("--json", "Output JSON")
     .action(async (opts: { agent?: string; owner?: string; onChain?: boolean; json?: boolean }) => {
       const local = opts.agent
-        ? services.archiveStore.listByAgent(opts.agent, 100)
-        : services.archiveStore.listAll(100)
+        ? deps.archiveStore.listByAgent(opts.agent, 100)
+        : deps.archiveStore.listAll(100)
 
       // Group by agent and pick latest-per-agent
       const byAgent = new Map<string, typeof local>()
@@ -515,11 +506,11 @@ export function registerBackupCommands(program: Command, services: CliServices):
 
       let onChain: Array<{ agentId: string; cid: string | null; error?: string }> = []
       if (opts.onChain) {
-        if (!services.backupManager.isConfigured()) {
+        if (!deps.backupManager.isConfigured()) {
           console.error("--on-chain requires backup to be configured (`claw-mem backup configure`).")
           process.exit(1)
         }
-        const soul = services.backupManager.getSoulClient()
+        const soul = deps.backupManager.getSoulClient()
         const targets: string[] = []
         if (opts.agent) targets.push(opts.agent)
         else if (opts.owner) {
@@ -586,7 +577,7 @@ export function registerBackupCommands(program: Command, services: CliServices):
     .description("Interactive wizard: set RPC, IPFS, SoulRegistry, DIDRegistry, private key")
     .option("--non-interactive", "Skip prompts; only generate a key if one is missing")
     .action(async (opts: { nonInteractive?: boolean }) => {
-      const current = services.config.backup
+      const current = deps.backupConfig
       if (opts.nonInteractive) {
         if (!current.privateKey) {
           const wallet = Wallet.createRandom()

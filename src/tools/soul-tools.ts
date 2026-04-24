@@ -3,8 +3,7 @@
 
 import type { CliServices } from "../cli/register-all.ts"
 import type { PluginApi } from "../types.ts"
-import { patchBackupState, readBackupState } from "../services/local-state.ts"
-import { resolveHomePath } from "../services/backup-utils.ts"
+import { patchBackupState, readBackupState, resolveHomePath } from "@chainofclaw/soul"
 
 export function registerSoulTools(api: PluginApi, services: CliServices): void {
   const { backupManager, recoveryManager, carrierManager, logger } = services

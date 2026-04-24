@@ -1,10 +1,10 @@
 // `claw-mem recovery ...` — social recovery (guardian-initiated owner migration).
 
 import type { Command } from "commander"
-import type { CliServices } from "../register-all.ts"
+import type { SoulCommandDeps } from "./deps.ts"
 
-export function registerRecoveryCommands(program: Command, services: CliServices): void {
-  const { backupManager, logger } = services
+export function registerRecoveryCommands(program: Command, deps: SoulCommandDeps): void {
+  const { backupManager, logger } = deps
   const recovery = program.command("recovery").description("Social recovery — guardian-initiated owner migration")
 
   recovery

@@ -1,10 +1,10 @@
 // `claw-mem carrier ...` — carrier daemon registration and request submission.
 
 import type { Command } from "commander"
-import type { CliServices } from "../register-all.ts"
+import type { SoulCommandDeps } from "./deps.ts"
 
-export function registerCarrierCommands(program: Command, services: CliServices): void {
-  const { backupManager, carrierManager, logger } = services
+export function registerCarrierCommands(program: Command, deps: SoulCommandDeps): void {
+  const { backupManager, carrierManager, logger } = deps
   const carrier = program.command("carrier").description("Carrier-mode operations (host souls for offline agents)")
 
   carrier

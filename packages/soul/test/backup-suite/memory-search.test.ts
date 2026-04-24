@@ -13,8 +13,8 @@ try {
   // node:sqlite not available
 }
 
-import { searchMemories } from "../../src/services/recovery/memory-search.ts"
-import type { MemorySearchResult } from "../../src/services/recovery/memory-search.ts"
+import { searchMemories } from "../../src/recovery/memory-search.ts"
+import type { MemorySearchResult } from "../../src/recovery/memory-search.ts"
 
 const skipSqlite = DatabaseSync === null
 

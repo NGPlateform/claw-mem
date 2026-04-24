@@ -37,11 +37,11 @@ import { ContractFactory, JsonRpcProvider, Wallet, parseEther } from "ethers"
 
 import type { ClawMemConfig } from "../config.ts"
 import { resolveContractsDir, resolveCocRoot } from "@chainofclaw/node"
-import { DEFAULT_CONFIG_PATH, patchConfigFile, setDotPath } from "./config-persistence.ts"
+import { DEFAULT_CONFIG_PATH, patchConfigFile, setDotPath } from "@chainofclaw/soul"
 import type { PluginLogger } from "../types.ts"
 import type { NodeManager, ProcessManager, StorageQuotaManager } from "@chainofclaw/node"
 import type { ArtifactStore } from "../db/artifact-store.ts"
-import type { BackupManager } from "./backup-manager.ts"
+import type { BackupManager } from "@chainofclaw/soul"
 
 export interface BootstrapManagerOptions {
   config: ClawMemConfig

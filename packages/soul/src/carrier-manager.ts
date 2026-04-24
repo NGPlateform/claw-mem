@@ -2,8 +2,8 @@
 // like BackupManager: nothing touches the network unless carrier mode is
 // actually enabled in config.backup.carrier.
 
-import type { BackupConfig } from "../config.ts"
-import type { PluginLogger } from "../types.ts"
+import type { BackupConfig } from "./config.ts"
+import type { Logger } from "./types.ts"
 import type { BackupManager } from "./backup-manager.ts"
 import { CarrierDaemon, CarrierDaemonConfigSchema, type AddRequestResult } from "./carrier/carrier-daemon.ts"
 import { createCidResolver } from "./recovery/cid-resolver.ts"
@@ -12,13 +12,13 @@ import { resolveHomePath } from "./backup-utils.ts"
 export interface CarrierManagerOptions {
   config: BackupConfig
   backupManager: BackupManager
-  logger: PluginLogger
+  logger: Logger
 }
 
 export class CarrierManager {
   private readonly config: BackupConfig
   private readonly backupManager: BackupManager
-  private readonly logger: PluginLogger
+  private readonly logger: Logger
   private daemon: CarrierDaemon | null = null
 
   constructor(opts: CarrierManagerOptions) {

@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { mkdtemp, writeFile, mkdir, readFile, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import { snapshotBinaryFile, extractSimpleTar } from "../../src/services/backup/binary-handler.ts"
+import { snapshotBinaryFile, extractSimpleTar } from "../../src/backup/binary-handler.ts"
 
 describe("binary-handler", () => {
   let tempDir: string

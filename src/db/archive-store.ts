@@ -1,6 +1,11 @@
 // Archive storage: backup history (manifest CIDs, sizes, anchoring tx)
 
 import type { Database } from "./database.ts"
+import type {
+  BackupArchivePruneCandidate,
+  BackupArchivePruneOptions,
+  BackupArchivePruneResult,
+} from "@chainofclaw/soul"
 
 export type BackupType = "full" | "incremental"
 
@@ -157,6 +162,48 @@ export class ArchiveStore {
       .prepare("SELECT COUNT(*) as c FROM backup_archives")
       .get() as { c: number }
     return row.c
+  }
+
+  /**
+   * Delete backup archives older than {@link BackupArchivePruneOptions.cutoffEpoch}
+   * while preserving the N most-recent per agent. Used by `claw-mem backup
+   * prune` via the BackupArchiveRepository port in @chainofclaw/soul.
+   */
+  prune(opts: BackupArchivePruneOptions): BackupArchivePruneResult {
+    const agentBind: unknown[] = opts.agent ? [opts.agent] : []
+
+    const rows = this.db.connection
+      .prepare(
+        `WITH ranked AS (
+           SELECT id, agent_id, manifest_cid, created_at_epoch, created_at,
+                  ROW_NUMBER() OVER (PARTITION BY agent_id ORDER BY created_at_epoch DESC) AS rn
+           FROM backup_archives
+           ${opts.agent ? "WHERE agent_id = ?" : ""}
+         )
+         SELECT id, manifest_cid, agent_id, created_at FROM ranked
+         WHERE created_at_epoch < ? AND rn > ?`,
+      )
+      .all(...(agentBind as never[]), opts.cutoffEpoch, opts.keepLatest) as Array<{
+        id: number; manifest_cid: string; agent_id: string; created_at: string
+      }>
+
+    const candidates: BackupArchivePruneCandidate[] = rows.map((r) => ({
+      id: r.id,
+      agentId: r.agent_id,
+      manifestCid: r.manifest_cid,
+      createdAt: r.created_at,
+    }))
+
+    if (opts.dryRun || candidates.length === 0) {
+      return { candidates, deleted: 0 }
+    }
+
+    const ids = candidates.map((c) => c.id)
+    const placeholders = ids.map(() => "?").join(",")
+    const result = this.db.connection
+      .prepare(`DELETE FROM backup_archives WHERE id IN (${placeholders})`)
+      .run(...(ids as never[]))
+    return { candidates, deleted: Number(result.changes) }
   }
 }
 

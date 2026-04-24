@@ -3,9 +3,9 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, it } from "node:test"
 import assert from "node:assert/strict"
-import { BackupScheduler } from "../../src/services/backup/scheduler.ts"
-import { cidToBytes32 } from "../../src/services/backup/anchor.ts"
-import type { CocBackupConfig, SnapshotManifest } from "../../src/services/backup-types.ts"
+import { BackupScheduler } from "../../src/backup/scheduler.ts"
+import { cidToBytes32 } from "../../src/backup/anchor.ts"
+import type { CocBackupConfig, SnapshotManifest } from "../../src/backup-types.ts"
 
 const AGENT_ID = "0x" + "ab".repeat(32)
 

@@ -3,7 +3,7 @@
 
 import type { Command } from "commander"
 import type { CliServices } from "../register-all.ts"
-import { isBackupConfigured } from "../../services/backup-config-adapter.ts"
+import { isBackupConfigured } from "@chainofclaw/soul"
 
 export function registerStatusCommand(program: Command, services: CliServices): void {
   program

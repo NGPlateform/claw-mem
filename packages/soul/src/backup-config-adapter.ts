@@ -6,7 +6,9 @@
 
 import { z } from "zod"
 import { CocBackupConfigSchema, type CocBackupConfig } from "./backup-config-schema.ts"
-import type { BackupConfig } from "../config.ts"
+import type { BackupConfig } from "./config.ts"
+
+export type { BackupConfig } from "./config.ts"
 
 export class BackupConfigError extends Error {}
 

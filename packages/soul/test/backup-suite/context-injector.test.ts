@@ -4,9 +4,9 @@ import { mkdtemp, rm, readFile, writeFile, mkdir } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 
-import { injectRecoveryContext } from "../../src/services/recovery/context-injector.ts"
-import type { RecoveryResult } from "../../src/services/backup-types.ts"
-import type { SemanticSnapshot } from "../../src/services/backup/semantic-snapshot.ts"
+import { injectRecoveryContext } from "../../src/recovery/context-injector.ts"
+import type { RecoveryResult } from "../../src/backup-types.ts"
+import type { SemanticSnapshot } from "../../src/backup/semantic-snapshot.ts"
 
 const mockRecovery: RecoveryResult = {
   filesRestored: 42,

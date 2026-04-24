@@ -15,7 +15,7 @@ import {
   getDotPath,
   setDotPath,
   coerceScalar,
-} from "../src/services/config-persistence.ts"
+} from "@chainofclaw/soul"
 
 const BIN = join(import.meta.dirname, "..", "bin", "claw-mem")
 

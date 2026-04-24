@@ -3,10 +3,10 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, it } from "node:test"
 import assert from "node:assert/strict"
-import { restoreFromManifestCid } from "../../src/services/recovery/state-restorer.ts"
-import { buildManifest } from "../../src/services/backup/manifest-builder.ts"
-import { cidToBytes32 } from "../../src/services/backup/anchor.ts"
-import type { SnapshotManifest } from "../../src/services/backup-types.ts"
+import { restoreFromManifestCid } from "../../src/recovery/state-restorer.ts"
+import { buildManifest } from "../../src/backup/manifest-builder.ts"
+import { cidToBytes32 } from "../../src/backup/anchor.ts"
+import type { SnapshotManifest } from "../../src/backup-types.ts"
 
 const AGENT_ID = "0x" + "ab".repeat(32)
 

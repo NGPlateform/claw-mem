@@ -8,7 +8,7 @@ import type { Command } from "commander"
 
 import type { CliServices } from "../register-all.ts"
 import { checkCocRepo, describeCocRepoCheck } from "@chainofclaw/node"
-import { isBackupConfigured } from "../../services/backup-config-adapter.ts"
+import { isBackupConfigured } from "@chainofclaw/soul"
 import { SCHEMA_VERSION } from "../../db/migrations.ts"
 
 type CheckLevel = "pass" | "warn" | "fail"

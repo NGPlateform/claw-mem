@@ -1,0 +1,18 @@
+#!/bin/sh
+# coc-soul CLI shim — see bin/claw-mem for the matching pattern.
+
+SCRIPT="$0"
+while [ -h "$SCRIPT" ]; do
+  TARGET=$(readlink "$SCRIPT")
+  case "$TARGET" in
+    /*) SCRIPT="$TARGET" ;;
+    *)  SCRIPT="$(dirname "$SCRIPT")/$TARGET" ;;
+  esac
+done
+DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
+
+if [ -f "$DIR/../dist/src/cli/bin.js" ]; then
+  exec node --no-warnings "$DIR/../dist/src/cli/bin.js" "$@"
+else
+  exec node --experimental-strip-types --no-warnings "$DIR/../src/cli/bin.ts" "$@"
+fi

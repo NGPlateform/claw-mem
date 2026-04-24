@@ -14,7 +14,7 @@ import {
   patchConfigFile,
   readConfigFile,
   setDotPath,
-} from "../../services/config-persistence.ts"
+} from "@chainofclaw/soul"
 
 export function registerConfigCommands(program: Command, services: CliServices): void {
   const { config: liveConfig } = services

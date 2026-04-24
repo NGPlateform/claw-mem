@@ -1,6 +1,6 @@
 import { describe, it} from "node:test"
 import assert from "node:assert/strict"
-import { OfflineMonitor } from "../../src/services/carrier/offline-monitor.ts"
+import { OfflineMonitor } from "../../src/carrier/offline-monitor.ts"
 
 function createFakeSoul(offlineAgents: Set<string>) {
   return {

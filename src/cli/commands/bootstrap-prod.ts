@@ -9,7 +9,7 @@ import {
   DEFAULT_CONFIG_PATH,
   patchConfigFile,
   setDotPath,
-} from "../../services/config-persistence.ts"
+} from "@chainofclaw/soul"
 
 export interface ProdBootstrapOptions {
   nonInteractive?: boolean

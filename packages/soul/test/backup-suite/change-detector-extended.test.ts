@@ -3,8 +3,8 @@ import assert from "node:assert/strict"
 import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import { detectChanges } from "../../src/services/backup/change-detector.ts"
-import type { CocBackupConfig } from "../../src/services/backup-config-schema.ts"
+import { detectChanges } from "../../src/backup/change-detector.ts"
+import type { CocBackupConfig } from "../../src/backup-config-schema.ts"
 
 const defaultConfig: CocBackupConfig = {
   enabled: true,

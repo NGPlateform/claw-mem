@@ -3,19 +3,19 @@
   "version": "1.0.7",
   "description": "COC soul layer — on-chain DID, guardian recovery, agent resurrection, soul backup, and carrier operations.",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./src/index.ts",
+      "default": "./dist/src/index.js"
     }
   },
   "bin": {
     "coc-soul": "./bin/coc-soul"
   },
   "scripts": {
-    "test": "node --experimental-strip-types --test test/*.test.ts test/**/*.test.ts",
+    "test": "node --experimental-strip-types --test test/backup-suite/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "rm -rf dist && tsc --project tsconfig.build.json",
     "prepublishOnly": "npm run build"
@@ -34,6 +34,7 @@
   "files": [
     "dist/",
     "bin/",
+    "src/",
     "README.md",
     "LICENSE"
   ]

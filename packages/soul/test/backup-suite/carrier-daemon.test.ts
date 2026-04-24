@@ -1,6 +1,6 @@
 import { describe, it} from "node:test"
 import assert from "node:assert/strict"
-import { CarrierDaemon, CarrierDaemonConfigSchema } from "../../src/services/carrier/carrier-daemon.ts"
+import { CarrierDaemon, CarrierDaemonConfigSchema } from "../../src/carrier/carrier-daemon.ts"
 
 const AGENT_ID = "0x" + "aa".repeat(32)
 

@@ -10,11 +10,11 @@ import { createCidResolver } from "./recovery/cid-resolver.ts"
 import { searchMemories, type MemorySearchResult } from "./recovery/memory-search.ts"
 import { resolveHomePath } from "./backup-utils.ts"
 import type { BackupManager } from "./backup-manager.ts"
-import type { PluginLogger } from "../types.ts"
+import type { Logger } from "./types.ts"
 
 export interface RecoveryManagerOptions {
   backupManager: BackupManager
-  logger: PluginLogger
+  logger: Logger
 }
 
 export interface RestoreParams {
@@ -33,7 +33,7 @@ export interface AutoRestoreParams {
 
 export class RecoveryManager {
   private readonly backupManager: BackupManager
-  private readonly logger: PluginLogger
+  private readonly logger: Logger
 
   constructor(opts: RecoveryManagerOptions) {
     this.backupManager = opts.backupManager

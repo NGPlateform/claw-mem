@@ -14,7 +14,7 @@ import { NodeStore } from "../src/db/node-store.ts"
 import { ArchiveStore } from "../src/db/archive-store.ts"
 import { ArtifactStore } from "../src/db/artifact-store.ts"
 import { NodeManager, ProcessManager, StorageQuotaManager } from "@chainofclaw/node"
-import { BackupManager } from "../src/services/backup-manager.ts"
+import { BackupManager } from "@chainofclaw/soul"
 import { BootstrapManager } from "../src/services/bootstrap-manager.ts"
 import type { PluginLogger } from "../src/types.ts"
 

@@ -2,11 +2,11 @@
 // All commands fail loudly when backup.didRegistryAddress is not set.
 
 import type { Command } from "commander"
-import type { CliServices } from "../register-all.ts"
-import type { DIDClient } from "../../services/did-client.ts"
+import type { DIDClient } from "../../did-client.ts"
+import type { SoulCommandDeps } from "./deps.ts"
 
-export function registerDidCommands(program: Command, services: CliServices): void {
-  const { backupManager, logger } = services
+export function registerDidCommands(program: Command, deps: SoulCommandDeps): void {
+  const { backupManager, logger } = deps
   const did = program.command("did").description("DID identity management (DIDRegistry operations)")
 
   function getDid(): DIDClient {

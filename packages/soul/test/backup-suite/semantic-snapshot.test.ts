@@ -16,7 +16,7 @@ try {
 import {
   captureSemanticSnapshot,
   readSemanticSnapshot,
-} from "../../src/services/backup/semantic-snapshot.ts"
+} from "../../src/backup/semantic-snapshot.ts"
 
 const skipSqlite = DatabaseSync === null
 

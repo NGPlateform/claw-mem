@@ -101,6 +101,7 @@ export const BackupConfigSchema = z.object({
   ipfsUrl: z.string().default(""),
   contractAddress: z.string().default("0x1291Be112d480055DaFd8a610b7d1e203891C274"),
   didRegistryAddress: z.string().default("0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154"),
+  faucetUrl: z.string().default("http://199.192.16.79:3003"),
   rpcAuthToken: z.string().optional(),
   privateKey: z.string().optional(),
   autoBackup: z.boolean().default(true),

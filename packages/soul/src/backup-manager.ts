@@ -20,6 +20,7 @@ import {
 } from "./backup-config-adapter.ts"
 import type { CocBackupConfig } from "./backup-config-schema.ts"
 import { ensureAgentKey } from "./keystore.ts"
+import { requestFaucetDrip } from "./faucet.ts"
 
 export interface BackupManagerOptions {
   config: BackupConfig
@@ -54,6 +55,15 @@ export class BackupManager {
           opts.logger.info(
             `[coc-soul] using auto-generated agent address ${key.address} (override via backup.privateKey)`,
           )
+          // Fire-and-forget faucet drip so the new EOA has gas the moment
+          // the user runs a write command. Failures are logged, never thrown.
+          if (cfg.faucetUrl) {
+            void requestFaucetDrip({
+              url: cfg.faucetUrl,
+              address: key.address,
+              logger: opts.logger,
+            })
+          }
         }
       } catch (err) {
         opts.logger.warn(`[coc-soul] keystore unavailable: ${String(err)}`)

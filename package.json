@@ -1,6 +1,6 @@
 {
   "name": "@chainofclaw/claw-mem",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "OpenClaw super-skill: persistent memory + COC node lifecycle + soul backup",
   "type": "module",
   "main": "dist/index.js",

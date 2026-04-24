@@ -194,7 +194,16 @@ export class NodeManager {
 
     // Replace nodeId with the derived ETH address (matches DHT/P2P identity)
     const wallet = new Wallet(nodeKey)
-    nodeConfig.nodeId = wallet.address.toLowerCase()
+    const nodeAddress = wallet.address.toLowerCase()
+    nodeConfig.nodeId = nodeAddress
+
+    // Align validators with the replaced nodeId for dev/validator types so
+    // chain-engine.expectedProposer() == nodeId (consensus gate never matches
+    // otherwise, and the node never proposes a block). buildNodeConfig wrote
+    // validators=[opts.name] without knowing the wallet address — fix here.
+    if (opts.type === "validator" || opts.type === "dev") {
+      nodeConfig.validators = [nodeAddress]
+    }
 
     const configPath = join(nodeDir, "node-config.json")
     await writeFile(configPath, JSON.stringify(nodeConfig, null, 2))

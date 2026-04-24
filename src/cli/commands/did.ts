@@ -57,7 +57,7 @@ export function registerDidCommands(program: Command, services: CliServices): vo
     .requiredOption("--scope <hash>", "Scope hash (bytes32)")
     .requiredOption("--expires <ts>", "Expiration unix timestamp")
     .option("--parent <id>", "Parent delegation ID (bytes32)", "0x" + "0".repeat(64))
-    .option("--depth <n>", "Delegation depth (0-3)", "1")
+    .option("--depth <n>", "Delegation depth (0-3)", "0")
     .action(async (opts: { delegator: string; delegatee: string; scope: string; expires: string; parent: string; depth: string }) => {
       try {
         const txHash = await getDid().grantDelegation(

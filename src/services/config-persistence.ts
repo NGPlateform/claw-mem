@@ -68,6 +68,10 @@ export function coerceScalar(raw: string): string | number | boolean | null {
   if (raw === "true") return true
   if (raw === "false") return false
   if (raw === "null") return null
-  if (raw !== "" && !isNaN(Number(raw))) return Number(raw)
+  // Only coerce to number for pure decimal / scientific notation. `Number("0xac09…")`
+  // silently parses hex as a lossy float (produced `4.06e+76` for a private key
+  // passed to `config set backup.privateKey`), which then fails schema validation.
+  // Keeping everything else as a string preserves hex keys, CIDs, URLs, etc.
+  if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(raw)) return Number(raw)
   return raw
 }

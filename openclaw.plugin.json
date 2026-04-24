@@ -1,7 +1,7 @@
 {
   "id": "claw-mem",
   "name": "Claw-Mem: Memory + Node + Backup",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "OpenClaw super-skill: persistent semantic memory, COC node lifecycle, and soul backup/recovery — all-in-one.",
   "main": "dist/index.js",
   "configSchema": {

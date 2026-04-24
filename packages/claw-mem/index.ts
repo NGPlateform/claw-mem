@@ -91,6 +91,12 @@ export { SearchEngine } from "./src/search/search.ts"
 export { buildContext } from "./src/context/builder.ts"
 export { extractObservation } from "./src/observer/extractor.ts"
 export { summarizeSession } from "./src/observer/summarizer.ts"
+export {
+  summarizeSessionWithLLM,
+  createSummarizer,
+  type SessionSummarizer,
+  type LLMSummarizerDeps,
+} from "./src/observer/index.ts"
 export { NodeManager, ProcessManager, StorageQuotaManager } from "@chainofclaw/node"
 export { BackupManager, RecoveryManager, SoulClient, IpfsClient } from "@chainofclaw/soul"
 export { bootstrapServices, bootstrapServicesSync, type MemoryServices } from "./src/cli/bootstrap-services.ts"
@@ -113,5 +119,7 @@ export type {
   BackupConfig,
   BootstrapConfig,
   CarrierConfig,
+  SummarizerConfig,
+  SummarizerLLMConfig,
 } from "./src/config.ts"
 export type * from "./src/types.ts"

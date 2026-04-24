@@ -1,6 +1,6 @@
 {
   "name": "@chainofclaw/claw-mem",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "OpenClaw super-skill: persistent memory + COC node lifecycle + soul backup",
   "type": "module",
   "main": "./dist/index.js",
@@ -54,12 +54,15 @@
     "url": "https://github.com/NGPlateform/claw-mem/issues"
   },
   "dependencies": {
-    "@chainofclaw/node": "1.1.0",
-    "@chainofclaw/soul": "1.1.0",
+    "@chainofclaw/node": "1.1.1",
+    "@chainofclaw/soul": "1.1.1",
     "@clack/prompts": "^0.10.0",
     "commander": "^12.1.0",
     "ethers": "^6.16.0",
     "zod": "^3.23.0"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "^0.68.0"
   },
   "engines": {
     "node": ">=22.0.0"

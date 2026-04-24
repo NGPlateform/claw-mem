@@ -1,18 +1,33 @@
 {
   "name": "@chainofclaw/node",
   "version": "1.0.10",
-  "description": "COC blockchain node lifecycle — install / start / stop / status for validator, fullnode, archive, gateway, dev nodes.",
+  "description": "OpenClaw skill: COC blockchain node lifecycle — install / start / stop / status for validator, fullnode, archive, gateway, dev nodes.",
   "type": "module",
-  "main": "./dist/src/index.js",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./index.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./dist/src/index.js"
-    }
+      "types": "./index.ts",
+      "default": "./dist/index.js"
+    },
+    "./openclaw.plugin.json": "./openclaw.plugin.json"
   },
   "bin": {
     "coc-node": "./bin/coc-node"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "service": {
+      "id": "coc-node",
+      "label": "COC Node Lifecycle",
+      "description": "Install, start, stop, and monitor COC blockchain nodes (validator / fullnode / archive / gateway / dev)."
+    },
+    "install": {
+      "npmSpec": "@chainofclaw/node",
+      "localPath": "extensions/coc-node"
+    }
   },
   "scripts": {
     "test": "node --experimental-strip-types --test test/*.test.ts",
@@ -20,7 +35,7 @@
     "build": "rm -rf dist && tsc --project tsconfig.build.json",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["coc", "chainofclaw", "blockchain", "node", "validator"],
+  "keywords": ["coc", "chainofclaw", "blockchain", "node", "validator", "openclaw", "openclaw-skill"],
   "license": "MIT",
   "homepage": "https://github.com/NGPlateform/claw-mem/tree/main/packages/node#readme",
   "repository": {
@@ -44,6 +59,8 @@
     "dist/",
     "bin/",
     "src/",
+    "index.ts",
+    "openclaw.plugin.json",
     "README.md",
     "LICENSE"
   ]

@@ -1,16 +1,22 @@
-// Construct the full claw-mem service graph. Used by both the standalone CLI
+// Construct the claw-mem service graph. Used by both the standalone CLI
 // (`bin/claw-mem`) and by the OpenClaw plugin `activate()` path.
 //
-// `bootstrapServices` is **synchronous** so it can run inside a plugin host
-// that requires `activate()` to register hooks/tools before returning. The
-// async wrapper is retained for API compatibility with callers that used to
-// await it.
+// `bootstrapServicesSync` is **synchronous** so it can run inside a plugin
+// host that requires `activate()` to register hooks/tools before returning.
+// The async wrapper is retained for API compatibility with callers that used
+// to await it.
+//
+// The `memoryOnly` option returns a narrower `MemoryServices` shape — only
+// the memory-layer stores, plus config + logger + db. The heavy node /
+// backup / recovery / carrier stack is skipped entirely. This is what the
+// thin claw-mem OpenClaw plugin uses; the coc-node and coc-soul plugins own
+// those subsystems.
 
 import { mkdirSync, existsSync, readFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { join } from "node:path"
 
-import { ClawMemConfigSchema, resolveDataDir, resolveDbPath } from "../config.ts"
+import { ClawMemConfigSchema, resolveDataDir, resolveDbPath, type ClawMemConfig } from "../config.ts"
 import type { PluginLogger } from "../types.ts"
 import { Database } from "../db/database.ts"
 import { ObservationStore } from "../db/observation-store.ts"
@@ -25,13 +31,38 @@ import { BackupManager, RecoveryManager, CarrierManager } from "@chainofclaw/sou
 import { BootstrapManager } from "../services/bootstrap-manager.ts"
 import type { CliServices } from "./register-all.ts"
 
+/**
+ * Subset returned when `memoryOnly: true`. Contains only the SQLite-backed
+ * memory layer stores plus configuration. No node manager, no backup stack.
+ */
+export interface MemoryServices {
+  config: ClawMemConfig
+  logger: PluginLogger
+  db: Database
+  dbPath: string
+  dataDir: string
+  observationStore: ObservationStore
+  summaryStore: SummaryStore
+  sessionStore: SessionStore
+  searchEngine: SearchEngine
+}
+
 export interface BootstrapServicesOptions {
   configPath?: string
   configOverride?: Record<string, unknown>
   logger?: PluginLogger
+  /**
+   * When true, skip constructing the node / backup / recovery / carrier
+   * managers and return a narrower `MemoryServices` object. Used by the
+   * thin claw-mem OpenClaw plugin. Defaults to false.
+   */
+  memoryOnly?: boolean
 }
 
-export function bootstrapServicesSync(opts: BootstrapServicesOptions = {}): CliServices {
+export function bootstrapServicesSync(opts: BootstrapServicesOptions & { memoryOnly: true }): MemoryServices
+export function bootstrapServicesSync(opts?: BootstrapServicesOptions & { memoryOnly?: false }): CliServices
+export function bootstrapServicesSync(opts?: BootstrapServicesOptions): CliServices | MemoryServices
+export function bootstrapServicesSync(opts: BootstrapServicesOptions = {}): CliServices | MemoryServices {
   const logger = opts.logger ?? createConsoleLogger()
   const diskConfig = loadConfigFileSync(opts.configPath)
   // Deep-merge so OpenClaw's pluginConfig (passed via configOverride) can layer
@@ -54,6 +85,22 @@ export function bootstrapServicesSync(opts: BootstrapServicesOptions = {}): CliS
   const summaryStore = new SummaryStore(db)
   const sessionStore = new SessionStore(db)
   const searchEngine = new SearchEngine(db)
+
+  if (opts.memoryOnly) {
+    const memOnly: MemoryServices = {
+      config,
+      logger,
+      db,
+      dbPath,
+      dataDir,
+      observationStore,
+      summaryStore,
+      sessionStore,
+      searchEngine,
+    }
+    return memOnly
+  }
+
   const nodeStore = new NodeStore(db)
   const archiveStore = new ArchiveStore(db)
   const artifactStore = new ArtifactStore(db)
@@ -105,6 +152,7 @@ export function bootstrapServicesSync(opts: BootstrapServicesOptions = {}): CliS
     logger,
     db,
     dbPath,
+    dataDir,
     observationStore,
     summaryStore,
     sessionStore,
@@ -123,8 +171,11 @@ export function bootstrapServicesSync(opts: BootstrapServicesOptions = {}): CliS
 }
 
 /** Async wrapper for legacy callers. Prefer `bootstrapServicesSync`. */
+export async function bootstrapServices(opts: BootstrapServicesOptions & { memoryOnly: true }): Promise<MemoryServices>
+export async function bootstrapServices(opts?: BootstrapServicesOptions & { memoryOnly?: false }): Promise<CliServices>
+export async function bootstrapServices(opts?: BootstrapServicesOptions): Promise<CliServices | MemoryServices>
 // eslint-disable-next-line @typescript-eslint/require-await
-export async function bootstrapServices(opts: BootstrapServicesOptions = {}): Promise<CliServices> {
+export async function bootstrapServices(opts: BootstrapServicesOptions = {}): Promise<CliServices | MemoryServices> {
   return bootstrapServicesSync(opts)
 }
 

@@ -2,11 +2,28 @@
 // Logic mirrors the original tools registered in index.ts so the agent surface
 // is unchanged while index.ts becomes a thin assembly layer.
 
-import type { CliServices } from "../cli/register-all.ts"
+import type { ClawMemConfig } from "../config.ts"
+import type { Database } from "../db/database.ts"
+import type { ObservationStore } from "../db/observation-store.ts"
+import type { SearchEngine } from "../search/search.ts"
 import type { PluginApi } from "../types.ts"
 
-export function registerMemTools(api: PluginApi, services: CliServices): void {
-  const { searchEngine, observationStore, db, dbPath, config } = services
+/**
+ * Dependencies needed to register memory-only tools.
+ *
+ * Intentionally narrow so the thin claw-mem plugin can wire these up without
+ * constructing NodeManager / BackupManager / RecoveryManager / CarrierManager.
+ */
+export interface MemToolsDeps {
+  searchEngine: SearchEngine
+  observationStore: ObservationStore
+  db: Database
+  dbPath: string
+  config: ClawMemConfig
+}
+
+export function registerMemTools(api: PluginApi, deps: MemToolsDeps): void {
+  const { searchEngine, observationStore, db, dbPath, config } = deps
 
   api.registerTool({
     name: "mem-search",

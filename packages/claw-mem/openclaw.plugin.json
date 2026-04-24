@@ -1,8 +1,8 @@
 {
   "id": "claw-mem",
-  "name": "Claw-Mem: Memory + Node + Backup",
+  "name": "Claw-Mem: Persistent Memory",
   "version": "1.0.10",
-  "description": "OpenClaw super-skill: persistent semantic memory, COC node lifecycle, and soul backup/recovery — all-in-one.",
+  "description": "OpenClaw skill: persistent semantic memory (observation capture, summaries, context injection). COC node lifecycle and soul backup moved to the @chainofclaw/node and @chainofclaw/soul sibling skills.",
   "main": "dist/index.js",
   "configSchema": {
     "type": "object",
@@ -18,51 +18,6 @@
         "items": { "type": "string" },
         "default": ["TodoWrite", "AskUserQuestion", "Skill"]
       },
-      "storage": {
-        "type": "object",
-        "properties": {
-          "quotaBytes": { "type": "number", "default": 268435456 },
-          "advertisedBytes": { "type": "number", "default": 268435456 },
-          "reservedBytes": { "type": "number", "default": 268435456 },
-          "enforceQuota": { "type": "boolean", "default": true },
-          "reserveFile": { "type": "string", "default": ".quota.reserved" }
-        }
-      },
-      "node": {
-        "type": "object",
-        "properties": {
-          "enabled": { "type": "boolean", "default": true },
-          "runtimeDir": { "type": "string" },
-          "defaultType": {
-            "type": "string",
-            "enum": ["validator", "fullnode", "archive", "gateway", "dev"],
-            "default": "dev"
-          },
-          "defaultNetwork": {
-            "type": "string",
-            "enum": ["testnet", "mainnet", "local", "custom"],
-            "default": "local"
-          },
-          "port": { "type": "number", "default": 18780 },
-          "bind": { "type": "string", "default": "127.0.0.1" },
-          "autoAdvertiseStorage": { "type": "boolean", "default": true }
-        }
-      },
-      "backup": {
-        "type": "object",
-        "properties": {
-          "enabled": { "type": "boolean", "default": true },
-          "rpcUrl": { "type": "string", "default": "http://127.0.0.1:18780" },
-          "ipfsUrl": { "type": "string", "default": "http://127.0.0.1:5001" },
-          "contractAddress": { "type": "string" },
-          "didRegistryAddress": { "type": "string" },
-          "privateKey": { "type": "string" },
-          "autoBackup": { "type": "boolean", "default": true },
-          "autoBackupIntervalMs": { "type": "number", "default": 3600000 },
-          "encryptMemory": { "type": "boolean", "default": false },
-          "backupOnSessionEnd": { "type": "boolean", "default": true }
-        }
-      },
       "bootstrap": {
         "type": "object",
         "properties": {
@@ -77,7 +32,6 @@
     }
   },
   "requirements": {
-    "node": ">=22.0.0",
-    "minStorageBytes": 268435456
+    "node": ">=22.0.0"
   }
 }

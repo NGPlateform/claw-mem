@@ -14,7 +14,6 @@ export class BackupConfigError extends Error {}
 
 const BACKUP_LIFECYCLE_KEYS = [
   "rpcUrl",
-  "ipfsUrl",
   "contractAddress",
   "privateKey",
 ] as const
@@ -42,16 +41,9 @@ export function buildCocBackupConfig(
     if (missing.length > 0) {
       throw new BackupConfigError(
         `Backup not configured. Missing required fields: ${missing.join(", ")}.\n\n` +
-          `Defaults already supplied:\n` +
-          `  rpcUrl   ${config.rpcUrl} (COC testnet by default; override for mainnet/local)\n` +
-          `  ipfsUrl  ${config.ipfsUrl} (run \`ipfs daemon\` locally, or set a public gateway)\n\n` +
-          `You still need to provide:\n` +
-          `  contractAddress     deployed SoulRegistry address on the target network\n` +
-          `  didRegistryAddress  deployed DIDRegistry address on the target network\n` +
-          `  privateKey          hex EOA key with funds on the target network (chmod 600 the config file)\n\n` +
-          `Set them via:\n` +
-          `  claw-mem backup configure                      (interactive)\n` +
-          `  claw-mem config set backup.<field> <value>     (one at a time)`,
+          `Run \`claw-mem backup configure\` (interactive) or \`claw-mem config set backup.<field> <value>\` to fix.\n` +
+          `Hint: rpcUrl + contract addresses default to the COC testnet; privateKey is auto-generated to ` +
+          `~/.claw-mem/keys/agent.key on first use. ipfsUrl is only required for backup create / restore.`,
       )
     }
   }

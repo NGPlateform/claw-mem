@@ -52,9 +52,9 @@ export const BackupConfigSchema = z.object({
   /** Source directory to back up (the agent's home). Defaults to ~/.openclaw. */
   sourceDir: z.string().default("~/.openclaw"),
   rpcUrl: z.string().default("http://199.192.16.79:28780"),
-  ipfsUrl: z.string().default("http://127.0.0.1:5001"),
-  contractAddress: z.string().optional(),
-  didRegistryAddress: z.string().optional(),
+  ipfsUrl: z.string().default("").describe("IPFS HTTP API. Empty by default — only required for backup create / restore. Set to your local IPFS daemon (e.g. http://127.0.0.1:5001) or a public gateway."),
+  contractAddress: z.string().default("0x1291Be112d480055DaFd8a610b7d1e203891C274").describe("SoulRegistry address. Default = COC testnet deployment; override for mainnet/custom."),
+  didRegistryAddress: z.string().default("0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154").describe("DIDRegistry address. Default = COC testnet deployment; override for mainnet/custom."),
   rpcAuthToken: z.string().optional(),
   privateKey: z.string().optional(),
   autoBackup: z.boolean().default(true),

@@ -27,12 +27,18 @@ export interface BackupManagerOptions {
   archiveStore: BackupArchiveRepository
   logger: Logger
   /**
-   * If `config.privateKey` is empty, auto-create a local EOA in
-   * ~/.claw-mem/keys/agent.key and use that. Default: true.
-   * Set false to opt out (e.g. during tests, or when integrating with
-   * an external signer).
+   * If `config.privateKey` is empty, auto-create a local EOA via the
+   * keystore. Default: true. Set false to opt out (e.g. during tests, or
+   * when integrating with an external signer).
    */
   autoGenerateKey?: boolean
+  /**
+   * Override the keystore file path. Useful in sandboxed runtimes where
+   * the default ~/.claw-mem/keys/agent.key location isn't writable.
+   * Falls back to COC_SOUL_KEYSTORE_PATH env var, then writability probe,
+   * then os.tmpdir() as last resort.
+   */
+  keystorePath?: string
 }
 
 export class BackupManager {
@@ -49,7 +55,7 @@ export class BackupManager {
     let cfg = opts.config
     if (!cfg.privateKey && opts.autoGenerateKey !== false) {
       try {
-        const key = ensureAgentKey({ logger: opts.logger })
+        const key = ensureAgentKey({ logger: opts.logger, keyPath: opts.keystorePath })
         cfg = { ...cfg, privateKey: key.privateKey }
         if (key.generated) {
           opts.logger.info(

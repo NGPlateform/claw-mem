@@ -1,56 +1,16 @@
 {
-  "name": "@chainofclaw/claw-mem",
+  "name": "chainofclaw-monorepo",
   "version": "1.0.7",
-  "description": "OpenClaw super-skill: persistent memory + COC node lifecycle + soul backup",
+  "private": true,
+  "description": "Monorepo root for @chainofclaw/node + @chainofclaw/soul + @chainofclaw/claw-mem (umbrella).",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
-  "bin": {
-    "claw-mem": "./bin/claw-mem"
-  },
-  "openclaw": {
-    "extensions": [
-      "./dist/index.js"
-    ],
-    "service": {
-      "id": "claw-mem",
-      "label": "Claw-Mem: Memory + Node + Backup",
-      "description": "Captures structured observations from agent sessions, runs COC nodes, and (PR 4) backs up agent souls"
-    },
-    "install": {
-      "npmSpec": "@chainofclaw/claw-mem",
-      "localPath": "extensions/claw-mem"
-    }
-  },
-  "scripts": {
-    "test": "node --experimental-strip-types --test test/*.test.ts test/backup-suite/*.test.ts",
-    "test:watch": "node --experimental-strip-types --test --watch test/*.test.ts test/backup-suite/*.test.ts",
-    "typecheck": "tsc --noEmit",
-    "build": "rm -rf dist && tsc --project tsconfig.build.json",
-    "prepublishOnly": "npm run build",
-    "claw-mem": "node --experimental-strip-types src/cli/bin.ts"
-  },
-  "keywords": [
-    "openclaw",
-    "memory",
-    "ai-agent",
-    "semantic-memory",
-    "coc",
-    "blockchain"
+  "workspaces": [
+    "packages/*"
   ],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "@clack/prompts": "^0.10.0",
-    "commander": "^12.1.0",
-    "ethers": "^6.16.0",
-    "zod": "^3.23.0"
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
@@ -58,12 +18,5 @@
   },
   "engines": {
     "node": ">=22.0.0"
-  },
-  "files": [
-    "dist/",
-    "bin/",
-    "openclaw.plugin.json",
-    "README.md",
-    "LICENSE"
-  ]
+  }
 }

@@ -1,0 +1,41 @@
+{
+  "name": "@chainofclaw/node",
+  "version": "1.0.7",
+  "description": "COC blockchain node lifecycle — install / start / stop / status for validator, fullnode, archive, gateway, dev nodes.",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "bin": {
+    "coc-node": "./bin/coc-node"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "rm -rf dist && tsc --project tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["coc", "chainofclaw", "blockchain", "node", "validator"],
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.10.0",
+    "commander": "^12.1.0",
+    "ethers": "^6.16.0",
+    "zod": "^3.23.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "files": [
+    "dist/",
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ]
+}

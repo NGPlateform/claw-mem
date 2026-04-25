@@ -49,7 +49,6 @@ export {
   resolveWritableDataDir,
   isPathWritable,
   DEFAULT_DATA_DIR,
-  FALLBACK_DATA_DIR,
   type ResolveDataDirOptions,
 } from "./writable-dir.ts"
 

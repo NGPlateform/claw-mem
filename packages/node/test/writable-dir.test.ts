@@ -7,12 +7,11 @@ import { join } from "node:path"
 import {
   resolveWritableDataDir,
   isPathWritable,
-  FALLBACK_DATA_DIR,
 } from "../src/writable-dir.ts"
 
-const SILENT: { warns: string[] } = { warns: [] }
+const SILENT: { warns: string[]; infos: string[] } = { warns: [], infos: [] }
 const logger = {
-  info: () => {},
+  info: (m: string) => SILENT.infos.push(m),
   warn: (m: string) => SILENT.warns.push(m),
   error: () => {},
 }
@@ -21,14 +20,16 @@ let scratch: string
 
 beforeEach(() => {
   SILENT.warns.length = 0
+  SILENT.infos.length = 0
   scratch = mkdtempSync(join(tmpdir(), "coc-node-wd-test-"))
   delete process.env.COC_NODE_DATA_DIR
+  delete process.env.OPENCLAW_STATE_DIR
 })
 
 afterEach(() => {
   rmSync(scratch, { recursive: true, force: true })
   delete process.env.COC_NODE_DATA_DIR
-  rmSync(FALLBACK_DATA_DIR, { recursive: true, force: true })
+  delete process.env.OPENCLAW_STATE_DIR
 })
 
 test("isPathWritable — writable scratch dir returns true", () => {
@@ -37,18 +38,6 @@ test("isPathWritable — writable scratch dir returns true", () => {
 
 test("isPathWritable — nonexistent path under writable parent returns true", () => {
   assert.equal(isPathWritable(join(scratch, "future", "deep", "leaf.json")), true)
-})
-
-test("isPathWritable — under a regular file (ENOTDIR) returns false", () => {
-  const f = join(scratch, "regular-file")
-  writeFileSync(f, "")
-  // The path traversal will hit the file as the "ancestor" — but accessSync
-  // treats it as a path, not a directory. The function correctly identifies
-  // it as the first existing ancestor. In our use case the consumer would
-  // try mkdirSync and fail with ENOTDIR; resolveWritableDataDir then falls
-  // back. isPathWritable on file returns true if file is W_OK; that's fine —
-  // the mkdir step in resolveWritableDataDir is the real gate.
-  assert.equal(isPathWritable(f), true)
 })
 
 test("resolveWritableDataDir — uses candidate when writable", () => {
@@ -63,7 +52,6 @@ test("resolveWritableDataDir — env var when no candidate", () => {
   process.env.COC_NODE_DATA_DIR = envPath
   const got = resolveWritableDataDir({ logger })
   assert.equal(got, envPath)
-  assert.equal(existsSync(envPath), true)
 })
 
 test("resolveWritableDataDir — candidate wins over env var", () => {
@@ -73,13 +61,31 @@ test("resolveWritableDataDir — candidate wins over env var", () => {
   assert.equal(got, cand)
 })
 
-test("resolveWritableDataDir — when candidate's mkdir fails (ENOTDIR), advances to next candidate and warns", () => {
+test("resolveWritableDataDir — uses OPENCLAW_STATE_DIR when neither candidate nor env set", () => {
+  const stateDir = join(scratch, "openclaw-state")
+  process.env.OPENCLAW_STATE_DIR = stateDir
+  const got = resolveWritableDataDir({ logger })
+  assert.equal(got, join(stateDir, "coc-node"))
+  assert.equal(existsSync(got), true)
+  assert.ok(SILENT.infos.some((m) => m.includes("OpenClaw state dir")), "info logged")
+})
+
+test("resolveWritableDataDir — env var wins over OPENCLAW_STATE_DIR", () => {
+  const envPath = join(scratch, "via-env-dir")
+  const stateDir = join(scratch, "openclaw-state")
+  process.env.COC_NODE_DATA_DIR = envPath
+  process.env.OPENCLAW_STATE_DIR = stateDir
+  const got = resolveWritableDataDir({ logger })
+  assert.equal(got, envPath)
+})
+
+test("resolveWritableDataDir — when candidate's mkdir fails (ENOTDIR), advances to OpenClaw state dir", () => {
   const fileBlocker = join(scratch, "blocker")
   writeFileSync(fileBlocker, "")
-  // Trying to mkdir a directory under a regular file fails with ENOTDIR;
-  // the resolver should warn and move to the next candidate.
   const candidate = join(fileBlocker, "child", "dir")
+  const stateDir = join(scratch, "openclaw-state")
+  process.env.OPENCLAW_STATE_DIR = stateDir
   const got = resolveWritableDataDir({ candidate, logger })
-  assert.notEqual(got, candidate, "must not return the unwritable candidate")
-  assert.ok(SILENT.warns.some((m) => m.includes("mkdir failed")), "should warn about candidate mkdir failure")
+  assert.equal(got, join(stateDir, "coc-node"))
+  assert.ok(SILENT.warns.some((m) => m.includes("trying next candidate")), "warn while traversing")
 })

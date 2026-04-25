@@ -129,9 +129,22 @@ export const SummarizerLLMConfigSchema = z.object({
   fallbackOnError: z.boolean().default(true).describe("Fall back to heuristic summary on LLM failure"),
 })
 
+// OpenClaw mode reuses the host's already-configured inference provider via
+// `openclaw infer model run --json`. No API key needs to live in claw-mem
+// config — auth follows the user's OpenClaw agent profile.
+export const SummarizerOpenClawConfigSchema = z.object({
+  bin: z.string().default("openclaw").describe("Path to openclaw CLI binary"),
+  model: z.string().optional().describe("Model override (provider/model). Empty = let OpenClaw pick the default."),
+  timeoutMs: z.number().int().min(1000).default(60_000),
+  fallbackOnError: z.boolean().default(true).describe("Fall back to heuristic summary on spawn / parse failure"),
+  forceLocal: z.boolean().default(false).describe("Pass --local to openclaw infer model run"),
+  forceGateway: z.boolean().default(false).describe("Pass --gateway to openclaw infer model run"),
+})
+
 export const SummarizerConfigSchema = z.object({
-  mode: z.enum(["heuristic", "llm"]).default("heuristic"),
+  mode: z.enum(["heuristic", "llm", "openclaw"]).default("heuristic"),
   llm: SummarizerLLMConfigSchema.default({}),
+  openclaw: SummarizerOpenClawConfigSchema.default({}),
 })
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -183,6 +196,7 @@ export type BootstrapConfig = z.infer<typeof BootstrapConfigSchema>
 export type CarrierConfig = z.infer<typeof CarrierConfigSchema>
 export type SummarizerConfig = z.infer<typeof SummarizerConfigSchema>
 export type SummarizerLLMConfig = z.infer<typeof SummarizerLLMConfigSchema>
+export type SummarizerOpenClawConfig = z.infer<typeof SummarizerOpenClawConfigSchema>
 
 // ──────────────────────────────────────────────────────────────────────────
 // Path resolvers

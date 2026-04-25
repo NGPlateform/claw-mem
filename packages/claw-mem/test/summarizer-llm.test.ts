@@ -1,9 +1,17 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 
-import { summarizeSessionWithLLM, createSummarizer } from "../src/observer/index.ts"
-import type { SummarizerLLMConfig } from "../src/config.ts"
+import { summarizeSessionWithLLM, summarizeSessionWithOpenClaw, createSummarizer } from "../src/observer/index.ts"
+import type { SummarizerLLMConfig, SummarizerOpenClawConfig } from "../src/config.ts"
 import type { Observation } from "../src/types.ts"
+
+const OPENCLAW_STUB: SummarizerOpenClawConfig = {
+  bin: "openclaw",
+  timeoutMs: 30000,
+  fallbackOnError: true,
+  forceLocal: false,
+  forceGateway: false,
+}
 
 const OBS: Observation[] = [
   {
@@ -140,6 +148,7 @@ test("createSummarizer — heuristic mode ignores llm config", async () => {
   const summarizer = createSummarizer({
     mode: "heuristic",
     llm: BASE_CONFIG,
+    openclaw: OPENCLAW_STUB,
   })
   const summary = await summarizer("s1", "a1", OBS, "hi")
   assert.equal(summary.investigated, "found an indexer bug")
@@ -150,6 +159,7 @@ test("createSummarizer — llm mode uses injected dep", async () => {
     {
       mode: "llm",
       llm: BASE_CONFIG,
+      openclaw: OPENCLAW_STUB,
     },
     {
       llmDeps: {
@@ -167,6 +177,63 @@ test("createSummarizer — llm mode uses injected dep", async () => {
   )
   const summary = await summarizer("s1", "a1", OBS, undefined)
   assert.equal(summary.investigated, "via LLM")
+})
+
+test("openclaw summarizer — happy path parses JSON returned by openclaw infer", async () => {
+  const summary = await summarizeSessionWithOpenClaw("s1", "a1", OBS, "fix indexer", OPENCLAW_STUB, {
+    runOpenClaw: async () =>
+      JSON.stringify({
+        investigated: "indexer rebuild path",
+        learned: "INSERT OR REPLACE handles vacuum race",
+        completed: "patched migrations.ts",
+        nextSteps: null,
+        notes: null,
+      }),
+  })
+  assert.equal(summary.investigated, "indexer rebuild path")
+  assert.equal(summary.learned, "INSERT OR REPLACE handles vacuum race")
+  assert.equal(summary.completed, "patched migrations.ts")
+  assert.equal(summary.observationCount, 2)
+})
+
+test("openclaw summarizer — spawn failure falls back to heuristic", async () => {
+  const summary = await summarizeSessionWithOpenClaw("s1", "a1", OBS, undefined, OPENCLAW_STUB, {
+    runOpenClaw: async () => {
+      throw new Error("openclaw not on PATH")
+    },
+  })
+  assert.equal(summary.investigated, "found an indexer bug")
+})
+
+test("openclaw summarizer — malformed JSON falls back to heuristic", async () => {
+  const summary = await summarizeSessionWithOpenClaw("s1", "a1", OBS, undefined, OPENCLAW_STUB, {
+    runOpenClaw: async () => "not even close to JSON",
+  })
+  assert.equal(summary.investigated, "found an indexer bug")
+})
+
+test("createSummarizer — openclaw mode dispatches via injected dep", async () => {
+  const summarizer = createSummarizer(
+    {
+      mode: "openclaw",
+      llm: BASE_CONFIG,
+      openclaw: OPENCLAW_STUB,
+    },
+    {
+      openclawDeps: {
+        runOpenClaw: async () =>
+          JSON.stringify({
+            investigated: "via openclaw",
+            learned: null,
+            completed: null,
+            nextSteps: null,
+            notes: null,
+          }),
+      },
+    },
+  )
+  const summary = await summarizer("s1", "a1", OBS, undefined)
+  assert.equal(summary.investigated, "via openclaw")
 })
 
 test("llm summarizer — prompt caching control flag is sent on system block", async () => {

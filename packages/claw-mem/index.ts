@@ -24,10 +24,25 @@ export function activate(api: PluginApi): void {
   const logger = api.logger
   logger.info("[claw-mem] Loading (memory-only plugin)...")
 
+  // Inside OpenClaw, the user has by definition already configured an
+  // inference provider for their agent. Default the session summarizer to
+  // `openclaw` mode so we get LLM-quality summaries via `openclaw infer model
+  // run` — no claw-mem-specific API key needed. Only activate the default
+  // when the user hasn't picked a mode explicitly.
+  const userPluginConfig = (api.pluginConfig ?? {}) as Record<string, unknown>
+  const userSummarizer = (userPluginConfig.summarizer ?? {}) as Record<string, unknown>
+  const userPickedMode = typeof userSummarizer.mode === "string" && userSummarizer.mode.length > 0
+  const configOverride = userPickedMode
+    ? userPluginConfig
+    : {
+        ...userPluginConfig,
+        summarizer: { ...userSummarizer, mode: "openclaw" },
+      }
+
   let services
   try {
     services = bootstrapServicesSync({
-      configOverride: api.pluginConfig ?? {},
+      configOverride,
       logger,
       memoryOnly: true,
     })

@@ -1,7 +1,7 @@
 ---
 name: claw-mem2db
-description: Give an AI agent persistent semantic memory that survives restarts and compaction. Captures structured observations from tool calls, summarizes sessions (LLM-quality summaries via the OpenClaw inference surface — no extra API key needed), and injects a token-budgeted memory context into the next prompt. Use when the user wants long-lived agent memory, wants to search past observations, wants to export / import memory across machines, wants to see what memory would be injected before the next turn, or is assembling the full COC agent stack (memory + node + soul). Zero-config — `openclaw plugins install @chainofclaw/claw-mem` is sufficient. The plugin opens its SQLite database on first activation, registers session hooks for automatic observation capture, defaults the session summarizer to `openclaw` mode (reuses the host's already-configured inference provider via `openclaw infer model run`), and starts answering `openclaw coc mem search ...` / `mem status` queries immediately. No external dependencies, no chain interaction, no setup required.
-version: 1.1.17
+description: Give an AI agent persistent semantic memory that survives restarts and compaction. Captures structured observations from tool calls, summarizes sessions (LLM-quality summaries via the OpenClaw inference surface — no extra API key needed), and injects a token-budgeted memory context into the next prompt. Use when the user wants long-lived agent memory, wants to search past observations, wants to export / import memory across machines, wants to see what memory would be injected before the next turn, or is assembling the full COC agent stack (memory + node + soul). Zero-config — `openclaw plugins install @chainofclaw/claw-mem` is sufficient. The plugin opens its SQLite database on first activation, registers session hooks for automatic observation capture, defaults the session summarizer to `openclaw` mode (reuses the host's already-configured inference provider via `openclaw infer model run`), and exposes both agent-callable tools (`mem-search`, `mem-status`, `mem-forget`) and CLI subcommands (`openclaw mem ...`). No external dependencies, no chain interaction, no setup required.
+version: 2.0.0
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/claw-mem
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/claw-mem"
-        version: "1.1.17"
+        version: "2.0.0"
         bins:
           - claw-mem
 ---
@@ -27,26 +27,28 @@ The **memory layer** for AI agents on COC.
 > **Naming note.** This ClawHub skill is published as **`claw-mem2db`** because the bare `claw-mem` slug was taken. The underlying artifacts keep the original names:
 >
 > - **npm package:** [`@chainofclaw/claw-mem`](https://www.npmjs.com/package/@chainofclaw/claw-mem)
-> - **CLI binary:** `claw-mem`
-> - **OpenClaw plugin id:** `claw-mem`
+> - **OpenClaw plugin id:** `claw-mem` (auto-loaded after `openclaw plugins install`)
+> - **Standalone CLI binary:** `claw-mem` — *only present if you separately ran `npm i -g @chainofclaw/claw-mem`*. `openclaw plugins install` does **not** put it on your PATH.
 >
-> Only the ClawHub slug differs.
+> Inside OpenClaw, you don't need the standalone bin. Use the agent tools or `openclaw mem …` (covered below).
 
 ## Zero-config
 
-**No setup needed after `openclaw plugins install`.** This skill has no chain interaction, no external services, no required env vars or config — it just opens a local SQLite database on first activation and starts capturing observations from session hooks.
+**No setup needed after `openclaw plugins install @chainofclaw/claw-mem`.** No chain interaction, no external services, no required env vars — the plugin opens a local SQLite database on first activation and starts capturing observations from session hooks.
 
 - **DB path** auto-resolves to a writable directory (1.1.17+). Resolution priority:
   1. `config.dataDir` (per-instance plugin config)
   2. `$CLAW_MEM_DATA_DIR` (operator override)
-  3. `$OPENCLAW_STATE_DIR/claw-mem` (the typical writable path inside OpenClaw's sandbox)
+  3. `$OPENCLAW_STATE_DIR/claw-mem` (OpenClaw's standard sandboxed state-dir)
   4. `~/.claw-mem` (standalone default)
-  The first writable candidate wins. If everything fails, the plugin throws an actionable error pointing here instead of silently picking `/tmp`.
-- **Session hooks** auto-register: every tool call becomes a candidate observation; sessions are summarized on close.
-- **Reads work immediately**: `openclaw coc mem search "..."`, `openclaw coc mem status`, `openclaw coc mem peek` all return data once any observations have been captured.
-- **No required env vars.** `CLAW_MEM_DATA_DIR` is the only knob, and it has a sensible default.
+  The first writable candidate wins. If every candidate fails, the plugin throws an actionable error pointing at these knobs instead of silently picking `/tmp`.
+- **Session hooks auto-register**: every tool call becomes a candidate observation; sessions are summarized on close.
+- **Reads work immediately** once any observations have been captured.
+- **No required env vars.** `CLAW_MEM_DATA_DIR` is the only knob and it has a sensible default.
 
-**Session summaries** default to `openclaw` mode when loaded inside OpenClaw (1.1.17+). Each session-end summary is generated by spawning `openclaw infer model run --json` — that means the summarizer reuses whatever provider the host's OpenClaw agent is already authenticated for. **No claw-mem-specific API key, no extra env var, no model picker**. If the spawn fails (openclaw not on PATH, no provider auth) the summarizer falls back to the heuristic stringifier so observations still get summaries. Override with `summarizer.mode: "heuristic"` to skip LLM calls entirely, or `summarizer.mode: "llm"` + `summarizer.llm.apiKey` (or `ANTHROPIC_API_KEY` env) to talk to Anthropic directly via the bundled SDK.
+**Memory-only mode is expected, not a degradation.** The gateway log line `[claw-mem] Loaded (memory layer only)` is intentional. After the 1.1.0 reshape, the `claw-mem` plugin owns *only* the memory layer; node lifecycle moved to `coc-node` and soul backup/recovery to `coc-soul`. Each plugin registers only its own commands and tools, so installing all three avoids double-registration.
+
+**Session summaries** default to `openclaw` mode when loaded inside OpenClaw (1.1.16+). Each session-end summary is generated by spawning `openclaw infer model run --json` — the summarizer reuses whatever inference provider the host's OpenClaw agent is already authenticated for. **No claw-mem-specific API key, no extra env var, no model picker.** If the spawn fails (openclaw not on PATH, no provider auth) the summarizer falls back to a heuristic stringifier so observations still get summaries. Override with `summarizer.mode: "heuristic"` to skip LLM calls entirely, or `summarizer.mode: "llm"` + `summarizer.llm.apiKey` (or `ANTHROPIC_API_KEY` env) to talk to Anthropic directly via the bundled SDK.
 
 ## Mental model
 
@@ -67,34 +69,47 @@ claw-mem is the **memory third** of the three COC agent-side skills:
 | [coc-soul](https://clawhub.ai/ngplateform/coc-soul) | On-chain identity, backup, recovery, resurrection |
 | **claw-mem** | Local persistent memory, observation capture, session hooks |
 
-Installing all three gives an agent that: runs its own infrastructure, remembers across restarts, and can resurrect on a different device if the current host dies.
+Installing all three gives an agent that runs its own infrastructure, remembers across restarts, and can resurrect on a different device if the current host dies.
 
-## How to invoke
+## How to use it
 
-**Inside OpenClaw (recommended — works automatically after `plugins install`):**
+### From inside an agent loop (preferred)
+
+The plugin registers three agent-callable tools. **Use these — not shell commands — when you're an agent answering the user.** No PATH lookup, no plugin discovery, no shell context required.
+
+| Tool | Parameters | Returns |
+|---|---|---|
+| `mem-search` | `query` (required), `limit?`, `type?` (`discovery` \| `decision` \| `pattern` \| `learning` \| `issue` \| `change` \| `explanation`) | Matching observations from FTS5 index |
+| `mem-status` | none | Stats: observation/summary/session counts, agents, DB path, tokenBudget |
+| `mem-forget` | `sessionId` (required) | Confirms deletion of that session's observations |
+
+Typical agent-side patterns:
+- Before deciding how to approach a familiar-feeling task, call `mem-search` with the topic — past decisions and their rationale will surface.
+- Before claiming "I'm not sure about X," call `mem-search` for X.
+- When the user says "forget that whole session" or you notice a session is polluting search results, call `mem-forget` with the session id from `mem-status`.
+
+### From a human shell (CLI)
+
+When operating from a terminal — install/upgrade scripts, ops checks, manual cleanup — use the OpenClaw CLI namespace. Every memory operation is reachable as `openclaw mem <subcommand>`.
 
 ```bash
-openclaw coc mem search "checkpoint"
-openclaw coc mem status
+openclaw mem search "checkpoint"        # FTS5 keyword/phrase search
+openclaw mem search "..." --type decision --limit 20 --json
+openclaw mem status                     # DB stats; --json for machine output
+openclaw mem peek                       # preview the context that would be injected
+openclaw mem forget <sessionId>         # delete one session's observations
+openclaw mem prune --older-than 90      # drop observations older than 90 days
+openclaw mem prune --before 2025-01-01  # explicit cutoff
+openclaw mem export memory.json         # dump observations to JSON
+openclaw mem import memory.json         # restore from JSON
 ```
 
-**Standalone bin (only if you ran `npm i -g @chainofclaw/claw-mem` separately):**
-
+Sibling subtrees:
 ```bash
-claw-mem mem search "checkpoint"
-claw-mem mem status
+openclaw mem config get|set|list|path       # plugin config (persisted to ~/.claw-mem/config.json)
+openclaw mem db vacuum|migrate-status|size  # SQLite maintenance
+openclaw mem version                        # plugin version
 ```
-
-> `openclaw plugins install` does NOT install the standalone `claw-mem` binary into your PATH. Use `openclaw coc ...` (with the `openclaw` prefix), or install the bin globally via npm if you want the bare command.
-
-## Typical flows
-
-1. **First-time setup** — `claw-mem init` (interactive wizard writes `~/.claw-mem/config.json`); `claw-mem doctor` verifies environment.
-2. **Search past observations** — `claw-mem mem search "..."` with FTS5 syntax; `--json` for machine-readable output.
-3. **Peek at memory injection** — `claw-mem mem peek` shows exactly the context that would be injected on the next prompt.
-4. **Forget a session** — `claw-mem mem forget <sessionId>` removes its observations (useful for noisy sessions that distort search).
-5. **Prune** — `claw-mem mem prune --days 90` drops observations older than N days; `--before <ISO>` for explicit cutoff.
-6. **Export / import** — `claw-mem mem export memory.json` for cross-machine migration; `claw-mem mem import memory.json` on the target.
 
 ## Configuration knobs worth knowing
 
@@ -105,7 +120,19 @@ claw-mem mem status
 - `summarizer.mode` — `openclaw` (default inside OpenClaw — spawns `openclaw infer model run`), `heuristic` (no LLM), or `llm` (direct Anthropic SDK with own apiKey)
 - `summarizer.openclaw.model` — pin a specific provider/model for summary calls (default: let OpenClaw pick); `summarizer.openclaw.timeoutMs` defaults to 60000ms
 
-Edit with `claw-mem config set <path> <value>`.
+Edit with `openclaw mem config set <path> <value>`.
+
+## Verification (post-install smoke test)
+
+After `openclaw plugins install @chainofclaw/claw-mem` (or an in-place upgrade), restart the gateway and run:
+
+```bash
+openclaw mem status              # proves the plugin is loaded; shows 0/0/0 on a fresh DB
+openclaw mem peek                # context that would inject on the next prompt
+openclaw mem db migrate-status       # confirms schema is current; 0 pending migrations
+```
+
+All three should succeed without errors. If `openclaw mem status` says `unknown command 'mem'`, the plugin failed to load — check `plugins.allow` in `~/.openclaw/openclaw.json` and the gateway startup logs for `[claw-mem] Loaded` (or a bootstrap error).
 
 ## When NOT to use this skill
 
@@ -115,9 +142,9 @@ Edit with `claw-mem config set <path> <value>`.
 
 ## Reference
 
-- `references/cli.md` — every `claw-mem` subcommand
-- `references/config.md` — complete config schema (memory + umbrella composition)
+- `references/cli.md` — every `openclaw mem|config|db` subcommand, plus the standalone-bin appendix
+- `references/config.md` — complete config schema
 - `references/observer.md` — how observations are extracted, when hooks fire
-- `references/programmatic-api.md` — using `Database` / `ObservationStore` / `SearchEngine` as library
+- `references/programmatic-api.md` — using `Database` / `ObservationStore` / `SearchEngine` as a library
 
 Source and issue tracker: <https://github.com/NGPlateform/claw-mem>.

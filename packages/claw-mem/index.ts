@@ -13,7 +13,10 @@
 import type { Command } from "commander"
 
 import { bootstrapServicesSync } from "./src/cli/bootstrap-services.ts"
-import { registerMemOnlyCommands } from "./src/cli/register-mem.ts"
+import { registerMemCommands } from "./src/cli/commands/mem.ts"
+import { registerDbCommands } from "./src/cli/commands/db.ts"
+import { registerConfigCommands } from "./src/cli/commands/config.ts"
+import { registerVersionCommand } from "./src/cli/commands/version.ts"
 import { registerHooks } from "./src/hooks/index.ts"
 import { registerMemTools } from "./src/tools/mem-tools.ts"
 import type { PluginApi } from "./src/types.ts"
@@ -66,18 +69,23 @@ export function activate(api: PluginApi): void {
   // registered by their respective plugins.
   registerMemTools(api, services)
 
-  // Register a narrow CLI subtree under `openclaw coc …` — only memory-layer
-  // commands. Node / backup / bootstrap commands live in the coc-node /
-  // coc-soul plugins' registerCli callbacks, or in the standalone bin.
+  // Register a single-root CLI subtree under `openclaw mem …`. After the 1.1.0
+  // reshape this plugin owns ONLY the memory layer, so it gets its own root
+  // (no shared `coc` umbrella). Node / soul plugins each own their own root.
   if (api.registerCli) {
     api.registerCli(
       async ({ program }) => {
-        const coc = (program as Command)
-          .command("coc")
-          .description("claw-mem — persistent memory CLI")
-        registerMemOnlyCommands(coc, services)
+        const mem = (program as Command)
+          .command("mem")
+          .description("claw-mem — persistent semantic memory for agents")
+        // search/status/peek/forget/prune/export/import attach directly to `mem`
+        registerMemCommands(mem, services, { attachAsRoot: true })
+        // db/config/version sit as subgroups: `mem db ...`, `mem config ...`, `mem version`
+        registerDbCommands(mem, services)
+        registerConfigCommands(mem, services)
+        registerVersionCommand(mem, services)
       },
-      { commands: ["coc"] },
+      { commands: ["mem"] },
     )
   }
 
@@ -93,7 +101,7 @@ export function activate(api: PluginApi): void {
 
   logger.info("[claw-mem] Loaded (memory layer only)")
   logger.info(
-    "[claw-mem] CLI is mounted at `openclaw coc ...`. Standalone `claw-mem` " +
+    "[claw-mem] CLI is mounted at `openclaw mem ...`. Standalone `claw-mem` " +
       "binary requires `npm i -g @chainofclaw/claw-mem` separately and is NOT installed by " +
       "`openclaw plugins install`.",
   )

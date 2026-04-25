@@ -7,10 +7,22 @@ import type { Command } from "commander"
 import type { MemoryServices } from "../bootstrap-services.ts"
 import { buildContext } from "../../context/builder.ts"
 
-export function registerMemCommands(program: Command, services: MemoryServices): void {
+// When `attachAsRoot` is true, the search/status/etc subcommands are attached
+// directly to the passed `program` (the parent is expected to be the `mem`
+// command itself, created elsewhere — used by the OpenClaw plugin path so the
+// final shape is `openclaw mem search` rather than `openclaw mem mem search`).
+// When false (default — used by the standalone `claw-mem` bin), this function
+// creates its own `mem` subcommand under `program` and attaches there.
+export function registerMemCommands(
+  program: Command,
+  services: MemoryServices,
+  opts: { attachAsRoot?: boolean } = {},
+): void {
   const { searchEngine, observationStore, summaryStore, sessionStore, db, config, dbPath } = services
 
-  const mem = program.command("mem").description("Semantic memory queries and maintenance")
+  const mem = opts.attachAsRoot
+    ? program
+    : program.command("mem").description("Semantic memory queries and maintenance")
 
   // ─── mem search <query> ───────────────────────────────────
   mem

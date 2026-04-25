@@ -143,7 +143,7 @@ describe("three-plugin isolation — no tool / CLI / registration collisions", (
       cliNames.length,
       `CLI commands must be unique across plugins; got ${JSON.stringify(cliNames)}`,
     )
-    assert.ok(cliNames.includes("coc"), "claw-mem mounts under `coc`")
+    assert.ok(cliNames.includes("mem"), "claw-mem mounts under `mem`")
     assert.ok(cliNames.includes("coc-node"), "coc-node mounts under `coc-node`")
     assert.ok(cliNames.includes("coc-soul"), "coc-soul mounts under `coc-soul`")
   })

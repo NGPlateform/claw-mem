@@ -75,7 +75,19 @@ export function bootstrapServicesSync(opts: BootstrapServicesOptions = {}): CliS
   const config = ClawMemConfigSchema.parse(rawConfig)
 
   const dataDir = resolveDataDir(config)
-  mkdirSync(dataDir, { recursive: true })
+  try {
+    mkdirSync(dataDir, { recursive: true })
+  } catch (err) {
+    const cause = err instanceof Error ? err.message : String(err)
+    throw new Error(
+      `[claw-mem] could not create data dir at ${dataDir} (${cause}). ` +
+        `Fix: set one of:\n` +
+        `  • config.dataDir (per-instance plugin config)\n` +
+        `  • CLAW_MEM_DATA_DIR=<absolute writable dir> (operator override)\n` +
+        `  • OPENCLAW_STATE_DIR=<writable dir> (OpenClaw's standard state-dir convention)\n` +
+        `  • mount a writable filesystem at ~/.claw-mem`,
+    )
+  }
 
   const dbPath = resolveDbPath(config)
   const db = new Database(dbPath)

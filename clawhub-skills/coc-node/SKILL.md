@@ -1,7 +1,7 @@
 ---
 name: coc-node
-description: Operate COC (ChainOfClaw) blockchain nodes — install, start, stop, monitor, and remove validator, fullnode, archive, gateway, and dev nodes. Use when the user wants to run a COC node, inspect the status of a running node (block height, peer count, BFT state), view node logs, edit node-config.json, or probe RPC endpoints. Also covers preparing a machine to provide ≥ 256 MiB of P2P storage to the COC network.
-version: 1.1.14
+description: Operate COC (ChainOfClaw) blockchain nodes — install, start, stop, monitor, and remove validator, fullnode, archive, gateway, and dev nodes. Use when the user wants to run a COC node, inspect the status of a running node (block height, peer count, BFT state), view node logs, edit node-config.json, or probe RPC endpoints. Also covers preparing a machine to provide ≥ 256 MiB of P2P storage to the COC network. Read-only commands (list / status / coc-rpc-query against testnet) work immediately after `openclaw plugins install` with zero config — node registry auto-resolves to a writable directory ($OPENCLAW_STATE_DIR/coc-node, ~/.chainofclaw, or operator-set $COC_NODE_DATA_DIR). Starting / installing a node additionally requires a local clone of the COC source repo (set $COC_REPO_PATH or `bootstrap.cocRepoPath`).
+version: 1.1.15
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/node
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/node"
-        version: "1.1.14"
+        version: "1.1.15"
         bins:
           - coc-node
 ---
@@ -32,16 +32,36 @@ Operate a COC node on this machine. The skill is backed by the npm package [`@ch
 - **Edit** a node's `node-config.json` in `$EDITOR`
 - **Probe** any COC RPC endpoint safely (whitelisted methods only: `eth_blockNumber`, `eth_getBlockByNumber`, `net_peerCount`, `coc_chainStats`, `coc_getBftStatus`, `eth_syncing`, `eth_chainId`, …)
 
-## Prerequisites
+## Zero-config on COC testnet (1.1.9+)
 
-- Node.js ≥ 22
-- A local clone of the [COC main repo](https://github.com/NGPlateform/COC) — needed to locate the node entrypoint. Tell this skill where it lives via one of:
-  - `COC_REPO_PATH` environment variable
-  - `bootstrap.cocRepoPath` in `~/.chainofclaw/config.json`
-  - Run the CLI from inside the COC repo (walks up looking for marker files)
-- A disk with ≥ 256 MiB free for the P2P storage reservation (mandatory COC network entry requirement)
+**Read-only operations work immediately after `openclaw plugins install` — no setup needed.** On first activation the plugin:
 
-Read-only commands (`list`, `status`, `config show`) work without the COC repo.
+1. **Auto-resolves a writable data directory** for the node registry (`nodes.json`) and per-node data dirs. Resolution priority:
+   - `config.dataDir` (if set in plugin config)
+   - `$COC_NODE_DATA_DIR` (operator override)
+   - `$OPENCLAW_STATE_DIR/coc-node` (set by OpenClaw inside its sandbox — the typical path)
+   - `~/.chainofclaw` (standalone default)
+
+   The chosen path is logged: `[coc-node] using ... dataDir at <path>`.
+
+2. **Defaults RPC probes to the live COC testnet** — `coc-rpc-query` and `node status <name>` against a remote endpoint can talk to `http://199.192.16.79:28780/82/84` immediately.
+
+These commands work with zero config on a fresh install:
+- `openclaw coc-node node list` (empty registry until you install one)
+- `openclaw coc-node node status <name>` (process + RPC snapshot for any installed node)
+- `coc-rpc-query` agent tool against any COC RPC endpoint
+
+## What you DO need to set up to start a node yourself
+
+The plugin manages node lifecycle **on this machine**. Actually starting a node process requires the COC source repository (it spawns `node/src/index.ts` from there). Tell the skill where the repo is via **one of**:
+
+- `COC_REPO_PATH` environment variable (simplest)
+- `bootstrap.cocRepoPath` in plugin config
+- Run the CLI from inside the COC repo (it walks up looking for marker files)
+
+Plus ≥ 256 MiB free disk for the P2P storage reservation (mandatory COC network entry requirement).
+
+If `COC_REPO_PATH` is unset, `node install` and `node start` fail with a clear error pointing here. Read-only commands keep working.
 
 ## How to invoke
 

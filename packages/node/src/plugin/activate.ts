@@ -136,4 +136,9 @@ export function activate(api: PluginApi): void {
   }
 
   logger.info(`[coc-node] Loaded (${nodeManager.listNodes().length} node(s) tracked)`)
+  logger.info(
+    `[coc-node] CLI is mounted at \`openclaw coc-node ...\`. Standalone \`coc-node\` ` +
+      `binary requires \`npm i -g @chainofclaw/node\` separately and is NOT installed by ` +
+      `\`openclaw plugins install\`.`,
+  )
 }

@@ -77,6 +77,11 @@ export function activate(api: PluginApi): void {
   }
 
   logger.info("[claw-mem] Loaded (memory layer only)")
+  logger.info(
+    "[claw-mem] CLI is mounted at `openclaw coc ...`. Standalone `claw-mem` " +
+      "binary requires `npm i -g @chainofclaw/claw-mem` separately and is NOT installed by " +
+      "`openclaw plugins install`.",
+  )
 }
 
 // Re-export core modules for external use (e.g. programmatic library users).

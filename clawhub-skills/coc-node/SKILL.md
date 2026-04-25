@@ -1,7 +1,7 @@
 ---
 name: coc-node
 description: Operate COC (ChainOfClaw) blockchain nodes — install, start, stop, monitor, and remove validator, fullnode, archive, gateway, and dev nodes. Use when the user wants to run a COC node, inspect the status of a running node (block height, peer count, BFT state), view node logs, edit node-config.json, or probe RPC endpoints. Also covers preparing a machine to provide ≥ 256 MiB of P2P storage to the COC network.
-version: 1.1.12
+version: 1.1.13
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/node
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/node"
-        version: "1.1.12"
+        version: "1.1.13"
         bins:
           - coc-node
 ---
@@ -45,19 +45,23 @@ Read-only commands (`list`, `status`, `config show`) work without the COC repo.
 
 ## How to invoke
 
-Two equivalent surfaces:
+**Inside OpenClaw (recommended — works automatically after `plugins install`):**
 
 ```bash
-# Standalone bin (after `npm install -g @chainofclaw/node` or via npx)
+openclaw coc-node node install --type fullnode --network testnet
+openclaw coc-node node list
+openclaw coc-node node status
+openclaw coc-node node logs <name> --follow --all
+```
+
+**Standalone bin (only if you ran `npm i -g @chainofclaw/node` separately):**
+
+```bash
 coc-node node install --type dev --network local --name dev-1 --rpc-port 28780
 coc-node node list
-coc-node node status dev-1
-coc-node node logs dev-1 --follow --all
-
-# Inside OpenClaw (after `openclaw plugins install @chainofclaw/node`)
-openclaw coc-node node install --type fullnode --network testnet
-openclaw coc-node node status
 ```
+
+> `openclaw plugins install` does NOT install the standalone `coc-node` binary into your PATH. Use `openclaw coc-node ...` (with the `openclaw` prefix), or install the bin globally via npm if you want the bare command.
 
 ## Typical flows
 

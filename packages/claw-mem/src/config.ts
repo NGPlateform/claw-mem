@@ -1,6 +1,7 @@
 import { z } from "zod"
-import { join } from "node:path"
+import { join, dirname } from "node:path"
 import { homedir } from "node:os"
+import { existsSync, accessSync, mkdirSync, constants as fsConst } from "node:fs"
 
 // ──────────────────────────────────────────────────────────────────────────
 // Memory (original claw-mem fields, kept top-level for backward compatibility)
@@ -202,13 +203,61 @@ export type SummarizerOpenClawConfig = z.infer<typeof SummarizerOpenClawConfigSc
 // Path resolvers
 // ──────────────────────────────────────────────────────────────────────────
 
-export function resolveDataDir(config: ClawMemConfig): string {
-  if (config.dataDir) {
-    return config.dataDir.startsWith("~")
-      ? join(homedir(), config.dataDir.slice(1))
-      : config.dataDir
+const DEFAULT_DATA_DIR = join(homedir(), ".claw-mem")
+
+function expandTilde(path: string): string {
+  return path.startsWith("~") ? join(homedir(), path.slice(1)) : path
+}
+
+function isPathWritable(path: string): boolean {
+  let cursor = path
+  for (let i = 0; i < 32; i++) {
+    if (existsSync(cursor)) {
+      try {
+        accessSync(cursor, fsConst.W_OK)
+        return true
+      } catch {
+        return false
+      }
+    }
+    const parent = dirname(cursor)
+    if (parent === cursor) return false
+    cursor = parent
   }
-  return join(homedir(), ".claw-mem")
+  return false
+}
+
+/**
+ * Resolve the claw-mem data directory.
+ *
+ * Priority (highest first):
+ *   1. config.dataDir (explicit)
+ *   2. process.env.CLAW_MEM_DATA_DIR (operator override)
+ *   3. <OPENCLAW_STATE_DIR>/claw-mem (sandbox-managed state dir; the
+ *      typical writable path inside OpenClaw)
+ *   4. ~/.claw-mem (default for standalone use)
+ *
+ * The first candidate whose path (or whose closest existing ancestor) is
+ * writable wins; mkdirSync at the call site will succeed for it.
+ *
+ * If none of (1)-(4) are writable, falls back to the default and lets the
+ * mkdir at the call site throw an actionable EACCES — that's better than
+ * silently picking /tmp, which would be lost on reboot.
+ */
+export function resolveDataDir(config: ClawMemConfig): string {
+  if (config.dataDir && config.dataDir.length > 0) {
+    return expandTilde(config.dataDir)
+  }
+  const envOverride = process.env.CLAW_MEM_DATA_DIR
+  if (envOverride && envOverride.length > 0 && isPathWritable(envOverride)) {
+    return envOverride
+  }
+  const stateDir = process.env.OPENCLAW_STATE_DIR
+  if (stateDir && stateDir.length > 0) {
+    const sandboxDir = join(stateDir, "claw-mem")
+    if (isPathWritable(sandboxDir)) return sandboxDir
+  }
+  return DEFAULT_DATA_DIR
 }
 
 export function resolveDbPath(config: ClawMemConfig): string {

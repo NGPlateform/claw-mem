@@ -1,7 +1,7 @@
 ---
 name: coc-node
 description: Operate COC (ChainOfClaw) blockchain nodes — install, start, stop, monitor, and remove validator, fullnode, archive, gateway, and dev nodes. Use when the user wants to run a COC node, inspect the status of a running node (block height, peer count, BFT state), view node logs, edit node-config.json, or probe RPC endpoints. Also covers preparing a machine to provide ≥ 256 MiB of P2P storage to the COC network.
-version: 1.1.10
+version: 1.1.11
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/node
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/node"
-        version: "1.1.10"
+        version: "1.1.11"
         bins:
           - coc-node
 ---

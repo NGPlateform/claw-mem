@@ -98,7 +98,7 @@ export const BackupConfigSchema = z.object({
   /** Source directory to back up (the agent's home). Defaults to ~/.openclaw. */
   sourceDir: z.string().default("~/.openclaw"),
   rpcUrl: z.string().default("http://199.192.16.79:28780"),
-  ipfsUrl: z.string().default(""),
+  ipfsUrl: z.string().default("http://199.192.16.79:28786"),
   contractAddress: z.string().default("0x1291Be112d480055DaFd8a610b7d1e203891C274"),
   didRegistryAddress: z.string().default("0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154"),
   faucetUrl: z.string().default("http://199.192.16.79:3003"),

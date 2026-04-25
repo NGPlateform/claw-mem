@@ -1,6 +1,6 @@
 {
   "name": "@chainofclaw/soul",
-  "version": "1.1.13",
+  "version": "1.1.14",
   "description": "OpenClaw skill: COC soul layer — on-chain DID, guardian recovery, agent resurrection, soul backup, and carrier operations.",
   "type": "module",
   "main": "./dist/index.js",

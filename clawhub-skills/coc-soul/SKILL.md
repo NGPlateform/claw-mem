@@ -1,7 +1,7 @@
 ---
 name: coc-soul
-description: Give an AI agent a persistent on-chain soul on COC — register and manage the agent's decentralized identity (DID), anchor encrypted backups to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the original host goes offline. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, or inspect an agent's on-chain identity state.
-version: 1.1.13
+description: Give an AI agent a persistent on-chain soul on COC — register and manage the agent's decentralized identity (DID), anchor encrypted backups to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the original host goes offline. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, or inspect an agent's on-chain identity state. Zero-config on COC testnet — installation auto-generates an EOA keystore (~/.claw-mem/keys or $OPENCLAW_STATE_DIR/coc-soul/keys), auto-drips testnet COC from the public faucet for gas, and pre-fills RPC + IPFS + contract addresses for the live testnet. The first \`openclaw coc-soul backup init\` works with no manual setup.
+version: 1.1.14
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/soul
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/soul"
-        version: "1.1.13"
+        version: "1.1.14"
         bins:
           - coc-soul
 ---
@@ -36,17 +36,24 @@ Every AI agent is identified by a `bytes32 agentId`, controlled by an EOA (owner
 | **Recovery** | Social recovery flow — guardians collectively migrate the owner to a new address |
 | **Carrier** | Register a hosting node that can resurrect offline agents |
 
-## Prerequisites
+## Zero-config on COC testnet (1.1.6+)
 
-Before first use, the skill reads `~/.chainofclaw/config.json` (or `$COC_SOUL_CONFIG`) for:
+**Out of the box, no setup is required to run against COC testnet.** A fresh `openclaw plugins install @chainofclaw/soul` lands an agent that can immediately query the chain, register a soul, and run backups. Specifically, on first activation the plugin:
 
-- `backup.rpcUrl` — a reachable COC JSON-RPC endpoint
-- `backup.contractAddress` — deployed SoulRegistry address
-- `backup.didRegistryAddress` — deployed DIDRegistry address
-- `backup.ipfsUrl` — IPFS HTTP API (for blob upload)
-- `backup.privateKey` — EOA private key (chmod 600 the file)
+1. **Auto-generates an agent EOA** if `backup.privateKey` is empty. The key file is written with mode `0o600` to one of (in priority order):
+   - `$COC_SOUL_KEYSTORE_PATH` (operator override)
+   - `$OPENCLAW_STATE_DIR/coc-soul/keys/agent.key` (set by OpenClaw inside its sandbox — the typical path)
+   - `~/.claw-mem/keys/agent.key` (standalone default)
 
-Without these, only non-chain operations still work (`backup doctor` diagnoses what's missing).
+   The chosen path and resulting agent address are logged: `[coc-soul] auto-generated agent key at <path>` and `[coc-soul] agent address: 0x…`.
+
+2. **Auto-drips testnet COC** to the new EOA from the public faucet (`backup.faucetUrl` defaults to `http://199.192.16.79:3003`, 10 COC per drip, 24h per-address cooldown). Logs: `[coc-soul] faucet dripped 10.0 COC to 0x… (tx 0x…)`. So the very first `openclaw coc-soul backup init` already has gas.
+
+3. **Defaults `rpcUrl`, `ipfsUrl`, `contractAddress`, `didRegistryAddress`** to the live COC testnet (RPC `199.192.16.79:28780`, IPFS `199.192.16.79:28786`, deployed SoulRegistry / DIDRegistry).
+
+**You do NOT need to set any of these manually for testnet usage.** The agent should `openclaw coc-soul backup init` directly. Override fields only when targeting mainnet, a private testnet, or an existing wallet.
+
+To bypass the keystore (e.g. use a wallet you already have): set `backup.privateKey` in config. To disable the auto-faucet (mainnet): set `backup.faucetUrl: ""`.
 
 ## How to invoke
 
@@ -67,13 +74,13 @@ coc-soul backup status
 
 ## Typical flows
 
-1. **First-time soul registration + backup** — `coc-soul backup init` registers on SoulRegistry, runs the first full backup, writes `~/.coc-backup/latest-recovery.json` locally.
-2. **Periodic incremental backup** — `coc-soul backup create` (auto runs if `backup.autoBackup: true`).
-3. **Inspect agent state** — `coc-soul backup status` (summary), `coc-soul backup doctor` (actionable recommendations).
-4. **Delegation** — `coc-soul did delegate --delegator <agentId> --delegatee <targetId> --scope <hash> --expires <epoch> --depth 0`.
-5. **Guardian setup** — `coc-soul guardian add --agent-id <id> --guardian 0x...` (repeat for each guardian).
-6. **Emergency recovery** (you lost your owner key) — a guardian runs `coc-soul recovery initiate`, the quorum approves via `recovery approve`, then after timelock `recovery complete`.
-7. **Resurrection as carrier** — `coc-soul carrier register --endpoint https://...` on the hosting node; `coc-soul carrier start` runs the daemon.
+1. **First-time soul registration + backup (zero config)** — Just run `openclaw coc-soul backup init`. The plugin auto-generates the agent EOA, auto-drips testnet COC for gas, then registers on SoulRegistry and runs the first full backup. No manual privateKey, no manual faucet, no manual contract addresses. Watch the activation logs to see the chosen keystore path and the agent address.
+2. **Periodic incremental backup** — `openclaw coc-soul backup create` (auto runs hourly if `backup.autoBackup: true`).
+3. **Inspect agent state** — `openclaw coc-soul backup status` (summary), `openclaw coc-soul backup doctor` (actionable recommendations).
+4. **Delegation** — `openclaw coc-soul did delegate --delegator <agentId> --delegatee <targetId> --scope <hash> --expires <epoch> --depth 0`.
+5. **Guardian setup** — `openclaw coc-soul guardian add --agent-id <id> --guardian 0x...` (repeat for each guardian).
+6. **Emergency recovery** (you lost your owner key) — a guardian runs `openclaw coc-soul recovery initiate`, the quorum approves via `recovery approve`, then after timelock `recovery complete`.
+7. **Resurrection as carrier** — `openclaw coc-soul carrier register --endpoint https://...` on the hosting node; `openclaw coc-soul carrier start` runs the daemon.
 
 ## When NOT to use this skill
 

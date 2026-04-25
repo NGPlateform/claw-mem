@@ -68,6 +68,9 @@ export class OfflineMonitor {
         this.logger.error(`OfflineMonitor poll error: ${String(error)}`)
       })
     }, this.config.pollIntervalMs)
+    // unref so the monitor doesn't keep a CLI process alive after the
+    // command's primary work completes.
+    this.timer.unref?.()
   }
 
   stop(): void {

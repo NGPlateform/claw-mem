@@ -78,6 +78,11 @@ export class BackupScheduler {
         if (this.config.autoBackupEnabled) this.scheduleNext()
       })
     }, backoff)
+    // unref so a CLI invocation that triggers backupManager.start() does
+    // not hang the process indefinitely waiting for the next scheduled
+    // backup. Long-running gateway processes still keep this alive via
+    // their own event loop work.
+    this.timer.unref?.()
   }
 
   /** Stop periodic backup timer */

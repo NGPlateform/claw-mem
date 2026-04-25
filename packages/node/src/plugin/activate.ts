@@ -4,7 +4,7 @@
 // manager) from api.pluginConfig, registers agent tools (`coc-node-*`), mounts
 // the CLI under `coc-node …`, and attaches a best-effort gateway_stop hook.
 
-import { mkdirSync } from "node:fs"
+import { resolveWritableDataDir } from "../writable-dir.ts"
 import { homedir } from "node:os"
 import { join } from "node:path"
 
@@ -83,8 +83,11 @@ export function activate(api: PluginApi): void {
   logger.info("[coc-node] Loading...")
 
   const config = mergeConfig(defaultConfig(), (api.pluginConfig ?? {}) as Record<string, unknown>)
-  const dataDir = config.dataDir ?? join(homedir(), ".chainofclaw")
-  mkdirSync(dataDir, { recursive: true })
+  const dataDir = resolveWritableDataDir({ candidate: config.dataDir, logger })
+  // Reflect the resolved path back into config so downstream consumers
+  // (NodeManager, JsonNodeRegistry, StorageQuotaManager) see the same
+  // sandbox-safe path. Keeps the `config.dataDir` invariant truthful.
+  config.dataDir = dataDir
 
   const nodeRegistry = new JsonNodeRegistry({ baseDir: dataDir })
   const processManager = new ProcessManager(logger)

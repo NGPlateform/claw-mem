@@ -24,6 +24,9 @@ export function registerHooks(
   const summarizer = createSummarizer(config.summarizer)
   if (config.summarizer.mode === "llm") {
     logger.info(`[claw-mem] summarizer mode=llm (model=${config.summarizer.llm.model}, fallback=${config.summarizer.llm.fallbackOnError})`)
+  } else if (config.summarizer.mode === "openclaw") {
+    const modelLabel = config.summarizer.openclaw.model ?? "default"
+    logger.info(`[claw-mem] summarizer mode=openclaw (bin=${config.summarizer.openclaw.bin}, model=${modelLabel}, fallback=${config.summarizer.openclaw.fallbackOnError})`)
   }
 
   // Track current session per agent (in-memory)

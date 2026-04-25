@@ -108,7 +108,7 @@ function main(): void {
   program
     .name("coc-node")
     .description("Manage COC blockchain nodes (standalone CLI for @chainofclaw/node).")
-    .version("1.1.11")
+    .version("1.1.12")
 
   registerNodeCommands(program, { nodeManager, logger })
 

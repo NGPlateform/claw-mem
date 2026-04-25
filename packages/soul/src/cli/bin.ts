@@ -63,7 +63,7 @@ function main(): void {
   program
     .name("coc-soul")
     .description("Standalone CLI for @chainofclaw/soul: DID, guardian, recovery, carrier, backup.")
-    .version("1.1.8")
+    .version("1.1.9")
 
   registerSoulCommands(program, {
     backupManager,

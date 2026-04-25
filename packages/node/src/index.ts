@@ -44,6 +44,15 @@ export {
 // ── Registry port + default implementation ─────────────────────
 export { JsonNodeRegistry, type JsonNodeRegistryOptions } from "./json-registry.ts"
 
+// ── Sandbox-safe data dir resolution ──────────────────────────
+export {
+  resolveWritableDataDir,
+  isPathWritable,
+  DEFAULT_DATA_DIR,
+  FALLBACK_DATA_DIR,
+  type ResolveDataDirOptions,
+} from "./writable-dir.ts"
+
 // ── CLI ───────────────────────────────────────────────────────
 export { registerNodeCommands, type NodeCommandDeps } from "./cli/node-commands.ts"
 export { runInitWizard, type InitWizardOptions } from "./cli/init-wizard.ts"

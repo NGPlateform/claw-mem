@@ -5,7 +5,7 @@
 // and mounts registerNodeCommands at the top level. This is intentionally
 // minimal — full bootstrap/memory/backup flows live in @chainofclaw/claw-mem.
 
-import { readFileSync, existsSync, mkdirSync } from "node:fs"
+import { readFileSync, existsSync } from "node:fs"
 import { homedir } from "node:os"
 import { join } from "node:path"
 
@@ -16,6 +16,7 @@ import { NodeManager } from "../node-manager.ts"
 import { ProcessManager } from "../process-manager.ts"
 import { StorageQuotaManager } from "../storage-quota-manager.ts"
 import type { Logger, NodeLifecycleConfig } from "../types.ts"
+import { resolveWritableDataDir } from "../writable-dir.ts"
 import { registerNodeCommands } from "./node-commands.ts"
 
 function createConsoleLogger(): Logger {
@@ -84,8 +85,8 @@ function loadConfig(): NodeLifecycleConfig {
 function main(): void {
   const config = loadConfig()
   const logger = createConsoleLogger()
-  const dataDir = config.dataDir ?? join(homedir(), ".chainofclaw")
-  mkdirSync(dataDir, { recursive: true })
+  const dataDir = resolveWritableDataDir({ candidate: config.dataDir, logger })
+  config.dataDir = dataDir
 
   const nodeRegistry = new JsonNodeRegistry({ baseDir: dataDir })
   const processManager = new ProcessManager(logger)
@@ -107,7 +108,7 @@ function main(): void {
   program
     .name("coc-node")
     .description("Manage COC blockchain nodes (standalone CLI for @chainofclaw/node).")
-    .version("1.1.8")
+    .version("1.1.9")
 
   registerNodeCommands(program, { nodeManager, logger })
 

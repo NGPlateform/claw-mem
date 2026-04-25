@@ -1,7 +1,7 @@
 ---
 name: claw-mem2db
-description: Give an AI agent persistent semantic memory that survives restarts and compaction. Captures structured observations from tool calls, summarizes sessions, and injects a token-budgeted memory context into the next prompt. Use when the user wants long-lived agent memory, wants to search past observations, wants to export / import memory across machines, wants to see what memory would be injected before the next turn, or is assembling the full COC agent stack (memory + node + soul).
-version: 1.1.14
+description: Give an AI agent persistent semantic memory that survives restarts and compaction. Captures structured observations from tool calls, summarizes sessions, and injects a token-budgeted memory context into the next prompt. Use when the user wants long-lived agent memory, wants to search past observations, wants to export / import memory across machines, wants to see what memory would be injected before the next turn, or is assembling the full COC agent stack (memory + node + soul). Zero-config — `openclaw plugins install @chainofclaw/claw-mem` is sufficient. The plugin opens its SQLite database on first activation, registers session hooks for automatic observation capture, and starts answering `openclaw coc mem search ...` / `mem status` queries immediately. No external dependencies, no chain interaction, no setup required.
+version: 1.1.15
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/claw-mem
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/claw-mem"
-        version: "1.1.14"
+        version: "1.1.15"
         bins:
           - claw-mem
 ---
@@ -31,6 +31,17 @@ The **memory layer** for AI agents on COC.
 > - **OpenClaw plugin id:** `claw-mem`
 >
 > Only the ClawHub slug differs.
+
+## Zero-config
+
+**No setup needed after `openclaw plugins install`.** This skill has no chain interaction, no external services, no required env vars or config — it just opens a local SQLite database on first activation and starts capturing observations from session hooks.
+
+- **DB path** defaults to `~/.claw-mem/claw-mem.db`. Override via `dataDir` in plugin config if needed.
+- **Session hooks** auto-register: every tool call becomes a candidate observation; sessions are summarized on close.
+- **Reads work immediately**: `openclaw coc mem search "..."`, `openclaw coc mem status`, `openclaw coc mem peek` all return data once any observations have been captured.
+- **No required env vars.** `CLAW_MEM_DATA_DIR` is the only knob, and it has a sensible default.
+
+If you also want LLM-quality session summaries instead of the default heuristic, set `summarizer.mode: "llm"` + `summarizer.llm.apiKey` (or `ANTHROPIC_API_KEY` env). Heuristic mode runs without any API key.
 
 ## Mental model
 

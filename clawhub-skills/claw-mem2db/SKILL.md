@@ -1,7 +1,7 @@
 ---
 name: claw-mem2db
 description: Give an AI agent persistent semantic memory that survives restarts and compaction. Captures structured observations from tool calls, summarizes sessions, and injects a token-budgeted memory context into the next prompt. Use when the user wants long-lived agent memory, wants to search past observations, wants to export / import memory across machines, wants to see what memory would be injected before the next turn, or is assembling the full COC agent stack (memory + node + soul).
-version: 1.1.12
+version: 1.1.13
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/claw-mem
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/claw-mem"
-        version: "1.1.12"
+        version: "1.1.13"
         bins:
           - claw-mem
 ---
@@ -55,15 +55,21 @@ Installing all three gives an agent that: runs its own infrastructure, remembers
 
 ## How to invoke
 
-```bash
-# Standalone
-claw-mem mem search "checkpoint"
-claw-mem mem status
+**Inside OpenClaw (recommended — works automatically after `plugins install`):**
 
-# Inside OpenClaw
+```bash
 openclaw coc mem search "checkpoint"
 openclaw coc mem status
 ```
+
+**Standalone bin (only if you ran `npm i -g @chainofclaw/claw-mem` separately):**
+
+```bash
+claw-mem mem search "checkpoint"
+claw-mem mem status
+```
+
+> `openclaw plugins install` does NOT install the standalone `claw-mem` binary into your PATH. Use `openclaw coc ...` (with the `openclaw` prefix), or install the bin globally via npm if you want the bare command.
 
 ## Typical flows
 

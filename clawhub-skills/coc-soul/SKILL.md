@@ -1,7 +1,7 @@
 ---
 name: coc-soul
 description: Give an AI agent a persistent on-chain soul on COC — register and manage the agent's decentralized identity (DID), anchor encrypted backups to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the original host goes offline. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, or inspect an agent's on-chain identity state.
-version: 1.1.12
+version: 1.1.13
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/soul
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/soul"
-        version: "1.1.12"
+        version: "1.1.13"
         bins:
           - coc-soul
 ---
@@ -50,14 +50,20 @@ Without these, only non-chain operations still work (`backup doctor` diagnoses w
 
 ## How to invoke
 
-```bash
-# Standalone
-coc-soul backup status
-coc-soul did delegations --agent-id 0x...
+**Inside OpenClaw (recommended — works automatically after `plugins install`):**
 
-# Inside OpenClaw
+```bash
 openclaw coc-soul backup status
+openclaw coc-soul did delegations --agent-id 0x...
 ```
+
+**Standalone bin (only if you ran `npm i -g @chainofclaw/soul` separately):**
+
+```bash
+coc-soul backup status
+```
+
+> `openclaw plugins install` does NOT install the standalone `coc-soul` binary into your PATH. Use `openclaw coc-soul ...` (with the `openclaw` prefix), or install the bin globally via npm if you want the bare command.
 
 ## Typical flows
 

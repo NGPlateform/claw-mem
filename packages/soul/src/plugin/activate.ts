@@ -98,4 +98,9 @@ export function activate(api: PluginApi): void {
     `[coc-soul] Loaded (backup ${backupManager.isConfigured() ? "configured" : "not configured"}, ` +
       `carrier ${backupConfig.carrier?.enabled ? "enabled" : "disabled"})`,
   )
+  logger.info(
+    `[coc-soul] CLI is mounted at \`openclaw coc-soul ...\`. Standalone \`coc-soul\` ` +
+      `binary requires \`npm i -g @chainofclaw/soul\` separately and is NOT installed by ` +
+      `\`openclaw plugins install\`.`,
+  )
 }

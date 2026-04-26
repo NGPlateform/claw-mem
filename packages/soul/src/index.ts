@@ -65,6 +65,15 @@ export {
   readBackupState,
 } from "./local-state.ts"
 
+// ── Shared data-dir resolver (aligned with @chainofclaw/claw-mem) ──
+export {
+  DEFAULT_SOUL_DATA_DIR,
+  CLAW_MEM_DB_FILENAME,
+  resolveSoulDataDir,
+  resolveClawMemDbPath,
+  type ResolveDataDirOptions,
+} from "./data-dir.ts"
+
 // ── Config schemas ─────────────────────────────────────────────
 export {
   soulConfigSchema,

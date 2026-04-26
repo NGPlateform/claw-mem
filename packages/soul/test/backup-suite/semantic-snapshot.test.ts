@@ -38,6 +38,7 @@ function createTestDb(dbPath: string): void {
       concepts TEXT,
       files_read TEXT,
       files_modified TEXT,
+      tool_name TEXT,
       prompt_number INTEGER,
       discovery_tokens INTEGER,
       created_at TEXT,
@@ -129,9 +130,9 @@ describe("semantic-snapshot", { skip: skipSqlite ? "node:sqlite not available" :
     assert.equal(firstSum.request, "Optimize database performance")
     assert.ok(firstSum.learned?.includes("Redis"))
 
-    // Verify active projects
-    assert.ok(snapshot.activeProjects.includes("my-project"))
-    assert.ok(snapshot.activeProjects.includes("other-project"))
+    // sourceDbPath surfaces in v1.2.0+
+    assert.equal(snapshot.sourceDbPath, dbPath)
+    assert.ok(snapshot.counts.totalObservations >= 3)
   })
 
   it("respects token budget by truncating entries", async () => {

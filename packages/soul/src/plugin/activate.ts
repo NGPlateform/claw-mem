@@ -13,6 +13,7 @@ import { BackupManager } from "../backup-manager.ts"
 import { RecoveryManager } from "../recovery-manager.ts"
 import { CarrierManager } from "../carrier-manager.ts"
 import { registerSoulCommands } from "../cli/register.ts"
+import { resolveClawMemDbPath, resolveSoulDataDir } from "../data-dir.ts"
 import { InMemoryArchiveRepository } from "./in-memory-archive-repository.ts"
 import { registerSoulTools } from "./tools.ts"
 import type { PluginApi } from "./types.ts"
@@ -31,6 +32,34 @@ export function activate(api: PluginApi): void {
   if (!backupConfig.enabled) {
     logger.info("[coc-soul] Disabled via config")
     return
+  }
+
+  // Probe writability of soul's data root early — fail fast with an actionable
+  // error instead of letting the keystore write fail mid-backup. The resolver
+  // throws an EACCES-style error with concrete fix instructions.
+  let dataDir: string
+  try {
+    dataDir = resolveSoulDataDir({ logger })
+  } catch (error) {
+    logger.error(`[coc-soul] data dir not writable: ${String(error)}`)
+    return
+  }
+  logger.info(`[coc-soul] data dir: ${dataDir}`)
+
+  // Detect a co-installed @chainofclaw/claw-mem and announce whether the
+  // semantic snapshot will have anything to capture. This is the only
+  // integration point with claw-mem — soul still runs fine standalone.
+  const clawMemDbPath = resolveClawMemDbPath({ logger })
+  if (clawMemDbPath) {
+    logger.info(
+      `[coc-soul] claw-mem detected at ${clawMemDbPath} — semantic snapshot ` +
+        `(chat + tool observations + session summaries) will be included in each backup`,
+    )
+  } else {
+    logger.info(
+      `[coc-soul] claw-mem not detected — backups will skip the semantic snapshot ` +
+        `(install @chainofclaw/claw-mem alongside soul to enable memory replay on recovery)`,
+    )
   }
 
   const archiveStore = new InMemoryArchiveRepository()

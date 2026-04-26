@@ -1,11 +1,11 @@
 ---
 name: coc-soul
-description: Give an AI agent a persistent on-chain soul on COC — register and manage the agent's decentralized identity (DID), anchor encrypted backups to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the original host goes offline. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, or inspect an agent's on-chain identity state. Zero-config on COC testnet — installation auto-generates an EOA keystore (~/.claw-mem/keys or $OPENCLAW_STATE_DIR/coc-soul/keys), auto-drips testnet COC from the public faucet for gas, and pre-fills RPC + IPFS + contract addresses for the live testnet. The first \`openclaw coc-soul backup init\` works with no manual setup.
-version: 1.1.15
+description: Give an AI agent a persistent on-chain soul — register and manage a decentralized identity (DID), encrypt and anchor agent state to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the host dies. **Pairs with `claw-mem2db` to deliver "digital / silicon-based persistence" for AI agents**: when claw-mem is co-installed, every backup automatically captures claw-mem's chat history + tool-call observations + session summaries as a token-budgeted semantic snapshot, so an agent recovered on a fresh host can replay its memory context — not just its files. Soul also runs fully standalone (without claw-mem), in which case backups still cover identity / config / workspace / chat files but skip the semantic snapshot. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, inspect on-chain identity state, or get persistent cross-device memory paired with claw-mem. Zero-config on COC testnet — installation auto-generates an EOA keystore (~/.claw-mem/keys, shared with claw-mem; or $OPENCLAW_STATE_DIR/coc-soul/keys in sandboxed hosts), auto-drips testnet COC from the public faucet for gas, and pre-fills RPC + IPFS + contract addresses for the live testnet. The first `openclaw coc-soul backup init` works with no manual setup.
+version: 1.2.0
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/soul
-    primaryEnv: COC_SOUL_CONFIG
+    primaryEnv: CLAW_MEM_DATA_DIR
     requires:
       bins:
         - node
@@ -15,14 +15,43 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/soul"
-        version: "1.1.15"
+        version: "1.2.0"
         bins:
           - coc-soul
 ---
 
-# coc-soul — agent identity, backup, and resurrection on COC
+# coc-soul — agent identity, backup, and resurrection
 
-The **soul layer** for AI agents on COC. Backed by the npm package [`@chainofclaw/soul`](https://www.npmjs.com/package/@chainofclaw/soul) which ships both a standalone `coc-soul` CLI and an OpenClaw skill (id `coc-soul`).
+The **soul layer** for AI agents: on-chain DID, encrypted backups to IPFS, social recovery via guardians, and cross-device resurrection via carriers. Backed by the npm package [`@chainofclaw/soul`](https://www.npmjs.com/package/@chainofclaw/soul) which ships both a standalone `coc-soul` CLI and an OpenClaw skill (id `coc-soul`).
+
+Soul works **standalone** (backs up the agent's home tree to chain + IPFS), and gets one extra capability when **`claw-mem2db` is installed alongside it**: each backup also captures claw-mem's chat history, tool-call observations, and session summaries as a token-budgeted semantic snapshot. Recover on a fresh host and the agent gets back not just its files but its remembered context — chat preferences, decisions, conversation history. **This is the "digital / silicon-based persistence" story.**
+
+## Relationship with claw-mem2db
+
+claw-mem and coc-soul are **separate, decoupled skills**. Each works on its own; together they cover complementary halves of "agent persistence":
+
+| Skill | Owns | What changes when paired |
+|---|---|---|
+| [claw-mem2db](https://clawhub.ai/ngplateform/claw-mem2db) | Local memory: chat + tool capture, FTS5 search, hybrid recall, in-process injection | Claw-mem itself doesn't change. Soul opportunistically reads the SQLite DB. |
+| **coc-soul** | On-chain DID, IPFS backup, guardian recovery, carrier resurrection | When claw-mem's DB is detected at startup, every backup adds a `semantic-snapshot.json` slice (top-N observations + summaries within `tokenBudget`) to the manifest. On recovery, that snapshot is restored alongside the rest of the agent home. |
+
+**Detection is automatic and silent.** At plugin activation, soul probes the same dataDir chain claw-mem uses (`$CLAW_MEM_DATA_DIR` → `$OPENCLAW_STATE_DIR/claw-mem` → `~/.claw-mem`) and logs one of two lines:
+
+- `[coc-soul] claw-mem detected at <path> — semantic snapshot ... will be included in each backup`
+- `[coc-soul] claw-mem not detected — backups will skip the semantic snapshot (install @chainofclaw/claw-mem alongside soul to enable memory replay on recovery)`
+
+No coupling at the npm-dependency level: soul does not depend on the `@chainofclaw/claw-mem` package. It just opens the SQLite DB read-only when present and reads two tables (`observations`, `session_summaries`). If the DB schema is absent or unreadable, soul logs a warning and moves on — backup never fails because of a memory hiccup.
+
+## Data dir alignment with claw-mem (1.2.0+)
+
+Soul writes its own files (keystore, config.json) to the same root as claw-mem by default — `~/.claw-mem` — so the two plugins share one operator-managed directory. Resolution priority (matches claw-mem's chain):
+
+1. `plugins.entries.coc-soul.config.backup.dataDir` (per-instance plugin config, when set)
+2. `$CLAW_MEM_DATA_DIR` (shared with claw-mem)
+3. `$OPENCLAW_STATE_DIR/coc-soul` (sandboxed-host fallback, soul-specific subdir)
+4. `~/.claw-mem` (default)
+
+If none of these are writable, soul **fails fast at activation** with an actionable EACCES message naming each candidate it tried — no silent `/tmp` fallback, no half-broken backup runs. The operator gets one clear list of paths to fix.
 
 ## Mental model
 
@@ -31,9 +60,9 @@ Every AI agent is identified by a `bytes32 agentId`, controlled by an EOA (owner
 | Area | What it does |
 |---|---|
 | **DID** | Register the agent on-chain, manage verification methods (keys), delegate capabilities, anchor verifiable credentials, record lineage (fork relationships) |
-| **Backup** | Encrypt + upload agent state (identity / config / memory / chat / workspace / DB) to IPFS, anchor the manifest CID in SoulRegistry |
+| **Backup** | Encrypt + upload agent state (identity / config / memory / chat / workspace / DB) to IPFS, anchor the manifest CID in SoulRegistry. With claw-mem present, also includes a token-budgeted semantic snapshot of recent observations + summaries. |
 | **Guardian** | Designate trusted accounts that can jointly recover or resurrect the agent |
-| **Recovery** | Social recovery flow — guardians collectively migrate the owner to a new address |
+| **Recovery** | Social recovery flow — guardians collectively migrate the owner to a new address. The semantic snapshot rides along, so the recovered agent gets its memory context back too. |
 | **Carrier** | Register a hosting node that can resurrect offline agents |
 
 ## Zero-config on COC testnet (1.1.6+)
@@ -85,7 +114,7 @@ coc-soul backup status
 ## When NOT to use this skill
 
 - Running a COC chain node yourself — use [coc-node](https://clawhub.ai/ngplateform/coc-node).
-- Local semantic memory (non-chain) — use [claw-mem2db](https://clawhub.ai/ngplateform/claw-mem2db).
+- Local semantic memory **only** (no chain backup needed) — use [claw-mem2db](https://clawhub.ai/ngplateform/claw-mem2db) on its own. Add coc-soul on top later if you decide you want the data on-chain.
 - Smart contract deployment — that lives in the [COC source repo](https://github.com/NGPlateform/COC) `contracts/` tree.
 
 ## Reference

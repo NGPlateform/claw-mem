@@ -33,6 +33,7 @@ const mockSnapshot: SemanticSnapshot = {
       facts: ["Reduced DB queries by 60%", "Added 2GB memory usage"],
       narrative: "Implemented Redis caching to reduce database load during peak hours",
       concepts: ["redis", "performance"],
+      toolName: "Edit",
       createdAt: "2026-04-17T09:30:00.000Z",
     },
     {
@@ -42,6 +43,7 @@ const mockSnapshot: SemanticSnapshot = {
       facts: ["Dashboard fires 200 queries per page load"],
       narrative: null,
       concepts: ["sql", "orm"],
+      toolName: "Grep",
       createdAt: "2026-04-17T08:00:00.000Z",
     },
   ],
@@ -54,7 +56,8 @@ const mockSnapshot: SemanticSnapshot = {
       createdAt: "2026-04-17T09:45:00.000Z",
     },
   ],
-  activeProjects: ["my-project", "other-project"],
+  sourceDbPath: "/tmp/test-claw-mem.db",
+  counts: { totalObservations: 2, chatObservations: 0, toolObservations: 2, summaries: 1 },
 }
 
 describe("context-injector", () => {
@@ -97,10 +100,10 @@ describe("context-injector", () => {
     assert.ok(content.includes("Added Redis caching layer"))
     assert.ok(content.includes("decision"))
 
-    // Verify active projects
-    assert.ok(content.includes("## Active Projects"))
-    assert.ok(content.includes("my-project"))
-    assert.ok(content.includes("other-project"))
+    // v1.2.0+ surfaces the source DB path + chat/tool counts in the metadata block
+    assert.ok(content.includes("Source DB:"))
+    assert.ok(content.includes("chat,"))
+    assert.ok(content.includes("tool"))
 
     // Verify recovery integrity
     assert.ok(content.includes("## Recovery Integrity"))
@@ -141,7 +144,8 @@ describe("context-injector", () => {
       tokensUsed: 0,
       observations: [],
       summaries: [],
-      activeProjects: [],
+      sourceDbPath: null,
+      counts: { totalObservations: 0, chatObservations: 0, toolObservations: 0, summaries: 0 },
     }
     await writeFile(
       join(baseDir, ".coc-backup", "semantic-snapshot.json"),
@@ -185,6 +189,7 @@ describe("context-injector", () => {
         facts: ["Fact with | pipe"],
         narrative: null,
         concepts: [],
+        toolName: null,
         createdAt: "2026-04-17T10:00:00.000Z",
       }],
     }

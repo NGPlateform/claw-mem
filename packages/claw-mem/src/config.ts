@@ -293,14 +293,15 @@ function isPathWritable(path: string): boolean {
  * Priority (highest first):
  *   1. config.dataDir (explicit)
  *   2. process.env.CLAW_MEM_DATA_DIR (operator override)
- *   3. <OPENCLAW_STATE_DIR>/claw-mem (sandbox-managed state dir; the
- *      typical writable path inside OpenClaw)
+ *   3. <OPENCLAW_STATE_DIR>/claw-mem (sandbox-managed state dir)
  *   4. ~/.claw-mem (default for standalone use)
+ *   5. ~/.openclaw/state/claw-mem (auto-fallback when ~/.claw-mem is
+ *      owned by the wrong uid — typical multi-user Docker host). 2.3.1+.
  *
  * The first candidate whose path (or whose closest existing ancestor) is
  * writable wins; mkdirSync at the call site will succeed for it.
  *
- * If none of (1)-(4) are writable, falls back to the default and lets the
+ * If none of (1)-(5) are writable, falls back to the default and lets the
  * mkdir at the call site throw an actionable EACCES — that's better than
  * silently picking /tmp, which would be lost on reboot.
  */
@@ -317,6 +318,13 @@ export function resolveDataDir(config: ClawMemConfig): string {
     const sandboxDir = join(stateDir, "claw-mem")
     if (isPathWritable(sandboxDir)) return sandboxDir
   }
+  // Default ~/.claw-mem is preferred when its parent is writable.
+  if (isPathWritable(DEFAULT_DATA_DIR)) return DEFAULT_DATA_DIR
+  // Last-resort auto-fallback to OpenClaw's per-host runtime state dir.
+  // Only reached when ~/.claw-mem is owned by a different uid (typical
+  // multi-user Docker host). 2.3.1+.
+  const openclawState = join(homedir(), ".openclaw", "state", "claw-mem")
+  if (isPathWritable(openclawState)) return openclawState
   return DEFAULT_DATA_DIR
 }
 

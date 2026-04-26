@@ -107,6 +107,14 @@ export function resolveWritableDataDir(opts: ResolveDataDirOptions = {}): string
     })
   }
   candidates.push({ path: defaultDataDir(), label: "default ~/.claw-mem/coc-node" })
+  // Last-resort auto-fallback to OpenClaw's per-host runtime state dir. Only
+  // tried when the default ~/.claw-mem/coc-node isn't writable (typical
+  // multi-user Docker host where /home/<user>/.claw-mem is owned by uid 0
+  // or another agent). Same pattern as claw-mem 2.3.1 + soul 1.2.2. 1.2.1+.
+  candidates.push({
+    path: join(homedir(), ".openclaw", "state", "coc-node"),
+    label: "auto ~/.openclaw/state/coc-node",
+  })
   // Legacy fallback (pre-1.2.0): only wins if it already exists *with content*,
   // so a fresh install never lands here. Existing installs that have a
   // pre-existing nodes.json keep working without forcing a manual move.

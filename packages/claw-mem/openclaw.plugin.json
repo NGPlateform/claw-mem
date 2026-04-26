@@ -1,7 +1,7 @@
 {
   "id": "claw-mem",
   "name": "Claw-Mem: Persistent Memory",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "OpenClaw skill: persistent semantic memory (chat + tool capture, FTS5 search, hybrid recall, context injection). COC node lifecycle moved to @chainofclaw/node; soul backup to @chainofclaw/soul. Both are optional companions — claw-mem works fully on its own.",
   "main": "dist/index.js",
   "hooks": [

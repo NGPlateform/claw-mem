@@ -87,6 +87,11 @@ function buildSoulCandidates(opts: ResolveDataDirOptions): Candidate[] {
     out.push({ path: join(stateDir, "coc-soul"), label: "$OPENCLAW_STATE_DIR/coc-soul" })
   }
   out.push({ path: defaultSoulDataDir(), label: "default ~/.claw-mem" })
+  // Last-resort auto-fallback to OpenClaw's per-host runtime state dir.
+  // ONLY tried when ~/.claw-mem isn't writable (e.g. pre-existing dir owned
+  // by the wrong uid in a Docker-style multi-user host). 1.2.2+. Sits at the
+  // end so existing users with a writable ~/.claw-mem get unchanged behavior.
+  out.push({ path: join(homedir(), ".openclaw", "state", "coc-soul"), label: "auto ~/.openclaw/state/coc-soul" })
   return out
 }
 
@@ -102,14 +107,22 @@ export function resolveSoulDataDir(opts: ResolveDataDirOptions = {}): string {
     if (isPathWritable(c.path)) return c.path
     opts.logger?.debug?.(`[coc-soul] data-dir candidate not writable: ${c.path} (${c.label})`)
   }
+  // No candidate worked. The dollar sign in the heredoc-style hints below
+  // is intentional — we want the user to literally export the variable.
+  const home = homedir()
   throw new Error(
     `Could not find a writable directory for coc-soul data. Tried:\n` +
       tried.map((p) => `  - ${p}`).join("\n") +
-      `\n\nFix: set one of:\n` +
+      `\n\nQuick fix (copy-paste, then restart the gateway):\n` +
+      `  mkdir -p ${home}/.openclaw/state/coc-soul\n` +
+      `  export CLAW_MEM_DATA_DIR=${home}/.openclaw/state\n` +
+      `\nOr pick one of these alternatives:\n` +
       `  • CLAW_MEM_DATA_DIR=<absolute writable dir>  (shared with @chainofclaw/claw-mem)\n` +
       `  • OPENCLAW_STATE_DIR=<absolute writable dir> (OpenClaw's standard state-dir convention)\n` +
       `  • plugins.entries.coc-soul.config.backup.dataDir = "<absolute writable dir>"  (per-instance)\n` +
-      `  • mount a writable filesystem at ~/.claw-mem`,
+      `  • chown the existing ~/.claw-mem to the user running the gateway\n` +
+      `\nUid context: process.getuid()=${(process as unknown as { getuid?(): number }).getuid?.() ?? "n/a"}, ` +
+      `HOME=${home}`,
   )
 }
 

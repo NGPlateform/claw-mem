@@ -75,6 +75,20 @@ describe("extractChatObservation", () => {
     assert.equal(obs, null)
   })
 
+  it("drops emoji-only / pictograph-only turns at capture time", () => {
+    assert.equal(extractChatObservation(ev("👍👍👍👍👍"), baseOpts), null)
+    assert.equal(extractChatObservation(ev("🎉🎊✨🌟💫"), baseOpts), null)
+  })
+
+  it("sets importance score on the captured observation", () => {
+    const cued = extractChatObservation(ev("remember this: never deploy on Friday"), baseOpts)
+    const plain = extractChatObservation(ev("just having a normal day chatting"), baseOpts)
+    assert.ok(cued && plain)
+    assert.ok(typeof cued!.importance === "number")
+    assert.ok(typeof plain!.importance === "number")
+    assert.ok(cued!.importance! > plain!.importance!, "cued should outrank plain")
+  })
+
   it("drops assistant messages by default", () => {
     const obs = extractChatObservation(ev("Sure, I'll remember that for next time", "assistant"), baseOpts)
     assert.equal(obs, null)

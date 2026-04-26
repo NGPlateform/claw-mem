@@ -161,6 +161,21 @@ export const ChatMemoryCuesSchema = z.object({
     .describe("Preference / habit cues; capture as learning when explicitOnly=false"),
 })
 
+export const ChatCompactionConfigSchema = z.object({
+  enabled: z.boolean().default(true)
+    .describe("Run incremental chat compaction (rolls batches of chat observations into a single chat_compaction summary)."),
+  triggerEvery: z.number().int().min(1).default(10)
+    .describe("Run compaction once every N new chat observations."),
+  idleMs: z.number().int().min(0).default(120_000)
+    .describe("Reserved for an idle-based trigger (not yet wired). Set 0 to disable when implemented."),
+  keepRecentRaw: z.number().int().min(0).default(20)
+    .describe("Always retain the most-recent N chat observations outside compaction so they stay directly readable."),
+  deleteCompactedLowValue: z.boolean().default(true)
+    .describe("After a compaction, hard-delete compacted rows whose importance is below minImportanceToKeep."),
+  minImportanceToKeep: z.number().min(0).max(1).default(0.7)
+    .describe("Importance threshold below which compacted chat rows are eligible for hard deletion. Higher = aggressive prune."),
+})
+
 export const ChatMemoryConfigSchema = z.object({
   enabled: z.boolean().default(true)
     .describe("Capture observations from chat messages (in addition to tool calls)"),
@@ -173,6 +188,7 @@ export const ChatMemoryConfigSchema = z.object({
   cues: ChatMemoryCuesSchema.default({}),
   captureAssistant: z.boolean().default(false)
     .describe("Also capture assistant messages via message_sent. Off by default to avoid noise."),
+  compaction: ChatCompactionConfigSchema.default({}),
 })
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -240,6 +256,7 @@ export type SummarizerLLMConfig = z.infer<typeof SummarizerLLMConfigSchema>
 export type SummarizerOpenClawConfig = z.infer<typeof SummarizerOpenClawConfigSchema>
 export type ChatMemoryConfig = z.infer<typeof ChatMemoryConfigSchema>
 export type ChatMemoryCues = z.infer<typeof ChatMemoryCuesSchema>
+export type ChatCompactionConfig = z.infer<typeof ChatCompactionConfigSchema>
 export type ContextRecallConfig = z.infer<typeof ContextRecallConfigSchema>
 
 // ──────────────────────────────────────────────────────────────────────────

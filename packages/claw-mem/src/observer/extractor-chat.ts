@@ -12,6 +12,7 @@
 // for "all chat" or pull just one direction. No schema change.
 
 import type { ObservationInput, ObservationType } from "../types.ts"
+import { isEmojiOnly, scoreImportance } from "./importance.ts"
 
 export type ChatRole = "user" | "assistant"
 
@@ -62,6 +63,11 @@ export function extractChatObservation(
 
   if (event.role === "assistant" && !opts.captureAssistant) return null
 
+  // Capture-time denoising: drop emoji-only / pictograph-only turns. They
+  // pollute the FTS index without carrying retrievable signal. Cheap check;
+  // proper importance scoring still happens below for everything that passes.
+  if (isEmojiOnly(text)) return null
+
   const lower = text.toLowerCase()
   const explicitHit = opts.cues.explicit.find((c) => containsCue(text, lower, c))
   const preferenceHit = !explicitHit
@@ -96,6 +102,16 @@ export function extractChatObservation(
   // or pull just one direction.
   const toolName = event.role === "user" ? "message_received" : "message_sent"
 
+  // Heuristic importance score (0.0..1.0). Persists into the row so the
+  // compactor + prune later can decide what to keep without re-reading the
+  // narrative.
+  const importance = scoreImportance({
+    text,
+    hasExplicitCue: Boolean(explicitHit),
+    hasPreferenceCue: Boolean(preferenceHit),
+    role: event.role,
+  })
+
   return {
     sessionId: event.sessionId,
     agentId: event.agentId,
@@ -108,6 +124,7 @@ export function extractChatObservation(
     filesModified: [],
     toolName,
     promptNumber: event.promptNumber,
+    importance,
   }
 }
 

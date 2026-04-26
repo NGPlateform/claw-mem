@@ -8,6 +8,12 @@ export interface SearchOptions {
   agentId?: string
   type?: string
   limit?: number
+  /**
+   * Whether to include rows that have been rolled into a chat compaction.
+   * Default false — keeps the result set focused on rows that aren't
+   * already represented by a parent chat_compaction observation.
+   */
+  includeCompacted?: boolean
 }
 
 export class SearchEngine {
@@ -29,7 +35,7 @@ export class SearchEngine {
   }
 
   private searchFts(options: SearchOptions): SearchResult {
-    const { query, agentId, type, limit = 10 } = options
+    const { query, agentId, type, limit = 10, includeCompacted = false } = options
     const ftsQuery = sanitizeFtsQuery(query)
 
     let sql = `
@@ -47,6 +53,9 @@ export class SearchEngine {
       sql += " AND o.type = ?"
       params.push(type)
     }
+    if (!includeCompacted) {
+      sql += " AND o.compacted = 0"
+    }
 
     sql += " ORDER BY rank LIMIT ?"
     params.push(limit)
@@ -61,7 +70,7 @@ export class SearchEngine {
   }
 
   private searchLike(options: SearchOptions): SearchResult {
-    const { query, agentId, type, limit = 10 } = options
+    const { query, agentId, type, limit = 10, includeCompacted = false } = options
     const pattern = `%${query}%`
 
     let sql = `
@@ -76,6 +85,9 @@ export class SearchEngine {
     if (type) {
       sql += " AND type = ?"
       params.push(type)
+    }
+    if (!includeCompacted) {
+      sql += " AND compacted = 0"
     }
 
     sql += " ORDER BY created_at_epoch DESC LIMIT ?"
@@ -117,6 +129,9 @@ interface RawObsRow {
   content_hash: string
   created_at: string
   created_at_epoch: number
+  compacted: number | null
+  importance: number | null
+  compacted_into: number | null
 }
 
 function mapRow(row: RawObsRow): Observation {
@@ -137,6 +152,9 @@ function mapRow(row: RawObsRow): Observation {
     contentHash: row.content_hash,
     createdAt: row.created_at,
     createdAtEpoch: row.created_at_epoch,
+    compacted: row.compacted ?? 0,
+    importance: row.importance ?? 0.5,
+    compactedInto: row.compacted_into,
   }
 }
 

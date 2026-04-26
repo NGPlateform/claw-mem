@@ -83,7 +83,7 @@ describe("CLI: version", () => {
     const info = JSON.parse(r.stdout) as Record<string, unknown>
     assert.ok("clawMem" in info)
     assert.ok("schema" in info)
-    assert.equal(info.schema, 2)
+    assert.equal(info.schema, 3)
     assert.ok((info.node as string).startsWith("v"))
   })
 

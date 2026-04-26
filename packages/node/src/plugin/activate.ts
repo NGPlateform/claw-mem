@@ -4,9 +4,8 @@
 // manager) from api.pluginConfig, registers agent tools (`coc-node-*`), mounts
 // the CLI under `coc-node …`, and attaches a best-effort gateway_stop hook.
 
-import { resolveWritableDataDir } from "../writable-dir.ts"
-import { homedir } from "node:os"
-import { join } from "node:path"
+import { defaultDataDir, resolveWritableDataDir } from "../writable-dir.ts"
+import { checkCocRepo } from "../paths.ts"
 
 import type { Command } from "commander"
 
@@ -40,8 +39,17 @@ function defaultConfig(): NodeLifecycleConfig {
       reserveFile: ".quota.reserved",
     },
     bootstrap: {},
-    dataDir: join(homedir(), ".chainofclaw"),
+    // Lazy default — aligned with @chainofclaw/claw-mem and @chainofclaw/soul
+    // so all three plugins share one operator-managed root by default.
+    dataDir: defaultDataDir(),
   }
+}
+
+function humanBytes(n: number): string {
+  if (n >= 1 << 30) return `${(n / (1 << 30)).toFixed(1)} GiB`
+  if (n >= 1 << 20) return `${(n / (1 << 20)).toFixed(0)} MiB`
+  if (n >= 1 << 10) return `${(n / (1 << 10)).toFixed(0)} KiB`
+  return `${n} B`
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -83,7 +91,17 @@ export function activate(api: PluginApi): void {
   logger.info("[coc-node] Loading...")
 
   const config = mergeConfig(defaultConfig(), (api.pluginConfig ?? {}) as Record<string, unknown>)
-  const dataDir = resolveWritableDataDir({ candidate: config.dataDir, logger })
+
+  // Resolve the data dir EARLY so EACCES surfaces as an actionable error at
+  // activate-time rather than mid-command. Aborts plugin load on failure
+  // (the rest of the plugin is useless without a writable registry path).
+  let dataDir: string
+  try {
+    dataDir = resolveWritableDataDir({ candidate: config.dataDir, logger })
+  } catch (error) {
+    logger.error(`[coc-node] data dir not writable: ${String(error)}`)
+    return
+  }
   // Reflect the resolved path back into config so downstream consumers
   // (NodeManager, JsonNodeRegistry, StorageQuotaManager) see the same
   // sandbox-safe path. Keeps the `config.dataDir` invariant truthful.
@@ -135,7 +153,39 @@ export function activate(api: PluginApi): void {
     })
   }
 
-  logger.info(`[coc-node] Loaded (${nodeManager.listNodes().length} node(s) tracked)`)
+  // ── Status banners — visible at gateway start AND at install probe-load ──
+  // Goal: after install, the user can see at a glance what works without any
+  // further config, and what they need to set up to unlock more.
+  logger.info(`[coc-node] data dir: ${dataDir}`)
+  logger.info(
+    `[coc-node] storage quota: advertised=${humanBytes(config.storage.advertisedBytes)}, ` +
+      `reserved=${humanBytes(config.storage.reservedBytes)}, enforce=${config.storage.enforceQuota}`,
+  )
+
+  const tracked = nodeManager.listNodes().length
+  logger.info(`[coc-node] tracked nodes: ${tracked}`)
+
+  // Probe for a usable COC source repo so the user knows whether install/start
+  // commands will succeed. Read-only commands (list / status / coc-rpc-query
+  // against an already-running node) work regardless.
+  const cocRepo = checkCocRepo({ cocRepoPath: config.bootstrap.cocRepoPath })
+  if (cocRepo.ok && cocRepo.root) {
+    logger.info(
+      `[coc-node] coc repo: detected at ${cocRepo.root} — install/start commands enabled`,
+    )
+  } else if (cocRepo.root && cocRepo.missing.length > 0) {
+    logger.warn(
+      `[coc-node] coc repo: incomplete at ${cocRepo.root} (missing: ${cocRepo.missing.join(", ")}) — ` +
+        `run \`npm install\` in contracts/ and \`git submodule update --init\``,
+    )
+  } else {
+    logger.info(
+      `[coc-node] coc repo: not detected — read-only mode (list / status / coc-rpc-query work; ` +
+        `install / start need bootstrap.cocRepoPath or $COC_REPO_PATH pointing at a COC source clone)`,
+    )
+  }
+
+  logger.info(`[coc-node] Loaded — ${tracked === 0 ? "no nodes yet, run \`openclaw coc-node node install <name>\` to add one" : `managing ${tracked} node(s)`}`)
   logger.info(
     `[coc-node] CLI is mounted at \`openclaw coc-node ...\`. Standalone \`coc-node\` ` +
       `binary requires \`npm i -g @chainofclaw/node\` separately and is NOT installed by ` +

@@ -76,6 +76,69 @@ Success criteria:
 
 If verification passes, **only then** confirm with the user before copying / moving the restored tree onto the production path.
 
+### Cross-host restore: directory-mismatch handling
+
+A backup made on a host where `$HOME=/home/node` will contain absolute paths like `/home/node/.openclaw/...`. Restoring on a host with `$HOME=/home/baominghao` puts those paths in the agent state where they don't exist. Rather than blindly string-replacing every occurrence (which silently corrupts SQLite binaries and rewrites historical chat content), the operator decides per-restore.
+
+**Step 1 — detect the mismatch.** After restore-to-temp completes, scan the restored tree:
+
+```bash
+# Look for paths that don't match the current $HOME
+grep -lrE '/home/[a-zA-Z_-]+/\.openclaw' /tmp/openclaw-restore-test 2>/dev/null \
+  | head -20
+```
+
+If any hit is from a path that's **not** the current `$HOME`, you have a cross-host restore.
+
+**Step 2 — explain to the user, get a decision.** Present three options:
+
+1. **Read-only inspect** — leave paths as-is, mount the restored tree only for inspection. Useful when you just want to recover a specific file or audit history without resuming the agent.
+2. **Smart rebase** (recommended for resuming the agent) — rewrite **only** runtime-config paths, leave historical content intact. See the three-class table below.
+3. **Full literal overwrite** — what happens if you don't intervene; almost always wrong (corrupts history, can break SQLite).
+
+**Step 3 — apply smart rebase.** Three classes of content, three different policies:
+
+| Class | What it is | Examples | Policy |
+|---|---|---|---|
+| **A. Runtime config (paths)** | Settings the runtime reads to find files on disk now | `openclaw.json` `agentDir` / `paths.*`, `models.json` paths, `device.json`, `latest-recovery.json` `targetDir` / `sourceDir`, `context-snapshot.json` cwd refs | **Rewrite** old `$HOME` → new `$HOME`. Done structurally (JSON parse → field edit → re-emit), never via byte-level `sed` |
+| **B. Historical content** | Records of past events that **were** at those paths when written | `agents/*/sessions/*.jsonl` (tool calls + outputs), `memory/main.sqlite` `observations.{narrative,facts,files_read,files_modified}`, `semantic-snapshot.json` summaries | **Leave intact**. Rewriting fakes history. claw-mem runtime never blindly opens those paths — it just searches FTS text. |
+| **C. Host-local policy (CRITICAL — see auth section below)** | Settings that belong to **this** host's operator, not the agent | `gateway.auth.*`, `gateway.bind`, `gateway.port`, `plugins.allow`, host-specific provider keys in `models.json` | **Preserve target host's existing values** — don't overlay the backup's. The new host's operator already configured these for the new environment. |
+
+The rebase routine should:
+1. Parse target file as JSON / structured (not byte-level `sed`)
+2. Edit only A-class fields
+3. For C-class fields in `openclaw.json`, **merge** rather than overwrite: keep the target host's existing `gateway.auth.*` / `gateway.bind` / `plugins.allow` exactly; only adopt the backup's agent-portable fields
+4. Skip B-class files entirely
+5. Write a `rebase-report.json` next to the restored tree so operators can audit what changed
+
+**Step 4 — auth: re-confirm before launching the gateway.**
+
+After rebase, dump the effective `gateway.auth` and use the matching TUI invocation:
+
+```bash
+jq '.gateway.auth' ~/.openclaw/openclaw.json
+```
+
+| `auth.mode` | TUI invocation |
+|---|---|
+| `"token"` | `openclaw tui --token "$(jq -r .gateway.auth.token ~/.openclaw/openclaw.json)"` |
+| `"password"` | `openclaw tui --password '<password>'` |
+| `"trusted-proxy"` | `openclaw tui --password '<password>'` (if header-based auth fronts the gateway, trust the proxy header in dev; otherwise pass `--password`) |
+| `"none"` | `openclaw tui` |
+
+**Common pitfall**: post-restore, `openclaw tui --token "$(jq -r .gateway.auth.token openclaw.json)"` returns the literal string `null` when the active auth mode no longer has a `.token` field (e.g. `mode` is now `password` or `trusted-proxy`). The TUI dutifully sends `null` and the gateway rejects with **1008**. Always re-read `auth.mode` after restore and pick the matching flag.
+
+### Auth-mode preservation rule (must read before any production restore)
+
+The most common production-breaking restore mistake: backup contains `gateway.auth.mode = "token"` with a valid token from the source host; target host has been carefully configured with `mode = "trusted-proxy"` or `"password"`. A literal-overwrite restore replaces target's auth, then the operator on target can't log in anymore — and **the backup's token is for a different gateway instance, useless on this host**.
+
+Rule: **`gateway.auth` is a property of the host, not of the agent.** It does not get restored. The smart-rebase path explicitly preserves the target host's `gateway.auth.*` block. If you must do a literal overwrite (e.g. recovering on a fresh host with no existing config), regenerate auth before starting the gateway:
+
+```bash
+openclaw gateway init --auth password
+# or whatever mode the new host should use
+```
+
 ### Discover what this key can restore
 
 ```bash
@@ -139,5 +202,8 @@ Private keys (owner / resurrection / guardian) are **never** chat-safe. Don't tr
 | `429 rate limit exceeded` | IPFS gateway rate-limited | Retry with exponential backoff until `merkleVerified: true` |
 | restore unavailable / blocked | chain not registered or no manifest | Run `backup doctor --json`; fix `chain.registered` first |
 | `[gateway] unauthorized (1008)` | gateway auth / proxy mode wrong | Fix gateway auth (token / OAuth / proxy) before scheduled `heartbeat` |
+| `[gateway] unauthorized (1008)` **right after restore** | restore overwrote `gateway.auth.mode` (was `token`, now `trusted-proxy` / `password`); old TUI command sends literal `null` token | `jq '.gateway.auth.mode' ~/.openclaw/openclaw.json` to see active mode; switch TUI invocation per the auth-mode table above. If smart-rebase wasn't used, restore target host's `gateway.auth.*` from the pre-restore backup at `~/.openclaw/.restore-overwrite-backup-*/openclaw.json` |
+| Cross-host restored agent has stale paths in chat / observations | literal overwrite was used, OR smart-rebase ran on B-class history files (it shouldn't) | Roll those files back from `.restore-overwrite-backup-<ts>/` and re-run with smart-rebase scoped to A-class only |
+| SQLite `PRAGMA integrity_check` reports errors after a manual rewrite | byte-level `sed` on `memory/main.sqlite` corrupted page offsets (string lengths changed) | Roll back `memory/main.sqlite` from backup, then use `UPDATE observations SET narrative = REPLACE(narrative, '<old>', '<new>')` etc. inside `sqlite3` (length-safe) and rebuild FTS: `INSERT INTO observations_fts(observations_fts) VALUES('rebuild')` |
 | `ENOENT ... backup/targeting.js` | extension install corrupt / mismatched | `openclaw plugins install @chainofclaw/soul --dangerously-force-unsafe-install --force` |
 | `data dir not writable` | `~/.claw-mem` owned by wrong uid | 1.2.2+ auto-falls-back to `~/.openclaw/state/coc-soul`; on older versions `export CLAW_MEM_DATA_DIR=~/.openclaw/state` and restart gateway |

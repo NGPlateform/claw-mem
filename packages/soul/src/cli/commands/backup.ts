@@ -16,7 +16,12 @@ import {
   setDotPath,
 } from "../../config-persistence.ts"
 import { runInitFlow } from "../../lifecycle.ts"
-import { patchBackupState, readBackupState } from "../../local-state.ts"
+import {
+  getLatestRecoveryPackagePath,
+  patchBackupState,
+  readBackupState,
+  readLatestRecoveryPackage,
+} from "../../local-state.ts"
 import {
   ZERO_BYTES32,
   deriveDefaultAgentId,
@@ -48,6 +53,43 @@ export function registerBackupCommands(program: Command, deps: SoulCommandDeps):
         console.log(`  bytes:      ${b.totalBytes}`)
         console.log(`  merkleRoot: ${b.dataMerkleRoot}`)
         if (b.txHash) console.log(`  txHash:     ${b.txHash}`)
+
+        // ── Recovery instructions: how to restore THIS backup later ──
+        // Surfaced after every successful backup so the user knows
+        // (a) the manifest CID to ask for, (b) where the private key
+        // they'll need lives, and (c) a copy-paste restore command.
+        // The recommendedRestoreCommand and encryptionMode come from
+        // the recovery package the scheduler just wrote to disk.
+        const sourceDir = resolveHomePath(backupManager.getCocConfig().dataDir)
+        const recoveryPkgPath = getLatestRecoveryPackagePath(sourceDir)
+        const recoveryPkg = await readLatestRecoveryPackage(sourceDir).catch(() => null)
+        const key = backupManager.getKeyMaterial()
+
+        console.log("")
+        console.log("Recovery info — keep this safe to restore on another host:")
+        console.log(`  recovery package: ${recoveryPkgPath}`)
+        if (recoveryPkg) {
+          console.log(`  encryption mode:  ${recoveryPkg.encryptionMode}`)
+        }
+        if (key.source === "keystore" && key.keyPath) {
+          console.log(`  signing key file: ${key.keyPath} (mode 0600 — copy off-host securely)`)
+        } else if (key.source === "config") {
+          console.log(`  signing key:      from backup.privateKey in config (operator-managed)`)
+        } else {
+          console.log(`  signing key:      not loaded (backup ran in dry mode?)`)
+        }
+        if (key.address) {
+          console.log(`  signer address:   ${key.address}`)
+        }
+        console.log("")
+        console.log("To restore on another host (always restore to /tmp first, verify, then promote):")
+        console.log(`  openclaw coc-soul backup restore --manifest-cid ${b.manifestCid} \\`)
+        console.log(`    --target-dir /tmp/openclaw-restore-test${recoveryPkg?.requiresPassword ? " \\\n    --password '<your-password>'" : ""}`)
+        if (recoveryPkg) {
+          console.log("")
+          console.log(`  (if you also have ${recoveryPkgPath} on the target host:)`)
+          console.log(`  openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test${recoveryPkg.requiresPassword ? " --password '<pw>'" : ""}`)
+        }
       } catch (error) {
         logger.error(`Backup failed: ${String(error)}`)
         process.exit(1)

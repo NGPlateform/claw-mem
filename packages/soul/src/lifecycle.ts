@@ -76,8 +76,8 @@ function buildRecommendedActions(report: Omit<DoctorReport, "actions">): Recomme
   if (!report.local.dataDirExists) {
     actions.push({
       id: "check_data_dir",
-      label: "检查数据目录",
-      description: "当前 dataDir 不存在或不可访问，需要先确认 Agent 数据目录配置。",
+      label: "Check dataDir",
+      description: "Current dataDir does not exist or is not accessible — verify the agent's data directory configuration.",
       command: null,
     })
   }
@@ -85,9 +85,9 @@ function buildRecommendedActions(report: Omit<DoctorReport, "actions">): Recomme
   if (!report.chain.registered) {
     actions.push({
       id: "init",
-      label: "执行初始化",
-      description: "注册 soul、执行首次全量备份并生成本地恢复包。",
-      command: "coc-backup init",
+      label: "Run initialization",
+      description: "Register the soul on-chain, run the first full backup, and generate a local recovery package.",
+      command: "openclaw coc-soul backup init",
     })
     return actions
   }
@@ -95,17 +95,17 @@ function buildRecommendedActions(report: Omit<DoctorReport, "actions">): Recomme
   if (report.chain.backupCount === 0) {
     actions.push({
       id: "first_backup",
-      label: "执行首次备份",
-      description: "当前已注册但没有链上备份，应立即执行全量备份。",
-      command: "coc-backup backup --full",
+      label: "Run first backup",
+      description: "Agent is registered but no on-chain backup exists yet — run a full backup now.",
+      command: "openclaw coc-soul backup create --full",
     })
   }
 
   if (!report.ipfs.reachable) {
     actions.push({
       id: "check_ipfs",
-      label: "检查 IPFS",
-      description: "IPFS 当前不可达，后续备份与恢复都会受阻。",
+      label: "Check IPFS",
+      description: "IPFS is currently unreachable; both backup and restore will be blocked.",
       command: null,
     })
   }
@@ -113,19 +113,19 @@ function buildRecommendedActions(report: Omit<DoctorReport, "actions">): Recomme
   if (report.chain.backupOverdue) {
     actions.push({
       id: "run_backup",
-      label: "立即备份",
-      description: "最新备份已过期，建议立即触发一次备份。",
-      command: "coc-backup backup",
+      label: "Run backup now",
+      description: "The latest backup is overdue; run one immediately.",
+      command: "openclaw coc-soul backup create",
     })
   }
 
   if (report.restore.blocked) {
     actions.push({
       id: "fix_restore",
-      label: "修复恢复材料",
-      description: report.restore.reason ?? "恢复链路缺少必要材料。",
+      label: "Fix restore material",
+      description: report.restore.reason ?? "Restore pipeline is missing required material.",
       command: report.restore.requiresPassword
-        ? "coc-backup restore --latest-local --password <password>"
+        ? "openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test --password <password>"
         : null,
     })
   }
@@ -133,9 +133,9 @@ function buildRecommendedActions(report: Omit<DoctorReport, "actions">): Recomme
   if (!report.resurrection.configured) {
     actions.push({
       id: "configure_resurrection",
-      label: "配置复活",
-      description: "建议尽快配置复活密钥和离线阈值，避免只有备份没有复活能力。",
-      command: "coc-backup configure-resurrection --key-hash <hash>",
+      label: "Configure resurrection",
+      description: "Configure the resurrection key + offline threshold so the agent isn't backup-only.",
+      command: "openclaw coc-soul backup configure-resurrection --key-hash <hash>",
     })
   }
 
@@ -144,23 +144,23 @@ function buildRecommendedActions(report: Omit<DoctorReport, "actions">): Recomme
     if (!readiness.carrierConfirmed) {
       actions.push({
         id: "confirm_resurrection",
-        label: "确认载体",
-        description: "复活请求已创建，但载体尚未确认承载。",
-        command: "coc-backup resurrection confirm",
+        label: "Confirm carrier",
+        description: "A resurrection request exists but the carrier has not yet confirmed it.",
+        command: "openclaw coc-soul backup resurrection confirm",
       })
     } else if (readiness.canComplete) {
       actions.push({
         id: "complete_resurrection",
-        label: "完成复活",
-        description: "复活请求已满足链上条件，可直接完成。",
-        command: "coc-backup resurrection complete",
+        label: "Complete resurrection",
+        description: "The resurrection request meets all on-chain conditions and can be completed.",
+        command: "openclaw coc-soul backup resurrection complete",
       })
     } else {
       actions.push({
         id: "check_resurrection",
-        label: "查看复活状态",
-        description: "复活请求存在，但还未满足完成条件。",
-        command: "coc-backup resurrection status",
+        label: "Check resurrection status",
+        description: "Resurrection request exists but does not yet meet completion conditions.",
+        command: "openclaw coc-soul backup resurrection status",
       })
     }
   }
@@ -224,9 +224,9 @@ export async function buildDoctorReport(
 
   const restoreReason =
     backupCount > 0 && !recoveryPackage
-      ? "存在链上备份，但本地缺少 latest-recovery.json，无法直接恢复最新快照。"
+      ? "On-chain backups exist but the local latest-recovery.json is missing — direct restore of the latest snapshot is not available."
       : recoveryPackage?.requiresPassword && !config.encryptionPassword
-        ? "当前恢复包要求密码解密，但插件配置中缺少 encryptionPassword。"
+        ? "The current recovery package requires password decryption but the plugin config is missing encryptionPassword."
         : null
 
   const restoreBlocked = restoreReason !== null

@@ -1,7 +1,7 @@
 ---
 name: claw-mem2db
-description: Standalone OpenClaw skill that automatically (and on demand) captures the agent's chat conversations and tool-call chains into a local SQLite + FTS5 database, then replays them as token-budgeted context on the next prompt — so the agent doesn't forget across restarts, compaction, or new sessions. Captures `message_received` / `message_sent` (chat, with explicit cues like `记一下` / `remember this` promoted to `decision` observations) and `after_tool_call` (tool); reads on `before_prompt_build` via hybrid recall (FTS5 search on the latest user message merged with the recent tail). Use when the user wants long-lived agent memory, wants to search past chats and tool-call observations, wants explicit "remember this" cues to stick, wants memory to survive restarts / compaction, or wants to export / import memory across machines. Zero-config — `openclaw plugins install @chainofclaw/claw-mem` is sufficient; works fully on its own with no chain interaction and no external services. Exposes agent-callable tools (`mem-search`, `mem-status`, `mem-forget`) and a CLI namespace (`openclaw mem ...`). Session summaries default to the OpenClaw inference surface (`openclaw infer model run`) so no extra API key is needed. Optional companion: install `coc-soul` alongside to upload memory snapshots on-chain, register a DID identity, mirror to P2P decentralized storage, and recover from a different device after corruption — together they enable "digital immortality" / "silicon-based persistence" for an AI agent.
-version: 2.3.0
+description: Standalone OpenClaw skill that automatically (and on demand) captures the agent's chat conversations and tool-call chains into a local SQLite + FTS5 database, then replays them as token-budgeted context on the next prompt — so the agent doesn't forget across restarts, compaction, or new sessions. Captures `message_received` / `message_sent` (chat, with explicit cues like "remember this" / "note this" promoted to `decision` observations; bilingual EN + zh-CN cue dictionaries built in) and `after_tool_call` (tool); reads on `before_prompt_build` via hybrid recall (FTS5 search on the latest user message merged with the recent tail). Use when the user wants long-lived agent memory, wants to search past chats and tool-call observations, wants explicit "remember this" cues to stick, wants memory to survive restarts / compaction, or wants to export / import memory across machines. Zero-config — `openclaw plugins install @chainofclaw/claw-mem` is sufficient; works fully on its own with no chain interaction and no external services. Exposes agent-callable tools (`mem-search`, `mem-status`, `mem-forget`) and a CLI namespace (`openclaw mem ...`). Session summaries default to the OpenClaw inference surface (`openclaw infer model run`) so no extra API key is needed. Optional companion: install `coc-soul` alongside to upload memory snapshots on-chain, register a DID identity, mirror to P2P decentralized storage, and recover from a different device after corruption — together they enable "digital immortality" / "silicon-based persistence" for an AI agent.
+version: 2.3.1
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/claw-mem
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/claw-mem"
-        version: "2.1.0"
+        version: "2.3.1"
         bins:
           - claw-mem
 ---
@@ -92,7 +92,7 @@ Use whatever absolute path is writable in your environment (`~/.openclaw/state/c
 
 Two streams feed the same store:
 
-- **Chat** — every user message (and optionally every assistant message) is run through a lightweight extractor that flags explicit cues (`记一下`, `记住`, `remember this`, `note this`, `for the record`, …) as `decision` observations and preference cues (`我喜欢`, `from now on`, `always use`, …) as `learning`. Plain chat lands as a low-signal `discovery`.
+- **Chat** — every user message (and optionally every assistant message) is run through a lightweight extractor that flags explicit cues (e.g. "remember this", "note this", "for the record" — full bilingual EN + zh-CN dictionary in the cue config) as `decision` observations and preference cues (e.g. "I prefer", "from now on", "always use") as `learning`. Plain chat lands as a low-signal `discovery`.
 - **Tool calls** — every tool the agent runs becomes a typed observation (discovery / decision / pattern / learning / issue / change / explanation), capturing what was read, edited, searched, or executed.
 
 Both streams write into a single local SQLite database with FTS5 full-text search. On each new prompt, claw-mem assembles a token-budgeted **memory context** via hybrid recall — an FTS5 search on the latest user message merged with the recent tail — and injects it into the next prompt. Sessions are summarized on close (the host's OpenClaw inference provider does the summarization, no extra API key needed).
@@ -100,7 +100,7 @@ Both streams write into a single local SQLite database with FTS5 full-text searc
 What the agent gets in return:
 - No more "I forgot what we were doing" between sessions or after compaction
 - Searchable history of decisions, preferences, and the rationale behind them
-- Explicit `记一下` / `remember this` cues in chat reliably stick as `decision` observations
+- Explicit "remember this" cues in chat reliably stick as `decision` observations (bilingual EN + zh-CN cue dictionaries built in)
 - All memory stays local by default — no network, no chain, no external service
 
 ## Optional companions: from local memory to digital immortality
@@ -199,10 +199,10 @@ Set `chatMemory.compaction.enabled = false` to keep raw chat rows forever (audit
 Pure chat sessions used to slip past the observer because capture only fired on `after_tool_call`. v2.1.0 added `message_received` / `message_sent` capture so spoken-only conversations build up memory too. v2.2.0 also exposes the schema in `openclaw.plugin.json` so `openclaw plugins inspect claw-mem` shows both hooks and config keys, and renames the knobs to match the OpenClaw operator-side conventions (breaking — see migration table below). Defaults are conservative: user messages are captured, assistant messages are not.
 
 - `chatMemory.enabled` (default `true`) — master switch for chat capture
-- `chatMemory.explicitOnly` (default `false`) — only capture when the message contains an explicit cue (`记一下`, `记住`, `长期记忆`, `别忘了`, `remember this`, `note this`, `for the record`, …); silences everything else
+- `chatMemory.explicitOnly` (default `false`) — only capture when the message contains an explicit cue ("remember this", "note this", "for the record", "save this", and the equivalent zh-CN tokens shipped in the default cue dictionary); silences everything else
 - `chatMemory.minChars` (default `8`) — drop shorter messages as chitchat
 - `chatMemory.maxNarrativeChars` (default `500`) — truncate the captured narrative body at this many characters
-- `chatMemory.cues.explicit` / `chatMemory.cues.preference` — override the cue dictionaries; preference cues (`我喜欢`, `from now on`, `always use`, …) become `learning` observations
+- `chatMemory.cues.explicit` / `chatMemory.cues.preference` — override the cue dictionaries (defaults ship bilingual EN + zh-CN); preference cues ("I prefer", "from now on", "always use" + zh-CN equivalents) become `learning` observations. To inspect or override the actual default tokens, run `openclaw mem config get chatMemory.cues`
 - `chatMemory.captureAssistant` (default `false`) — also capture assistant messages via `message_sent` (use sparingly — high noise)
 
 Chat observations now carry `toolName: "message_received"` (user) or `toolName: "message_sent"` (assistant) — a 1:1 mapping with the originating hook so downstream filters can write `tool_name IN ('message_received','message_sent')` for "all chat" or pull just one direction. Still no schema migration; the existing `tool_name` column carries the value.

@@ -89,7 +89,7 @@ describe("lifecycle", () => {
           backupType: "full",
           encryptionMode: "privateKey",
           requiresPassword: false,
-          recommendedRestoreCommand: "coc-backup restore --latest-local",
+          recommendedRestoreCommand: "openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test",
         })
         await writeBackupState(dataDir, {
           version: 1,
@@ -149,7 +149,7 @@ describe("lifecycle", () => {
       backupType: "full",
       encryptionMode: "password",
       requiresPassword: true,
-      recommendedRestoreCommand: "coc-backup restore --latest-local --password <password>",
+      recommendedRestoreCommand: "openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test --password <password>",
     })
 
     await assert.rejects(resolveRestorePlan(config, { latestLocal: true }), "--password")

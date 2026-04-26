@@ -11,6 +11,53 @@
   - `backup.autoBackup: true` + `backup.autoBackupIntervalMs` runs this on a timer inside the OpenClaw plugin.
 - `backup.backupOnSessionEnd: true` + a `session_end` hook from OpenClaw also triggers `backup create` when the agent's session closes.
 
+### Output: `backup create` recovery summary (1.2.6+)
+
+Every successful `backup create` prints two blocks. The first is the receipt; the second is what the user needs to restore the backup later — relay it verbatim to the user (don't swallow it):
+
+```
+Backup complete (full):
+  manifest:   <cid>
+  files:      <n>
+  bytes:      <n>
+  merkleRoot: 0x...
+  txHash:     0x...           # only present if anchored on-chain
+
+Recovery info — keep this safe to restore on another host:
+  recovery package: <sourceDir>/.coc-backup/latest-recovery.json
+  encryption mode:  none | privateKey | password
+  signing key file: <path>    # mode 0600 — copy off-host securely
+  signer address:   0x...
+
+To restore on another host (always restore to /tmp first, verify, then promote):
+  openclaw coc-soul backup restore --manifest-cid <cid> \
+    --target-dir /tmp/openclaw-restore-test [ --password '<pw>' ]
+
+  (if you also have <path>/latest-recovery.json on the target host:)
+  openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test [ --password '<pw>' ]
+```
+
+The `--password` clause appears only when `encryption mode = password`. In `privateKey` mode, the operator must instead make sure the right key is loaded on the target host (either by copying the keystore file or by setting `backup.privateKey` in target's config).
+
+The same fields are persisted in `<sourceDir>/.coc-backup/latest-recovery.json` (a small JSON written atomically after every backup) so the info survives even if the operator missed the terminal output:
+
+```jsonc
+{
+  "version": 1,
+  "agentId": "0x...",
+  "latestManifestCid": "bafy...",
+  "anchoredAt": 1777180566,
+  "txHash": "0x...",
+  "dataMerkleRoot": "0x...",
+  "backupType": "full" | "incremental",
+  "encryptionMode": "none" | "privateKey" | "password",
+  "requiresPassword": false | true,
+  "recommendedRestoreCommand": "openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test ..."
+}
+```
+
+Treat both `latest-recovery.json` AND the signing-key file as a pair — back them up together (the manifest CID is also visible on-chain via the SoulRegistry contract, so even losing `latest-recovery.json` is recoverable from `backup find-recoverable --on-chain`, but losing the key means the encrypted payload is permanently unreadable).
+
 ## Inspect
 
 - `backup status` — concise: chain registration state, last backup time, IPFS reachability

@@ -144,9 +144,13 @@ export class BackupScheduler {
       ? "none"
       : (this.config.encryptionPassword ? "password" : "privateKey")
 
+    // Note: emitted as guidance into latest-recovery.json so any consumer
+    // (CLI, recovery scripts, doctor reports) can show the user one
+    // copy-pasteable command. Keep flags minimal — operators will add
+    // --target-dir at restore time per the safety-first restore policy.
     const recommendedRestoreCommand = encryptionMode === "password"
-      ? "coc-backup restore --latest-local --password <password>"
-      : "coc-backup restore --latest-local"
+      ? "openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test --password <password>"
+      : "openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test"
 
     void baseDir
 

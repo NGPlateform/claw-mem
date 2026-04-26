@@ -1,7 +1,7 @@
 ---
 name: coc-soul
 description: Give an AI agent a persistent on-chain soul — register and manage a decentralized identity (DID), encrypt and anchor agent state to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the host dies. **Pairs with `claw-mem2db` to deliver "digital / silicon-based persistence" for AI agents**: when claw-mem is co-installed, every backup automatically captures claw-mem's chat history + tool-call observations + session summaries as a token-budgeted semantic snapshot, so an agent recovered on a fresh host can replay its memory context — not just its files. Soul also runs fully standalone (without claw-mem), in which case backups still cover identity / config / workspace / chat files but skip the semantic snapshot. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, inspect on-chain identity state, or get persistent cross-device memory paired with claw-mem. Zero-config on COC testnet — installation auto-generates an EOA keystore (~/.claw-mem/keys, shared with claw-mem; or $OPENCLAW_STATE_DIR/coc-soul/keys in sandboxed hosts), auto-drips testnet COC from the public faucet for gas, and pre-fills RPC + IPFS + contract addresses for the live testnet. The first `openclaw coc-soul backup init` works with no manual setup.
-version: 1.2.5
+version: 1.2.6
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/soul
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/soul"
-        version: "1.2.5"
+        version: "1.2.6"
         bins:
           - coc-soul
 ---
@@ -106,6 +106,50 @@ jq '.gateway.auth.mode' ~/.openclaw/openclaw.json
 Pick the matching TUI flag — `--token` only works when `mode = "token"` AND `.token` is non-null. If the active mode is `password` or `trusted-proxy`, `jq -r .gateway.auth.token` returns the literal string `"null"` and TUI sends that, which the gateway rejects with 1008. **Don't reflexively use `--token` after a restore — read the active mode first.**
 
 Full procedure with command-line examples: `references/backup.md` → "Cross-host restore: directory-mismatch handling" + "Auth-mode preservation rule".
+
+## Post-backup messaging contract (1.2.6+)
+
+**After every successful `backup create`, the agent MUST relay the recovery info to the user.** The CLI 1.2.6+ prints it; agents that wrap the CLI must pass it through, not swallow it. The user needs four things to be able to restore later:
+
+1. **The manifest CID** (`b.manifestCid`, e.g. `bafy...`) — what to ask for at restore time.
+2. **The signing-key location** — where the private key needed to read the encrypted backup lives. One of:
+   - `~/.claw-mem/keys/agent.key` (default keystore, mode `0600`, auto-generated when `backup.privateKey` is unset; resolution chain: `$COC_SOUL_KEYSTORE_PATH` → `$OPENCLAW_STATE_DIR/coc-soul/keys/agent.key` → `~/.claw-mem/keys/agent.key`)
+   - `backup.privateKey` in `~/.openclaw/openclaw.json` (when operator set it explicitly)
+3. **The encryption mode** — `none` / `privateKey` / `password` — determines whether `--password` is needed at restore time.
+4. **The recovery package path** — `<sourceDir>/.coc-backup/latest-recovery.json` — small JSON file with all of the above pre-formatted; copy this off-host alongside the key for fast restore.
+
+The CLI emits this block:
+
+```
+Backup complete (full):
+  manifest:   bafyabc...
+  files:      127
+  bytes:      4194304
+  merkleRoot: 0xabc...
+  txHash:     0xdef...
+
+Recovery info — keep this safe to restore on another host:
+  recovery package: /home/<user>/.openclaw/.coc-backup/latest-recovery.json
+  encryption mode:  privateKey
+  signing key file: /home/<user>/.claw-mem/keys/agent.key (mode 0600 — copy off-host securely)
+  signer address:   0x...
+
+To restore on another host (always restore to /tmp first, verify, then promote):
+  openclaw coc-soul backup restore --manifest-cid bafyabc... \
+    --target-dir /tmp/openclaw-restore-test
+
+  (if you also have /home/<user>/.openclaw/.coc-backup/latest-recovery.json on the target host:)
+  openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test
+```
+
+**Agent responsibilities when displaying this:**
+
+- Echo the **manifest CID** verbatim (it's how the user later asks "restore my backup `bafy...`")
+- Echo the **signing key file path** verbatim — this is the file the user must back up off-host (encrypted USB / passphrase-protected vault / hardware security module). **Do NOT print the key contents themselves.**
+- Echo the **`To restore on another host`** block verbatim — operators on the recovery host will copy-paste it
+- If the encryption mode is `password`, remind the user that `--password '<value>'` is required at restore time and they must remember it (or store it securely separately)
+
+For agents running headless (no user attention right now): the same info is persisted to `~/.openclaw/.coc-backup/latest-recovery.json` automatically — operators can read it later via `cat` or `openclaw coc-soul backup status --json`.
 
 ---
 

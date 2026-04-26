@@ -21,6 +21,7 @@ import {
 import type { CocBackupConfig } from "./backup-config-schema.ts"
 import { ensureAgentKey } from "./keystore.ts"
 import { requestFaucetDrip } from "./faucet.ts"
+import { Wallet } from "ethers"
 
 export interface BackupManagerOptions {
   config: BackupConfig
@@ -41,10 +42,26 @@ export interface BackupManagerOptions {
   keystorePath?: string
 }
 
+/**
+ * Where the active signing key came from. Surfaced to the CLI so a
+ * post-backup summary can tell the user which file holds the key needed
+ * to restore on another host. `keyPath` is null when the key came from
+ * `backup.privateKey` in config (no on-disk file managed by soul).
+ */
+export interface KeyMaterialInfo {
+  /** "config" — operator set backup.privateKey directly; "keystore" — auto-generated/loaded from disk */
+  source: "config" | "keystore" | "missing"
+  /** Absolute path to the keystore file, or null when source !== "keystore" */
+  keyPath: string | null
+  /** Ethereum address derived from the active key, or null when not available */
+  address: string | null
+}
+
 export class BackupManager {
   private readonly config: BackupConfig
   private readonly archiveStore: BackupArchiveRepository
   private readonly logger: Logger
+  private readonly keyMaterial: KeyMaterialInfo
 
   private cocConfig: CocBackupConfig | null = null
   private soul: SoulClient | null = null
@@ -53,10 +70,17 @@ export class BackupManager {
 
   constructor(opts: BackupManagerOptions) {
     let cfg = opts.config
-    if (!cfg.privateKey && opts.autoGenerateKey !== false) {
+    let keyMaterial: KeyMaterialInfo
+    if (cfg.privateKey) {
+      // Operator set the key explicitly; we don't track its on-disk location.
+      let address: string | null = null
+      try { address = new Wallet(cfg.privateKey).address } catch { /* ignore */ }
+      keyMaterial = { source: "config", keyPath: null, address }
+    } else if (opts.autoGenerateKey !== false) {
       try {
         const key = ensureAgentKey({ logger: opts.logger, keyPath: opts.keystorePath })
         cfg = { ...cfg, privateKey: key.privateKey }
+        keyMaterial = { source: "keystore", keyPath: key.keyPath, address: key.address }
         if (key.generated) {
           opts.logger.info(
             `[coc-soul] using auto-generated agent address ${key.address} (override via backup.privateKey)`,
@@ -73,12 +97,19 @@ export class BackupManager {
         }
       } catch (err) {
         opts.logger.warn(`[coc-soul] keystore unavailable: ${String(err)}`)
+        keyMaterial = { source: "missing", keyPath: null, address: null }
       }
+    } else {
+      keyMaterial = { source: "missing", keyPath: null, address: null }
     }
     this.config = cfg
     this.archiveStore = opts.archiveStore
     this.logger = opts.logger
+    this.keyMaterial = keyMaterial
   }
+
+  /** Where the active signing key lives — surfaced post-backup so users know what to copy off-host for restore. */
+  getKeyMaterial(): KeyMaterialInfo { return this.keyMaterial }
 
   isConfigured(): boolean {
     return isBackupConfigured(this.config)

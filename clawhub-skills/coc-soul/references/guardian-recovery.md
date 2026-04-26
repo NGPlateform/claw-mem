@@ -43,9 +43,9 @@ Both are guardian-touching, but they do different things:
 
 | Subtree | Changes | Typical question |
 |---|---|---|
-| `coc-soul recovery ...` | **Owner address** of the agent (ownership migration after key loss) | "我丢了 owner key，怎么转给新地址？" |
-| `coc-soul guardian initiate / approve / status` | **Resurrection request lifecycle** for moving the agent to a carrier | "agent 主机宕了，怎么让 carrier 把它接走？" |
-| `coc-soul guardian add / remove / list` | **Guardian set membership** (owner-only admin) | "我要换 / 增加 / 看 guardian 名单" |
+| `coc-soul recovery ...` | **Owner address** of the agent (ownership migration after key loss) | "I lost the owner key — how do I transfer ownership to a new address?" |
+| `coc-soul guardian initiate / approve / status` | **Resurrection request lifecycle** for moving the agent to a carrier | "Agent's host died — how do I get a carrier to pick it up?" |
+| `coc-soul guardian add / remove / list` | **Guardian set membership** (owner-only admin) | "I want to change / add / list the guardian set" |
 
 When you see "social recovery", clarify which one — the owner-migration `recovery` flow, or the guardian-mediated resurrection `guardian initiate` flow.
 
@@ -61,7 +61,7 @@ When you see "social recovery", clarify which one — the owner-migration `recov
 
 - Never transmit owner / resurrection / guardian **private keys** in chat — even split or encrypted fragments. Route key transfer through a local secure channel.
 - It IS safe to share addresses, agent IDs, request IDs, transaction hashes.
-- "多签" in this context = guardian quorum threshold (an N-of-M policy at the SoulRegistry contract level), not a separate multisig wallet contract.
+- When users say "multisig" in this context, they mean the **guardian quorum threshold** (an N-of-M policy enforced at the SoulRegistry contract level), not a separate multisig wallet contract.
 
 ## Failure-mode triage
 

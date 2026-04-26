@@ -1,7 +1,7 @@
 ---
 name: coc-soul
 description: Give an AI agent a persistent on-chain soul — register and manage a decentralized identity (DID), encrypt and anchor agent state to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the host dies. **Pairs with `claw-mem2db` to deliver "digital / silicon-based persistence" for AI agents**: when claw-mem is co-installed, every backup automatically captures claw-mem's chat history + tool-call observations + session summaries as a token-budgeted semantic snapshot, so an agent recovered on a fresh host can replay its memory context — not just its files. Soul also runs fully standalone (without claw-mem), in which case backups still cover identity / config / workspace / chat files but skip the semantic snapshot. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, inspect on-chain identity state, or get persistent cross-device memory paired with claw-mem. Zero-config on COC testnet — installation auto-generates an EOA keystore (~/.claw-mem/keys, shared with claw-mem; or $OPENCLAW_STATE_DIR/coc-soul/keys in sandboxed hosts), auto-drips testnet COC from the public faucet for gas, and pre-fills RPC + IPFS + contract addresses for the live testnet. The first `openclaw coc-soul backup init` works with no manual setup.
-version: 1.2.4
+version: 1.2.5
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/soul
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/soul"
-        version: "1.2.4"
+        version: "1.2.5"
         bins:
           - coc-soul
 ---
@@ -46,7 +46,7 @@ Don't merge the two explanations until the path is selected. `recovery` and `res
 | latest incremental CID | Newest chain tip | Restore the latest state |
 | identity CID / hash | Identity-content hash used in registration | **Not** the backup restore point |
 
-Rule: when a user asks "你的 CID 是什么 / what's your CID", first confirm whether they mean **latest backup manifest CID**.
+Rule: when a user asks "what's your CID?", first confirm whether they mean the **latest backup manifest CID** vs. an older backup CID vs. the identity registration CID — they get conflated constantly.
 
 ## Key material — agent safety rules
 
@@ -60,30 +60,30 @@ Rule: when a user asks "你的 CID 是什么 / what's your CID", first confirm w
 
 ## Ultra-quick runbook (10 lines)
 
-1. 先判路：`restore` 还是 `resurrection`（见上面的决策树）
-2. 跑 `openclaw coc-soul backup doctor --json` 看 `chain.registered` / `restore.available` / `resurrection.configured`
-3. 有 manifest CID 或 `latest-recovery.json` → 走 restore
-4. **先恢复到 `/tmp/...`**，不要直接覆盖生产目录
-5. 验证 `merkleVerified: true` + exit code 0 通过后，再按用户确认 promote 到正式路径
-6. 无 owner key 且 resurrection 已预配置 → 走 resurrection 流程
-7. 需要多人审批迁移所有权 → 走 guardian recovery（quorum + timelock）
-8. heartbeat 先脚本化，再用 cron / systemd / OpenClaw 调度落地
-9. 私钥不进聊天（含拆分、加密分段、临时 paste）
-10. 命令面默认 `openclaw coc-soul ...`；只有当 `npm i -g @chainofclaw/soul` 装了独立 bin 才有 bare `coc-soul ...`
+1. Pick the path first: `restore` or `resurrection` (see the decision tree above).
+2. Run `openclaw coc-soul backup doctor --json` and read `chain.registered` / `restore.available` / `resurrection.configured`.
+3. If there's a manifest CID or a `latest-recovery.json`, take the **restore** path.
+4. **Restore to `/tmp/...` first** — never overwrite a production directory in one step.
+5. Verify `merkleVerified: true` + exit code 0, then promote to the production path only after explicit user confirmation.
+6. No owner key but resurrection was pre-configured → take the **resurrection** flow.
+7. Need multi-party approval for ownership migration → take **guardian recovery** (quorum + timelock).
+8. Script the `heartbeat` first, then schedule it via cron / systemd / OpenClaw scheduler.
+9. Private keys never go through chat (including split / encrypted fragments or temporary paste).
+10. Default command surface is `openclaw coc-soul ...`; the bare `coc-soul ...` only exists when the standalone bin was installed via `npm i -g @chainofclaw/soul`.
 
 ## Common failure → cause → fix
 
 | Symptom | Likely cause | First action |
 |---|---|---|
-| `Unsupported state or unable to authenticate data` on restore | encryption mode / key 不匹配 | 复读 `latest-recovery.json` 的 `encryptionMode`：`password` 模式才传 `--password`，`privateKey` 模式不能传 |
-| `429 rate limit exceeded` from IPFS | 取 manifest 时被限速 | 退避重试至 `merkleVerified: true` |
-| `[gateway] unauthorized (1008)` from cron / scheduled job | gateway auth mode / token / proxy 配置 | 修 gateway auth 后再 schedule |
-| `[gateway] unauthorized (1008)` **right after a restore** | restore 把 `gateway.auth.mode` 从原 host 覆盖了过来；老 TUI 命令 `--token "$(jq -r .gateway.auth.token ...)"` 现在拿到字面量 `null` | `jq '.gateway.auth.mode'` 看现在到底是什么 mode；按 mode 用对应 flag（见下面 "Cross-host restore" 段）。如果 auth 块整段被覆盖了，从 `~/.openclaw/.restore-overwrite-backup-*/openclaw.json` 把 `.gateway.auth.*` 拷回来 |
-| `ENOENT ... backup/targeting.js` | extension install 缺文件 | 重装：`openclaw plugins install @chainofclaw/soul --dangerously-force-unsafe-install --force` |
-| `data dir not writable` 启动失败 | `~/.claw-mem` 被别的 uid 占了（典型 Docker 多用户场景） | 1.2.2+ 自动 fallback 到 `~/.openclaw/state/coc-soul`；老版本 `export CLAW_MEM_DATA_DIR=~/.openclaw/state` 后重启 gateway |
-| `plugins.allow is empty ... may auto-load` 警告 | gateway 没设 trusted list | 在 `~/.openclaw/openclaw.json` 加 `"plugins": {"allow": ["claw-mem","coc-soul","coc-node"]}` |
+| `Unsupported state or unable to authenticate data` on restore | encryption mode / key mismatch | Re-read `encryptionMode` in `latest-recovery.json`: `password` mode requires `--password`; `privateKey` mode must NOT pass `--password` |
+| `429 rate limit exceeded` from IPFS | manifest fetch is rate-limited | Exponential-backoff retry until `merkleVerified: true` |
+| `[gateway] unauthorized (1008)` from cron / scheduled job | wrong gateway auth mode / token / proxy config | Fix gateway auth before scheduling anything |
+| `[gateway] unauthorized (1008)` **right after a restore** | restore overlaid `gateway.auth.mode` from the source host; the old TUI command `--token "$(jq -r .gateway.auth.token ...)"` now resolves to the literal string `null` | Run `jq '.gateway.auth.mode'` to see the active mode and pick the matching flag (see the "Cross-host restore" section below). If the whole auth block was overwritten, copy `.gateway.auth.*` back from `~/.openclaw/.restore-overwrite-backup-*/openclaw.json` |
+| `ENOENT ... backup/targeting.js` | extension install is missing files | Reinstall: `openclaw plugins install @chainofclaw/soul --dangerously-force-unsafe-install --force` |
+| `data dir not writable` at startup | `~/.claw-mem` is owned by another uid (common Docker multi-user case) | 1.2.2+ auto-falls-back to `~/.openclaw/state/coc-soul`; on older versions `export CLAW_MEM_DATA_DIR=~/.openclaw/state` and restart the gateway |
+| `plugins.allow is empty ... may auto-load` warning | gateway has no trusted-plugin allow list | Add `"plugins": {"allow": ["claw-mem","coc-soul","coc-node"]}` to `~/.openclaw/openclaw.json` |
 
-完整每命令的 troubleshooting 在 `references/backup.md` 与 `references/config.md` 末尾。
+Full per-command troubleshooting lives at the end of `references/backup.md` and `references/config.md`.
 
 ## Cross-host restore — read BEFORE you blanket-overwrite (1.2.4+)
 

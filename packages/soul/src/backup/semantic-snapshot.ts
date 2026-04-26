@@ -191,8 +191,14 @@ function countObservations(
   db: InstanceType<typeof import("node:sqlite").DatabaseSync>,
 ): { total: number; chat: number; tool: number } {
   const totalRow = db.prepare(`SELECT COUNT(*) AS n FROM observations`).get() as { n: number }
+  // claw-mem 2.2.0+ writes role-specific tool_names (`message_received` for
+  // user, `message_sent` for assistant). 2.1.0 wrote `chat` for both.
+  // Counting all three keeps the chat tally correct across the upgrade.
   const chatRow = db
-    .prepare(`SELECT COUNT(*) AS n FROM observations WHERE tool_name = 'chat'`)
+    .prepare(
+      `SELECT COUNT(*) AS n FROM observations
+       WHERE tool_name IN ('message_received', 'message_sent', 'chat')`,
+    )
     .get() as { n: number }
   const total = Number(totalRow?.n ?? 0)
   const chat = Number(chatRow?.n ?? 0)

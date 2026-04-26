@@ -10,9 +10,10 @@ import {
 const baseOpts: ChatExtractorOptions = {
   enabled: true,
   explicitOnly: false,
-  minLen: 8,
+  minChars: 8,
+  maxNarrativeChars: 500,
   cues: DEFAULT_CHAT_CUES,
-  captureAssistantPromises: false,
+  captureAssistant: false,
 }
 
 const ev = (text: string, role: "user" | "assistant" = "user") => ({
@@ -28,7 +29,7 @@ describe("extractChatObservation", () => {
     const obs = extractChatObservation(ev("记一下，下次部署用 staging 环境而不是 prod"), baseOpts)
     assert.ok(obs)
     assert.equal(obs!.type, "decision")
-    assert.equal(obs!.toolName, "chat")
+    assert.equal(obs!.toolName, "message_received")
     assert.ok(obs!.facts.some((f) => f.includes("记一下")))
     assert.ok(obs!.title.startsWith("User"))
   })
@@ -69,7 +70,7 @@ describe("extractChatObservation", () => {
     assert.equal(obs!.type, "decision")
   })
 
-  it("drops messages shorter than minLen", () => {
+  it("drops messages shorter than minChars", () => {
     const obs = extractChatObservation(ev("ok"), baseOpts)
     assert.equal(obs, null)
   })
@@ -79,13 +80,14 @@ describe("extractChatObservation", () => {
     assert.equal(obs, null)
   })
 
-  it("captures assistant messages when captureAssistantPromises=true", () => {
+  it("captures assistant messages when captureAssistant=true", () => {
     const obs = extractChatObservation(
       ev("Sure, I'll remember that — never deploy on Friday afternoons.", "assistant"),
-      { ...baseOpts, captureAssistantPromises: true },
+      { ...baseOpts, captureAssistant: true },
     )
     assert.ok(obs)
     assert.ok(obs!.title.startsWith("Assistant"))
+    assert.equal(obs!.toolName, "message_sent")
   })
 
   it("returns null when extractor is disabled", () => {

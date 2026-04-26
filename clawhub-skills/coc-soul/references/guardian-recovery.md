@@ -36,3 +36,38 @@ Triggers (set via `backup configure-resurrection`):
 - Explicit — a guardian manually initiates
 - Offline — heartbeat missed for `maxOfflineDuration` seconds
 - Key-hash — a pre-agreed key is submitted (disaster recovery)
+
+## `recovery` vs `guardian` — don't conflate them
+
+Both are guardian-touching, but they do different things:
+
+| Subtree | Changes | Typical question |
+|---|---|---|
+| `coc-soul recovery ...` | **Owner address** of the agent (ownership migration after key loss) | "我丢了 owner key，怎么转给新地址？" |
+| `coc-soul guardian initiate / approve / status` | **Resurrection request lifecycle** for moving the agent to a carrier | "agent 主机宕了，怎么让 carrier 把它接走？" |
+| `coc-soul guardian add / remove / list` | **Guardian set membership** (owner-only admin) | "我要换 / 增加 / 看 guardian 名单" |
+
+When you see "social recovery", clarify which one — the owner-migration `recovery` flow, or the guardian-mediated resurrection `guardian initiate` flow.
+
+## Preconditions checklist (run before any recovery / resurrection action)
+
+1. Agent is registered on-chain (`backup doctor --json` → `chain.registered: true`)
+2. Guardian set is configured and reachable: `coc-soul guardian list --agent-id <id>`
+3. Participants know the target `agentId` (bytes32)
+4. For `recovery`: the new owner address is validated and signer-controlled
+5. For resurrection (guardian-initiated): a registered carrier exists (`coc-soul carrier list`)
+
+## Security rules
+
+- Never transmit owner / resurrection / guardian **private keys** in chat — even split or encrypted fragments. Route key transfer through a local secure channel.
+- It IS safe to share addresses, agent IDs, request IDs, transaction hashes.
+- "多签" in this context = guardian quorum threshold (an N-of-M policy at the SoulRegistry contract level), not a separate multisig wallet contract.
+
+## Failure-mode triage
+
+| Symptom | Cause | Action |
+|---|---|---|
+| `recovery approve` reverts with "not a guardian" | guardian set out of date | `guardian list --agent-id <id>` to confirm membership |
+| `recovery complete` reverts before timelock | quorum reached but waiting period not elapsed | `recovery status --request-id <id>` shows `unlocksAt` — wait until past that timestamp |
+| `recovery complete` reverts after timelock | owner cancelled mid-flight | `recovery status` will show `cancelled: true`; restart with a fresh `recovery initiate` |
+| `guardian initiate` reverts with "carrier inactive" | target carrier deregistered or unavailable | `carrier list --include-inactive` to see all; pick an active one |

@@ -1,7 +1,7 @@
 ---
 name: coc-soul
 description: Give an AI agent a persistent on-chain soul — register and manage a decentralized identity (DID), encrypt and anchor agent state to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the host dies. **Pairs with `claw-mem2db` to deliver "digital / silicon-based persistence" for AI agents**: when claw-mem is co-installed, every backup automatically captures claw-mem's chat history + tool-call observations + session summaries as a token-budgeted semantic snapshot, so an agent recovered on a fresh host can replay its memory context — not just its files. Soul also runs fully standalone (without claw-mem), in which case backups still cover identity / config / workspace / chat files but skip the semantic snapshot. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, inspect on-chain identity state, or get persistent cross-device memory paired with claw-mem. Zero-config on COC testnet — installation auto-generates an EOA keystore (~/.claw-mem/keys, shared with claw-mem; or $OPENCLAW_STATE_DIR/coc-soul/keys in sandboxed hosts), auto-drips testnet COC from the public faucet for gas, and pre-fills RPC + IPFS + contract addresses for the live testnet. The first `openclaw coc-soul backup init` works with no manual setup.
-version: 1.2.3
+version: 1.2.4
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/soul
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/soul"
-        version: "1.2.3"
+        version: "1.2.4"
         bins:
           - coc-soul
 ---
@@ -78,11 +78,34 @@ Rule: when a user asks "你的 CID 是什么 / what's your CID", first confirm w
 | `Unsupported state or unable to authenticate data` on restore | encryption mode / key 不匹配 | 复读 `latest-recovery.json` 的 `encryptionMode`：`password` 模式才传 `--password`，`privateKey` 模式不能传 |
 | `429 rate limit exceeded` from IPFS | 取 manifest 时被限速 | 退避重试至 `merkleVerified: true` |
 | `[gateway] unauthorized (1008)` from cron / scheduled job | gateway auth mode / token / proxy 配置 | 修 gateway auth 后再 schedule |
+| `[gateway] unauthorized (1008)` **right after a restore** | restore 把 `gateway.auth.mode` 从原 host 覆盖了过来；老 TUI 命令 `--token "$(jq -r .gateway.auth.token ...)"` 现在拿到字面量 `null` | `jq '.gateway.auth.mode'` 看现在到底是什么 mode；按 mode 用对应 flag（见下面 "Cross-host restore" 段）。如果 auth 块整段被覆盖了，从 `~/.openclaw/.restore-overwrite-backup-*/openclaw.json` 把 `.gateway.auth.*` 拷回来 |
 | `ENOENT ... backup/targeting.js` | extension install 缺文件 | 重装：`openclaw plugins install @chainofclaw/soul --dangerously-force-unsafe-install --force` |
 | `data dir not writable` 启动失败 | `~/.claw-mem` 被别的 uid 占了（典型 Docker 多用户场景） | 1.2.2+ 自动 fallback 到 `~/.openclaw/state/coc-soul`；老版本 `export CLAW_MEM_DATA_DIR=~/.openclaw/state` 后重启 gateway |
 | `plugins.allow is empty ... may auto-load` 警告 | gateway 没设 trusted list | 在 `~/.openclaw/openclaw.json` 加 `"plugins": {"allow": ["claw-mem","coc-soul","coc-node"]}` |
 
 完整每命令的 troubleshooting 在 `references/backup.md` 与 `references/config.md` 末尾。
+
+## Cross-host restore — read BEFORE you blanket-overwrite (1.2.4+)
+
+The most dangerous restore scenario: backup made on host A (e.g. `$HOME=/home/node`), restoring on host B (`$HOME=/home/baominghao`). The backup's files contain absolute paths to host A; literal copies will (a) fake history, (b) corrupt SQLite if anyone tries byte-level `sed`, and (c) **wipe out host B's `gateway.auth` configuration**, locking the operator out with a 1008 right after restart.
+
+**The agent must ask the user before any cross-host restore.** Don't auto-overwrite. Three-class policy:
+
+| Class | What | Example fields | What restore does |
+|---|---|---|---|
+| **A. Runtime config (paths)** | Where on disk to read/write today | `agentDir`, `models.json` paths, `latest-recovery.json` `targetDir` | **Rewrite** old `$HOME` → new `$HOME`, structured (JSON parse, not `sed`) |
+| **B. Historical content** | Records of past events | `sessions/*.jsonl`, `observations.{narrative,facts,files_*}`, `semantic-snapshot.json` | **Leave intact**. Rewriting fakes history. claw-mem doesn't blindly open these paths anyway. |
+| **C. Host-local policy** | Belongs to **this** host's operator | `gateway.auth.*`, `gateway.bind`, `gateway.port`, `plugins.allow`, target-host provider keys | **Preserve target host's existing values** — never overlaid by backup |
+
+**Auth-mode warning, in particular:** `gateway.auth.mode` and `.token` / `.password` belong to the host, not the agent. After restoring, always re-check:
+
+```bash
+jq '.gateway.auth.mode' ~/.openclaw/openclaw.json
+```
+
+Pick the matching TUI flag — `--token` only works when `mode = "token"` AND `.token` is non-null. If the active mode is `password` or `trusted-proxy`, `jq -r .gateway.auth.token` returns the literal string `"null"` and TUI sends that, which the gateway rejects with 1008. **Don't reflexively use `--token` after a restore — read the active mode first.**
+
+Full procedure with command-line examples: `references/backup.md` → "Cross-host restore: directory-mismatch handling" + "Auth-mode preservation rule".
 
 ---
 

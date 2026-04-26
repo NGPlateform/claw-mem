@@ -3,6 +3,8 @@ import { join, dirname } from "node:path"
 import { homedir } from "node:os"
 import { existsSync, accessSync, mkdirSync, constants as fsConst } from "node:fs"
 
+import { DEFAULT_CHAT_CUES } from "./observer/extractor-chat.ts"
+
 // ──────────────────────────────────────────────────────────────────────────
 // Memory (original claw-mem fields, kept top-level for backward compatibility)
 // ──────────────────────────────────────────────────────────────────────────
@@ -149,6 +151,40 @@ export const SummarizerConfigSchema = z.object({
 })
 
 // ──────────────────────────────────────────────────────────────────────────
+// Chat memory (capture from message_received / message_sent hooks)
+// ──────────────────────────────────────────────────────────────────────────
+
+export const ChatMemoryCuesSchema = z.object({
+  explicit: z.array(z.string()).default([...DEFAULT_CHAT_CUES.explicit])
+    .describe("High-priority cues; capture as decision/learning regardless of explicitOnly"),
+  preference: z.array(z.string()).default([...DEFAULT_CHAT_CUES.preference])
+    .describe("Preference / habit cues; capture as learning when explicitOnly=false"),
+})
+
+export const ChatMemoryConfigSchema = z.object({
+  enabled: z.boolean().default(true)
+    .describe("Capture observations from chat messages (in addition to tool calls)"),
+  explicitOnly: z.boolean().default(false)
+    .describe("Only capture chat messages that match an explicit cue; suppress preference + plain capture"),
+  minLen: z.number().int().min(1).default(8)
+    .describe("Drop messages shorter than this many characters as chitchat"),
+  cues: ChatMemoryCuesSchema.default({}),
+  captureAssistantPromises: z.boolean().default(false)
+    .describe("Also capture assistant messages (commitments / decisions). Off by default."),
+})
+
+// ──────────────────────────────────────────────────────────────────────────
+// Context recall (how before_prompt_build assembles the injected context)
+// ──────────────────────────────────────────────────────────────────────────
+
+export const ContextRecallConfigSchema = z.object({
+  mode: z.enum(["recent", "hybrid"]).default("hybrid")
+    .describe("recent = chronological tail only; hybrid = FTS5 search on the latest user message merged with recent"),
+  searchLimitRatio: z.number().min(0).max(1).default(0.5)
+    .describe("Fraction of maxObservations to allocate to search hits in hybrid mode (rest is recent)"),
+})
+
+// ──────────────────────────────────────────────────────────────────────────
 // Bootstrap (dev-mode auto stack)
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -187,6 +223,8 @@ export const ClawMemConfigSchema = z.object({
   backup: BackupConfigSchema.default({}),
   bootstrap: BootstrapConfigSchema.default({}),
   summarizer: SummarizerConfigSchema.default({}),
+  chatMemory: ChatMemoryConfigSchema.default({}),
+  contextRecall: ContextRecallConfigSchema.default({}),
 })
 
 export type ClawMemConfig = z.infer<typeof ClawMemConfigSchema>
@@ -198,6 +236,9 @@ export type CarrierConfig = z.infer<typeof CarrierConfigSchema>
 export type SummarizerConfig = z.infer<typeof SummarizerConfigSchema>
 export type SummarizerLLMConfig = z.infer<typeof SummarizerLLMConfigSchema>
 export type SummarizerOpenClawConfig = z.infer<typeof SummarizerOpenClawConfigSchema>
+export type ChatMemoryConfig = z.infer<typeof ChatMemoryConfigSchema>
+export type ChatMemoryCues = z.infer<typeof ChatMemoryCuesSchema>
+export type ContextRecallConfig = z.infer<typeof ContextRecallConfigSchema>
 
 // ──────────────────────────────────────────────────────────────────────────
 // Path resolvers

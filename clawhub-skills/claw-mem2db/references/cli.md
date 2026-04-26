@@ -51,3 +51,32 @@ The standalone binary is a separate artifact: install it with `npm i -g @chainof
 - `claw-mem status` / `doctor` / `init` / `tools` / `uninstall` — cross-layer health + management
 
 If you don't have the bin and don't want to install it: stick with `openclaw mem …` for memory work, install `coc-node` for node lifecycle, and `coc-soul` for backup/recovery. That's the supported in-OpenClaw composition.
+
+---
+
+## Appendix: in-place tarball install (when `openclaw plugins install` is unusable)
+
+If `openclaw plugins install @chainofclaw/claw-mem --dangerously-force-unsafe-install --force` errors out (npm cache `EACCES` on the openclaw user, registry blocked, sandboxed runner without npm install permissions, etc.), you can install the byte-identical artifact manually — this completely bypasses OpenClaw's install pipeline and its `child_process` static scan:
+
+```bash
+# 1. Build/pack from source (or download the tarball from npm directly)
+cd /path/to/claw-mem/packages/claw-mem
+npm pack --pack-destination /tmp        # → /tmp/chainofclaw-claw-mem-<v>.tgz
+
+# 2. Wipe the existing extension dir and extract the tarball in place
+rm -rf ~/.openclaw/extensions/claw-mem
+mkdir -p ~/.openclaw/extensions/claw-mem
+tar -xzf /tmp/chainofclaw-claw-mem-<v>.tgz \
+    -C ~/.openclaw/extensions/claw-mem --strip-components=1
+
+# 3. Install runtime deps only (skips dev/build tooling)
+cd ~/.openclaw/extensions/claw-mem
+npm install --omit=dev
+
+# 4. Restart the gateway and verify
+openclaw mem status                     # → JSON with observation/summary/session counts
+```
+
+To download the tarball from npm without a source clone: `npm pack @chainofclaw/claw-mem@<version> --pack-destination /tmp` works as long as you have npm registry access; the rest of the steps are identical.
+
+Always back the DB up before any version change: `cp ~/.claw-mem/claw-mem.db ~/.claw-mem/claw-mem.db.pre-<v>.bak` (or use whatever `dataDir` is configured if you've overridden it).

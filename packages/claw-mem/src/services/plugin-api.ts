@@ -15,18 +15,39 @@ export interface PluginToolDefinition {
 
 export type PluginHookName =
   | "stop"
+  | "gateway_stop"
+  | "session_start"
   | "session_end"
+  | "before_prompt_build"
+  | "after_tool_call"
+  | "message_received"
+  | "message_sent"
+  | "agent_end"
   | "before_compaction"
   | "after_compaction"
-  | "gateway_stop"
 
 export interface PluginHookEvent {
+  // Common identifiers
+  agentId?: string
   sessionId?: string
+  // Session / compaction lifecycle
   messageCount?: number
   durationMs?: number
   reason?: string
   tokensBeforeCompaction?: number
   tokensAfterCompaction?: number
+  // Tool-call hooks
+  toolName?: string
+  toolInput?: Record<string, unknown>
+  toolOutput?: string
+  result?: { content?: string }
+  // Chat hooks (message_received / message_sent)
+  text?: string
+  content?: unknown
+  message?: { role?: string; content?: unknown; text?: string }
+  // Prompt-build hook (host may pass the assembled message list)
+  messages?: Array<{ role?: string; content?: unknown }>
+  userMessage?: string
 }
 
 export interface OpenClawPluginApi {

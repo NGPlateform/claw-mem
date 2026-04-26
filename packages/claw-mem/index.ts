@@ -118,6 +118,14 @@ export { ArtifactStore } from "./src/db/artifact-store.ts"
 export { SearchEngine } from "./src/search/search.ts"
 export { buildContext } from "./src/context/builder.ts"
 export { extractObservation } from "./src/observer/extractor.ts"
+export {
+  extractChatObservation,
+  DEFAULT_CHAT_CUES,
+  type ChatRole,
+  type ChatEvent,
+  type ChatExtractorCues,
+  type ChatExtractorOptions,
+} from "./src/observer/extractor-chat.ts"
 export { summarizeSession } from "./src/observer/summarizer.ts"
 export {
   summarizeSessionWithLLM,
@@ -149,5 +157,8 @@ export type {
   CarrierConfig,
   SummarizerConfig,
   SummarizerLLMConfig,
+  ChatMemoryConfig,
+  ChatMemoryCues,
+  ContextRecallConfig,
 } from "./src/config.ts"
 export type * from "./src/types.ts"

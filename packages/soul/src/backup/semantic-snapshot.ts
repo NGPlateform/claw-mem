@@ -1,8 +1,19 @@
-// Semantic snapshot: extract structured observations and summaries from claude-mem's SQLite database
-// Writes a token-budgeted snapshot for backup, enabling context injection on recovery
+// Semantic snapshot: extract structured observations and summaries from
+// claw-mem's SQLite database. Writes a token-budgeted snapshot into the
+// backup payload so an agent recovered on a different host can replay its
+// memory context.
+//
+// claw-mem 2.1.0+ writes both tool-call observations (toolName != "chat")
+// and chat-message observations (toolName == "chat", originating from the
+// `message_received` / `message_sent` hooks). Both kinds land in the same
+// `observations` table; we surface the split in the snapshot's counts so
+// downstream tooling can tell at a glance whether the agent was a chat-only
+// or tool-using session.
 
-import { readdir, readFile, writeFile, mkdir } from "node:fs/promises"
-import { join, basename } from "node:path"
+import { readFile, writeFile, mkdir } from "node:fs/promises"
+import { join } from "node:path"
+
+import { resolveClawMemDbPath } from "../data-dir.ts"
 
 const CHARS_PER_TOKEN = 4
 
@@ -13,7 +24,15 @@ export interface SemanticSnapshot {
   tokensUsed: number
   observations: ObservationEntry[]
   summaries: SummaryEntry[]
-  activeProjects: string[]
+  /** Source DB path (where the snapshot was read from), or null if no DB found. */
+  sourceDbPath: string | null
+  /** Counts surfaced for quick at-a-glance: how many of each kind were available. */
+  counts: {
+    totalObservations: number
+    chatObservations: number
+    toolObservations: number
+    summaries: number
+  }
 }
 
 export interface ObservationEntry {
@@ -23,6 +42,8 @@ export interface ObservationEntry {
   facts: string[]
   narrative: string | null
   concepts: string[]
+  /** "chat" for chat-memory observations, tool name for tool-call observations, null for legacy rows. */
+  toolName: string | null
   createdAt: string
 }
 
@@ -89,10 +110,21 @@ function parseJsonArray(value: unknown): string[] {
   }
 }
 
-/** Try to find and open the claude-mem SQLite database */
-async function openClaudeMemDb(
+/**
+ * Try to find and open the claw-mem SQLite database.
+ *
+ * Priority:
+ *   1. config.claudeMemDbPath (explicit, kept under the legacy field name
+ *      for backward compatibility with older operator configs)
+ *   2. shared chain via resolveClawMemDbPath: $CLAW_MEM_DATA_DIR →
+ *      $OPENCLAW_STATE_DIR/claw-mem → ~/.claw-mem
+ *
+ * Returns null (not throws) if no DB is found — the snapshot then degrades
+ * gracefully into an empty stub so the surrounding backup still proceeds.
+ */
+async function openClawMemDb(
   config: SemanticSnapshotConfig,
-): Promise<{ db: InstanceType<typeof import("node:sqlite").DatabaseSync>; close: () => void } | null> {
+): Promise<{ db: InstanceType<typeof import("node:sqlite").DatabaseSync>; close: () => void; path: string } | null> {
   // Dynamic import node:sqlite (experimental in Node 22+)
   let DatabaseSync: typeof import("node:sqlite").DatabaseSync
   try {
@@ -102,35 +134,31 @@ async function openClaudeMemDb(
     return null
   }
 
-  // Try explicit path first
-  if (config.claudeMemDbPath) {
+  const tryOpen = (path: string) => {
     try {
-      const db = new DatabaseSync(config.claudeMemDbPath, { open: true, readOnly: true })
-      return { db, close: () => db.close() }
+      const db = new DatabaseSync(path, { open: true, readOnly: true })
+      return { db, close: () => db.close(), path }
     } catch {
       return null
     }
   }
 
-  // Try well-known location: ~/.claude-mem/claude-mem.db
-  const homedir = (await import("node:os")).homedir()
-  const defaultPath = join(homedir, ".claude-mem", "claude-mem.db")
-  try {
-    const db = new DatabaseSync(defaultPath, { open: true, readOnly: true })
-    return { db, close: () => db.close() }
-  } catch {
-    return null
+  if (config.claudeMemDbPath) {
+    return tryOpen(config.claudeMemDbPath)
   }
+  const resolved = resolveClawMemDbPath()
+  if (!resolved) return null
+  return tryOpen(resolved)
 }
 
-/** Query observations from claude-mem database */
+/** Query observations from claw-mem database */
 function queryObservations(
   db: InstanceType<typeof import("node:sqlite").DatabaseSync>,
   maxRows: number,
 ): ObservationEntry[] {
   const rows = db
     .prepare(
-      `SELECT id, type, title, facts, narrative, concepts, created_at
+      `SELECT id, type, title, facts, narrative, concepts, tool_name, created_at
        FROM observations
        ORDER BY created_at_epoch DESC
        LIMIT ?`,
@@ -142,6 +170,7 @@ function queryObservations(
     facts: string | null
     narrative: string | null
     concepts: string | null
+    tool_name: string | null
     created_at: string
   }>
 
@@ -152,11 +181,25 @@ function queryObservations(
     facts: parseJsonArray(row.facts),
     narrative: row.narrative,
     concepts: parseJsonArray(row.concepts),
+    toolName: row.tool_name,
     createdAt: row.created_at,
   }))
 }
 
-/** Query session summaries from claude-mem database */
+/** Total observation count in the table (independent of the LIMIT). */
+function countObservations(
+  db: InstanceType<typeof import("node:sqlite").DatabaseSync>,
+): { total: number; chat: number; tool: number } {
+  const totalRow = db.prepare(`SELECT COUNT(*) AS n FROM observations`).get() as { n: number }
+  const chatRow = db
+    .prepare(`SELECT COUNT(*) AS n FROM observations WHERE tool_name = 'chat'`)
+    .get() as { n: number }
+  const total = Number(totalRow?.n ?? 0)
+  const chat = Number(chatRow?.n ?? 0)
+  return { total, chat, tool: Math.max(0, total - chat) }
+}
+
+/** Query session summaries from claw-mem database */
 function querySummaries(
   db: InstanceType<typeof import("node:sqlite").DatabaseSync>,
   maxRows: number,
@@ -185,26 +228,14 @@ function querySummaries(
   }))
 }
 
-/** Query distinct active projects */
-function queryProjects(
-  db: InstanceType<typeof import("node:sqlite").DatabaseSync>,
-): string[] {
-  const rows = db
-    .prepare(
-      `SELECT DISTINCT project FROM observations
-       WHERE project IS NOT NULL AND project != ''
-       ORDER BY created_at_epoch DESC
-       LIMIT 20`,
-    )
-    .all() as Array<{ project: string }>
-
-  return rows.map((r) => r.project)
-}
-
 /**
- * Capture a semantic snapshot from claude-mem's database.
+ * Capture a semantic snapshot from claw-mem's database.
  * Greedily packs observations and summaries within the token budget.
  * Writes result to .coc-backup/semantic-snapshot.json.
+ *
+ * Graceful degradation: if claw-mem isn't installed (no DB found) or the
+ * snapshot is disabled by config, writes a stub snapshot with sourceDbPath
+ * = null so the rest of the backup pipeline still runs unchanged.
  */
 export async function captureSemanticSnapshot(
   baseDir: string,
@@ -212,32 +243,35 @@ export async function captureSemanticSnapshot(
 ): Promise<SemanticSnapshot> {
   const cfg: SemanticSnapshotConfig = { ...DEFAULT_CONFIG, ...config }
 
-  const emptySnapshot: SemanticSnapshot = {
+  const emptySnapshot = (sourceDbPath: string | null): SemanticSnapshot => ({
     version: 1,
     capturedAt: new Date().toISOString(),
     tokenBudget: cfg.tokenBudget,
     tokensUsed: 0,
     observations: [],
     summaries: [],
-    activeProjects: [],
-  }
+    sourceDbPath,
+    counts: { totalObservations: 0, chatObservations: 0, toolObservations: 0, summaries: 0 },
+  })
 
   if (!cfg.enabled) {
-    await writeSnapshot(baseDir, emptySnapshot)
-    return emptySnapshot
+    const empty = emptySnapshot(null)
+    await writeSnapshot(baseDir, empty)
+    return empty
   }
 
-  const connection = await openClaudeMemDb(cfg)
+  const connection = await openClawMemDb(cfg)
   if (!connection) {
-    // claude-mem database not found — graceful degradation
-    await writeSnapshot(baseDir, emptySnapshot)
-    return emptySnapshot
+    // claw-mem not installed — graceful degradation
+    const empty = emptySnapshot(null)
+    await writeSnapshot(baseDir, empty)
+    return empty
   }
 
   try {
     const allObservations = queryObservations(connection.db, cfg.maxObservations)
     const allSummaries = querySummaries(connection.db, cfg.maxSummaries)
-    const activeProjects = queryProjects(connection.db)
+    const counts = countObservations(connection.db)
 
     // Greedy packing: summaries first (higher information density), then observations
     let tokensUsed = 0
@@ -265,7 +299,13 @@ export async function captureSemanticSnapshot(
       tokensUsed,
       observations: packedObservations,
       summaries: packedSummaries,
-      activeProjects,
+      sourceDbPath: connection.path,
+      counts: {
+        totalObservations: counts.total,
+        chatObservations: counts.chat,
+        toolObservations: counts.tool,
+        summaries: packedSummaries.length,
+      },
     }
 
     await writeSnapshot(baseDir, snapshot)

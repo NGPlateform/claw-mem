@@ -75,22 +75,17 @@ function buildRecoveryMarkdown(
       sections.push("")
     }
 
-    // Active projects
-    if (snapshot.activeProjects.length > 0) {
-      sections.push("## Active Projects")
-      sections.push("")
-      for (const project of snapshot.activeProjects) {
-        sections.push(`- ${project}`)
-      }
-      sections.push("")
-    }
-
     // Snapshot metadata
     sections.push("## Snapshot Metadata")
     sections.push("")
     sections.push(`- Captured at: ${snapshot.capturedAt}`)
-    sections.push(`- Observations: ${snapshot.observations.length}`)
-    sections.push(`- Summaries: ${snapshot.summaries.length}`)
+    sections.push(`- Source DB: ${snapshot.sourceDbPath ?? "(claw-mem not detected)"}`)
+    sections.push(
+      `- Observations packed: ${snapshot.observations.length} ` +
+        `(of ${snapshot.counts.totalObservations} total — ` +
+        `${snapshot.counts.chatObservations} chat, ${snapshot.counts.toolObservations} tool)`,
+    )
+    sections.push(`- Summaries packed: ${snapshot.summaries.length}`)
     sections.push(`- Tokens used: ${snapshot.tokensUsed} / ${snapshot.tokenBudget}`)
     sections.push("")
   }

@@ -1,7 +1,7 @@
 {
   "id": "claw-mem",
   "name": "Claw-Mem: Persistent Memory",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "OpenClaw skill: persistent semantic memory (chat + tool capture, FTS5 search, hybrid recall, context injection). COC node lifecycle moved to @chainofclaw/node; soul backup to @chainofclaw/soul. Both are optional companions — claw-mem works fully on its own.",
   "main": "dist/index.js",
   "hooks": [
@@ -48,6 +48,38 @@
             "type": "boolean",
             "default": false,
             "description": "Also capture assistant messages (commitments / decisions) via message_sent. Off by default to avoid noise."
+          },
+          "compaction": {
+            "type": "object",
+            "description": "Incremental chat compaction: rolls batches of chat observations into a single chat_compaction summary; optionally hard-prunes low-importance originals.",
+            "properties": {
+              "enabled": { "type": "boolean", "default": true },
+              "triggerEvery": {
+                "type": "number",
+                "default": 10,
+                "description": "Run a compaction pass once every N new chat observations."
+              },
+              "idleMs": {
+                "type": "number",
+                "default": 120000,
+                "description": "Reserved for an idle-based trigger (not yet wired)."
+              },
+              "keepRecentRaw": {
+                "type": "number",
+                "default": 20,
+                "description": "Always retain the most-recent N chat observations outside compaction so they stay directly readable."
+              },
+              "deleteCompactedLowValue": {
+                "type": "boolean",
+                "default": true,
+                "description": "After compaction, hard-delete compacted rows whose importance is below minImportanceToKeep."
+              },
+              "minImportanceToKeep": {
+                "type": "number",
+                "default": 0.7,
+                "description": "Importance threshold below which compacted chat rows are eligible for hard deletion."
+              }
+            }
           },
           "minChars": {
             "type": "number",

@@ -11,6 +11,7 @@ import { SessionStore } from "../db/session-store.ts"
 import { SearchEngine } from "../search/search.ts"
 import { extractObservation } from "../observer/extractor.ts"
 import { extractChatObservation, type ChatRole } from "../observer/extractor-chat.ts"
+import { CompactionTrigger, runChatCompaction } from "../observer/chat-compactor.ts"
 import { createSummarizer } from "../observer/index.ts"
 import { buildContext } from "../context/builder.ts"
 
@@ -36,6 +37,25 @@ export function registerHooks(
       `[claw-mem] chat-memory enabled (explicitOnly=${config.chatMemory.explicitOnly}, ` +
       `minChars=${config.chatMemory.minChars}, captureAssistant=${config.chatMemory.captureAssistant})`,
     )
+    if (config.chatMemory.compaction.enabled) {
+      logger.info(
+        `[claw-mem] chat-compaction enabled (triggerEvery=${config.chatMemory.compaction.triggerEvery}, ` +
+        `keepRecentRaw=${config.chatMemory.compaction.keepRecentRaw}, ` +
+        `prune<${config.chatMemory.compaction.minImportanceToKeep}=${config.chatMemory.compaction.deleteCompactedLowValue})`,
+      )
+    }
+  }
+  // Per-agent compaction trigger counter. Maintained outside activeSessions
+  // so it survives session boundaries (an agent that hops between sessions
+  // still gets compaction on the same cadence).
+  const compactionTriggers = new Map<string, CompactionTrigger>()
+  function getTrigger(agentId: string): CompactionTrigger {
+    let t = compactionTriggers.get(agentId)
+    if (!t) {
+      t = new CompactionTrigger(config.chatMemory.compaction)
+      compactionTriggers.set(agentId, t)
+    }
+    return t
   }
   logger.info(`[claw-mem] context recall mode=${config.contextRecall.mode}`)
 
@@ -182,6 +202,16 @@ export function registerHooks(
     if (!obs) return
     if (observations.isDuplicate(obs, config.dedupWindowMs)) return
     observations.insert(obs)
+
+    // After-N-events compaction trigger. We use a separate microtask via
+    // setImmediate so the inserting hook returns immediately — the gateway
+    // doesn't block on summarizer roundtrip. Errors are logged, never thrown.
+    if (getTrigger(agentId).tick()) {
+      setImmediate(() => {
+        runChatCompaction({ db, observations, summarizer, config, logger }, agentId)
+          .catch((err) => logger.warn(`[claw-mem] background compaction failed: ${String(err)}`))
+      })
+    }
   }
 
   // ──────────────────────────────────────────────────────
@@ -248,6 +278,19 @@ export function registerHooks(
       summaries.upsert(summary)
 
       logger.info(`[claw-mem] Summary generated: ${sessionObs.length} observations → summary for ${sessionId}`)
+
+      // Opportunistic compaction flush at agent_end — drains whatever's queued
+      // even if we didn't hit the after-N threshold during the session.
+      if (config.chatMemory.enabled && config.chatMemory.compaction.enabled) {
+        try {
+          const result = await runChatCompaction({ db, observations, summarizer, config, logger }, agentId)
+          if (result.batchSize > 0) {
+            getTrigger(agentId).reset()
+          }
+        } catch (err) {
+          logger.warn(`[claw-mem] agent_end compaction failed: ${String(err)}`)
+        }
+      }
     } catch (error) {
       logger.error(`[claw-mem] agent_end error: ${String(error)}`)
     }

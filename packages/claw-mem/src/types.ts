@@ -17,6 +17,12 @@ export interface Observation {
   contentHash: string
   createdAt: string
   createdAtEpoch: number
+  /** v3+: 1 if this row has been rolled into a chat_compaction observation. */
+  compacted: number
+  /** v3+: heuristic importance score (0.0..1.0); higher = more worth keeping after compaction. */
+  importance: number
+  /** v3+: id of the compaction observation that this row was rolled into; null if unbatched. */
+  compactedInto: number | null
 }
 
 export type ObservationType =
@@ -60,6 +66,8 @@ export interface ObservationInput {
   filesModified: string[]
   toolName: string | null
   promptNumber: number
+  /** Optional importance hint (0.0..1.0). When omitted, store records 0.5 (the schema default). */
+  importance?: number
 }
 
 export interface SummaryInput {

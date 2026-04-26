@@ -1,7 +1,7 @@
 ---
 name: claw-mem2db
 description: Standalone OpenClaw skill that automatically (and on demand) captures the agent's chat conversations and tool-call chains into a local SQLite + FTS5 database, then replays them as token-budgeted context on the next prompt — so the agent doesn't forget across restarts, compaction, or new sessions. Captures `message_received` / `message_sent` (chat, with explicit cues like `记一下` / `remember this` promoted to `decision` observations) and `after_tool_call` (tool); reads on `before_prompt_build` via hybrid recall (FTS5 search on the latest user message merged with the recent tail). Use when the user wants long-lived agent memory, wants to search past chats and tool-call observations, wants explicit "remember this" cues to stick, wants memory to survive restarts / compaction, or wants to export / import memory across machines. Zero-config — `openclaw plugins install @chainofclaw/claw-mem` is sufficient; works fully on its own with no chain interaction and no external services. Exposes agent-callable tools (`mem-search`, `mem-status`, `mem-forget`) and a CLI namespace (`openclaw mem ...`). Session summaries default to the OpenClaw inference surface (`openclaw infer model run`) so no extra API key is needed. Optional companion: install `coc-soul` alongside to upload memory snapshots on-chain, register a DID identity, mirror to P2P decentralized storage, and recover from a different device after corruption — together they enable "digital immortality" / "silicon-based persistence" for an AI agent.
-version: 2.2.0
+version: 2.3.0
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/claw-mem
@@ -162,6 +162,37 @@ openclaw mem version                        # plugin version
 - `dedupWindowMs` (30000) — de-duplicate observations with the same content hash within this window
 - `summarizer.mode` — `openclaw` (default inside OpenClaw — spawns `openclaw infer model run`), `heuristic` (no LLM), or `llm` (direct Anthropic SDK with own apiKey)
 - `summarizer.openclaw.model` — pin a specific provider/model for summary calls (default: let OpenClaw pick); `summarizer.openclaw.timeoutMs` defaults to 60000ms
+
+### Chat compaction (2.3.0+) — automatic summarization & space reclamation
+
+By default, chat capture writes one observation per message. Over time the chat tail grows and the agent's tokenBudget gets eaten by raw chitchat. v2.3.0 adds a compactor that rolls batches of chat observations into a single `chat_compaction` summary, and (optionally) hard-deletes low-importance originals to reclaim space.
+
+**Pipeline:**
+
+1. **Capture-time denoising** — emoji-only / pictograph-only turns are dropped entirely (don't even reach the DB). Each captured row gets a heuristic `importance` score (0.0–1.0) computed from cue match, presence of dates / URLs / code / numbers, length, role, and chitchat-token detection.
+2. **Trigger** — every `chatMemory.compaction.triggerEvery` chat captures (default 10) the compactor runs in the background. It also fires opportunistically on `agent_end`.
+3. **Roll-up** — the compactor pulls uncompacted chat rows (skipping the most-recent `keepRecentRaw`, default 20), passes the batch through the configured summarizer (`openclaw` mode by default — same auth path as session summaries), writes a single `chat_compaction` observation tagged `tool_name="chat_compaction"` with `importance=0.9`, then marks the originals `compacted=1, compacted_into=<id>`.
+4. **Prune** — when `deleteCompactedLowValue=true` (default), compacted rows whose `importance < minImportanceToKeep` (default 0.7) are hard-deleted. The most-recent `keepRecentRaw` are always retained regardless of importance.
+5. **Recall** — `before_prompt_build` and `mem-search` exclude `compacted=1` rows by default, so the agent reads the compaction summary + the recent tail instead of seeing the same content twice.
+
+**Schema (migration v3, additive — safe on existing DBs):**
+
+| Column | Type | Default | Meaning |
+|---|---|---|---|
+| `compacted` | INTEGER | `0` | `1` = rolled into a chat_compaction; hidden from default recall / search |
+| `importance` | REAL | `0.5` | heuristic score; higher = more worth keeping |
+| `compacted_into` | INTEGER | NULL | id of the chat_compaction observation that this row was rolled into (audit trail) |
+
+**Config (under `chatMemory.compaction`):**
+
+- `enabled` (default `true`)
+- `triggerEvery` (default `10`) — run a pass every N captures
+- `keepRecentRaw` (default `20`) — never compact the most-recent N
+- `deleteCompactedLowValue` (default `true`) — hard-delete after compaction
+- `minImportanceToKeep` (default `0.7`) — prune threshold
+- `idleMs` (default `120000`) — reserved for future idle-based trigger
+
+Set `chatMemory.compaction.enabled = false` to keep raw chat rows forever (audit-heavy use). Set `deleteCompactedLowValue = false` to keep all originals on disk but still benefit from cleaner recall (the compaction summary stays small).
 
 ### Chat memory (2.1.0+ / renamed knobs in 2.2.0)
 

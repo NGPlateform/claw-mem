@@ -31,6 +31,9 @@ const OBS: Observation[] = [
     contentHash: "abc123",
     createdAt: "2026-04-24T14:00:00Z",
     createdAtEpoch: 1777000000,
+    compacted: 0,
+    importance: 0.5,
+    compactedInto: null,
   },
   {
     id: 2,
@@ -49,6 +52,9 @@ const OBS: Observation[] = [
     contentHash: "def456",
     createdAt: "2026-04-24T14:05:00Z",
     createdAtEpoch: 1777000300,
+    compacted: 0,
+    importance: 0.5,
+    compactedInto: null,
   },
 ]
 

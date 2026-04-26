@@ -157,6 +157,32 @@ const MIGRATIONS: Array<{ version: number; sql: string }> = [
         ON carrier_requests(status);
     `,
   },
+  {
+    version: 3,
+    // Chat compaction support: importance scoring + compacted markers.
+    //
+    //   compacted=1     → row was rolled into a compaction observation; should
+    //                     be hidden from recall / search by default
+    //   importance      → 0.0..1.0 heuristic score (default 0.5; explicit-cue
+    //                     hits get bumped, chitchat gets pulled down). Used by
+    //                     prune to decide which compacted rows to delete.
+    //   compacted_into  → id of the chat_compaction observation that this row
+    //                     was rolled into; lets you reconstruct the audit
+    //                     trail without re-walking the timestamp range
+    //
+    // ADD-only — no v1 / v2 schema changes. Safe to apply on a populated DB:
+    // existing rows default compacted=0, importance=0.5, compacted_into=NULL.
+    sql: `
+      ALTER TABLE observations ADD COLUMN compacted INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE observations ADD COLUMN importance REAL NOT NULL DEFAULT 0.5;
+      ALTER TABLE observations ADD COLUMN compacted_into INTEGER;
+
+      CREATE INDEX IF NOT EXISTS idx_obs_compacted_agent
+        ON observations(compacted, agent_id, created_at_epoch DESC);
+      CREATE INDEX IF NOT EXISTS idx_obs_compacted_into
+        ON observations(compacted_into);
+    `,
+  },
 ]
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version

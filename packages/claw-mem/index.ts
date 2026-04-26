@@ -126,6 +126,17 @@ export {
   type ChatExtractorCues,
   type ChatExtractorOptions,
 } from "./src/observer/extractor-chat.ts"
+export {
+  scoreImportance,
+  isEmojiOnly,
+  type ImportanceContext,
+} from "./src/observer/importance.ts"
+export {
+  runChatCompaction,
+  CompactionTrigger,
+  type ChatCompactorDeps,
+  type CompactionResult,
+} from "./src/observer/chat-compactor.ts"
 export { summarizeSession } from "./src/observer/summarizer.ts"
 export {
   summarizeSessionWithLLM,
@@ -159,6 +170,7 @@ export type {
   SummarizerLLMConfig,
   ChatMemoryConfig,
   ChatMemoryCues,
+  ChatCompactionConfig,
   ContextRecallConfig,
 } from "./src/config.ts"
 export type * from "./src/types.ts"

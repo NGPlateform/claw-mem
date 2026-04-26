@@ -24,6 +24,9 @@ const mockObservations: Observation[] = [
     contentHash: "abc",
     createdAt: new Date(now).toISOString(),
     createdAtEpoch: Math.floor(now / 1000),
+    compacted: 0,
+    importance: 0.5,
+    compactedInto: null,
   },
   {
     id: 2,
@@ -42,6 +45,9 @@ const mockObservations: Observation[] = [
     contentHash: "def",
     createdAt: new Date(now - 1000).toISOString(),
     createdAtEpoch: Math.floor((now - 1000) / 1000),
+    compacted: 0,
+    importance: 0.5,
+    compactedInto: null,
   },
 ]
 

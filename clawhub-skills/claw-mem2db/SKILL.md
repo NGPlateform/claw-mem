@@ -1,7 +1,7 @@
 ---
 name: claw-mem2db
 description: Give an AI agent persistent semantic memory that survives restarts and compaction. Captures structured observations from tool calls, summarizes sessions (LLM-quality summaries via the OpenClaw inference surface — no extra API key needed), and injects a token-budgeted memory context into the next prompt. Use when the user wants long-lived agent memory, wants to search past observations, wants to export / import memory across machines, wants to see what memory would be injected before the next turn, or is assembling the full COC agent stack (memory + node + soul). Zero-config — `openclaw plugins install @chainofclaw/claw-mem` is sufficient. The plugin opens its SQLite database on first activation, registers session hooks for automatic observation capture, defaults the session summarizer to `openclaw` mode (reuses the host's already-configured inference provider via `openclaw infer model run`), and exposes both agent-callable tools (`mem-search`, `mem-status`, `mem-forget`) and CLI subcommands (`openclaw mem ...`). No external dependencies, no chain interaction, no setup required.
-version: 2.0.0
+version: 2.1.0
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/claw-mem
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/claw-mem"
-        version: "2.0.0"
+        version: "2.1.0"
         bins:
           - claw-mem
 ---
@@ -32,19 +32,57 @@ The **memory layer** for AI agents on COC.
 >
 > Inside OpenClaw, you don't need the standalone bin. Use the agent tools or `openclaw mem …` (covered below).
 
-## Zero-config
+## Install
 
-**No setup needed after `openclaw plugins install @chainofclaw/claw-mem`.** No chain interaction, no external services, no required env vars — the plugin opens a local SQLite database on first activation and starts capturing observations from session hooks.
+The plugin ships on npm as `@chainofclaw/claw-mem`. The full real-world install command is:
 
-- **DB path** auto-resolves to a writable directory (1.1.17+). Resolution priority:
-  1. `config.dataDir` (per-instance plugin config)
-  2. `$CLAW_MEM_DATA_DIR` (operator override)
+```bash
+openclaw plugins install @chainofclaw/claw-mem --dangerously-force-unsafe-install --force
+```
+
+Two flags are needed in practice — neither is "skip safety checks for fun":
+
+- **`--dangerously-force-unsafe-install`** — claw-mem legitimately uses `child_process` (the `openclaw` summarizer mode spawns `openclaw infer model run`; bootstrap helpers shell out). OpenClaw's static scan flags any plugin that imports `child_process`, so this flag is required to whitelist a known-safe consumer. It is **not** disabling sandboxing of the running plugin.
+- **`--force`** — allows reinstalling/upgrading over an existing extension directory without the "already installed" abort.
+
+If `openclaw plugins install` itself errors out (npm cache `EACCES`, registry timeout, etc.), fall back to the in-place tarball install — see the appendix in `references/cli.md`.
+
+### After install: writable data dir
+
+claw-mem opens its SQLite DB on first activation. The data dir auto-resolves (1.1.17+):
+
+  1. `config.dataDir` (per-instance plugin config — set this when the defaults below don't work)
+  2. `$CLAW_MEM_DATA_DIR` (operator env override)
   3. `$OPENCLAW_STATE_DIR/claw-mem` (OpenClaw's standard sandboxed state-dir)
   4. `~/.claw-mem` (standalone default)
-  The first writable candidate wins. If every candidate fails, the plugin throws an actionable error pointing at these knobs instead of silently picking `/tmp`.
+
+The first writable candidate wins. If every candidate fails, the plugin throws an actionable error — it does **not** silently fall back to `/tmp`.
+
+**Sandboxed hosts (Docker, restricted-uid runners) commonly hit `EACCES` on `~/.claw-mem`** because `$HOME` is read-only or owned by a different uid. The fix is to point claw-mem at an explicitly-writable directory in `~/.openclaw/openclaw.json`:
+
+```jsonc
+{
+  "plugins": {
+    "entries": {
+      "claw-mem": {
+        "config": {
+          "dataDir": "/home/node/.openclaw/state/claw-mem"
+        }
+      }
+    }
+  }
+}
+```
+
+Use whatever absolute path is writable in your environment (`~/.openclaw/state/claw-mem` is a good default since OpenClaw already owns that tree). Restart the gateway after editing. Verify with `openclaw mem status` — if it returns counts (even 0/0/0), the DB opened successfully.
+
+## Zero-config (after the install + dataDir step)
+
+**No further setup needed.** No chain interaction, no external services, no required env vars beyond the dataDir override above (and only when the default isn't writable).
+
 - **Session hooks auto-register**: every tool call becomes a candidate observation; sessions are summarized on close.
 - **Reads work immediately** once any observations have been captured.
-- **No required env vars.** `CLAW_MEM_DATA_DIR` is the only knob and it has a sensible default.
+- **`CLAW_MEM_DATA_DIR`** is the only env knob and it has a sensible default.
 
 **Memory-only mode is expected, not a degradation.** The gateway log line `[claw-mem] Loaded (memory layer only)` is intentional. After the 1.1.0 reshape, the `claw-mem` plugin owns *only* the memory layer; node lifecycle moved to `coc-node` and soul backup/recovery to `coc-soul`. Each plugin registers only its own commands and tools, so installing all three avoids double-registration.
 
@@ -120,7 +158,64 @@ openclaw mem version                        # plugin version
 - `summarizer.mode` — `openclaw` (default inside OpenClaw — spawns `openclaw infer model run`), `heuristic` (no LLM), or `llm` (direct Anthropic SDK with own apiKey)
 - `summarizer.openclaw.model` — pin a specific provider/model for summary calls (default: let OpenClaw pick); `summarizer.openclaw.timeoutMs` defaults to 60000ms
 
-Edit with `openclaw mem config set <path> <value>`.
+### Chat memory (2.1.0+)
+
+Pure chat sessions used to slip past the observer because capture only fired on `after_tool_call`. v2.1.0 adds `message_received` / `message_sent` capture so spoken-only conversations build up memory too. Defaults are conservative: user messages are captured, assistant messages are not.
+
+- `chatMemory.enabled` (default `true`) — master switch for chat capture
+- `chatMemory.explicitOnly` (default `false`) — only capture when the message contains an explicit cue (`记一下`, `记住`, `长期记忆`, `别忘了`, `remember this`, `note this`, `for the record`, …); silences everything else
+- `chatMemory.minLen` (default `8`) — drop shorter messages as chitchat
+- `chatMemory.cues.explicit` / `chatMemory.cues.preference` — override the cue dictionaries; preference cues (`我喜欢`, `from now on`, `always use`, …) become `learning` observations
+- `chatMemory.captureAssistantPromises` (default `false`) — also capture assistant messages on `message_sent` (use sparingly — high noise)
+
+Captured chat observations carry `toolName: "chat"` so they go through the existing FTS5 index. No schema migration.
+
+### Context recall
+
+How `before_prompt_build` picks observations to inject:
+
+- `contextRecall.mode` (default `hybrid`) — `recent` keeps the chronological tail; `hybrid` runs an FTS5 search on the latest user message and merges the hits with the recent tail (deduped by id). Hybrid surfaces topical past memories instead of always showing the last N regardless of relevance.
+- `contextRecall.searchLimitRatio` (default `0.5`) — fraction of `maxObservations` reserved for search hits in hybrid mode; the rest is filled with recent.
+
+Hybrid mode falls back transparently to recent-only if the search throws or no user-message text is available.
+
+Edit any knob with `openclaw mem config set <path> <value>`.
+
+## Hardening (opt-outs)
+
+Default behavior: claw-mem auto-injects a memory context block into every prompt (via `before_prompt_build`) and exposes `mem-search` / `mem-status` / `mem-forget` to the agent. That's the right default for "give the agent persistent memory and let it use it."
+
+If your deployment wants memory to be **query-only** — captured in the background, but never auto-injected and never callable from inside the agent loop — the gateway provides two host-side switches in `~/.openclaw/openclaw.json`:
+
+```jsonc
+{
+  "plugins": {
+    "entries": {
+      "claw-mem": {
+        "hooks": {
+          // Block claw-mem's before_prompt_build hook from stuffing context
+          // into the next prompt. Observation capture (after_tool_call) and
+          // session summarization (session_end) still fire — only the
+          // prompt-side injection is suppressed.
+          "allowPromptInjection": false
+        }
+      }
+    }
+  },
+  // Host-level filter: hide these tools from the agent's tool list entirely.
+  // Useful for tightening the agent's surface (e.g. blocking exec/process)
+  // and/or making memory access human-only via the CLI.
+  "skipTools": ["exec", "process", "mem-search"]
+}
+```
+
+Pick what fits your threat model:
+
+- **Capture but don't inject** — set `allowPromptInjection: false`. Observations still accumulate; you read them via `openclaw mem search` when needed.
+- **CLI-only memory** — also add `mem-search` (and optionally `mem-status` / `mem-forget`) to the host's `skipTools`. The agent can no longer query memory; only humans can via `openclaw mem …`.
+- **Default ("memory just works")** — leave both unset.
+
+Note: the plugin-config knob `skipTools` (under `plugins.entries.claw-mem.config.skipTools`, listed above) is a **different** filter. It controls which **observed** tool calls the *observer* records, not which tools the *agent* can see. The host-level `skipTools` at the top of `openclaw.json` is what gates agent visibility.
 
 ## Verification (post-install smoke test)
 
@@ -132,7 +227,11 @@ openclaw mem peek                # context that would inject on the next prompt
 openclaw mem db migrate-status       # confirms schema is current; 0 pending migrations
 ```
 
-All three should succeed without errors. If `openclaw mem status` says `unknown command 'mem'`, the plugin failed to load — check `plugins.allow` in `~/.openclaw/openclaw.json` and the gateway startup logs for `[claw-mem] Loaded` (or a bootstrap error).
+All three should succeed without errors. Common failure modes:
+
+- **`unknown command 'mem'`** — the plugin failed to load. Check `plugins.allow` in `~/.openclaw/openclaw.json` and the gateway startup logs for `[claw-mem] Loaded` (or a `[claw-mem] Bootstrap failed:` line).
+- **`Bootstrap failed: ... EACCES ... /home/.../.claw-mem`** — the default `~/.claw-mem` isn't writable on this host. Apply the explicit `dataDir` override from the [Install](#after-install-writable-data-dir) section.
+- **`mem search` / `mem-search` agent tool returns "tool not found"** — check whether the host has `mem-search` in `skipTools` (see [Hardening](#hardening-opt-outs)). If yes, that's intentional; query via the CLI or remove the entry.
 
 ## When NOT to use this skill
 

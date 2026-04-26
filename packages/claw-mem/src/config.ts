@@ -166,11 +166,13 @@ export const ChatMemoryConfigSchema = z.object({
     .describe("Capture observations from chat messages (in addition to tool calls)"),
   explicitOnly: z.boolean().default(false)
     .describe("Only capture chat messages that match an explicit cue; suppress preference + plain capture"),
-  minLen: z.number().int().min(1).default(8)
+  minChars: z.number().int().min(1).default(8)
     .describe("Drop messages shorter than this many characters as chitchat"),
+  maxNarrativeChars: z.number().int().min(1).default(500)
+    .describe("Truncate the captured narrative body at this many characters."),
   cues: ChatMemoryCuesSchema.default({}),
-  captureAssistantPromises: z.boolean().default(false)
-    .describe("Also capture assistant messages (commitments / decisions). Off by default."),
+  captureAssistant: z.boolean().default(false)
+    .describe("Also capture assistant messages via message_sent. Off by default to avoid noise."),
 })
 
 // ──────────────────────────────────────────────────────────────────────────

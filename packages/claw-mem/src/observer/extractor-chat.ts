@@ -5,8 +5,11 @@
 // the user just types things and the agent just talks back — still build up
 // useful long-term memory.
 //
-// Zero-migration: emitted observations carry `toolName: "chat"` and slot into
-// the existing observations table / FTS5 index. No schema change.
+// Zero-migration: emitted observations carry `toolName: "message_received"`
+// (user) or `toolName: "message_sent"` (assistant) and slot into the existing
+// observations table / FTS5 index. The 1:1 mapping with the originating hook
+// name makes it easy to filter (`tool_name IN ('message_received','message_sent')`)
+// for "all chat" or pull just one direction. No schema change.
 
 import type { ObservationInput, ObservationType } from "../types.ts"
 
@@ -24,12 +27,14 @@ export interface ChatExtractorOptions {
   enabled: boolean
   /** Only capture when an explicit cue matches (suppresses preference + plain capture). */
   explicitOnly: boolean
-  /** Hard floor on text length; shorter messages are dropped as chitchat. */
-  minLen: number
+  /** Hard floor on text length (characters); shorter messages are dropped as chitchat. */
+  minChars: number
+  /** Truncate the captured narrative body at this many characters. */
+  maxNarrativeChars: number
   /** Cue dictionaries. */
   cues: ChatExtractorCues
-  /** Capture assistant messages containing commitments / decisions. Default off. */
-  captureAssistantPromises: boolean
+  /** Capture assistant messages via message_sent. Default off. */
+  captureAssistant: boolean
 }
 
 export interface ChatEvent {
@@ -41,7 +46,6 @@ export interface ChatEvent {
 }
 
 const TITLE_MAX = 120
-const NARRATIVE_MAX = 500
 
 /**
  * Extract a single observation from a chat message, or return null if it
@@ -54,9 +58,9 @@ export function extractChatObservation(
   if (!opts.enabled) return null
 
   const text = (event.text ?? "").trim()
-  if (text.length < opts.minLen) return null
+  if (text.length < opts.minChars) return null
 
-  if (event.role === "assistant" && !opts.captureAssistantPromises) return null
+  if (event.role === "assistant" && !opts.captureAssistant) return null
 
   const lower = text.toLowerCase()
   const explicitHit = opts.cues.explicit.find((c) => containsCue(text, lower, c))
@@ -82,8 +86,15 @@ export function extractChatObservation(
   }
 
   const title = buildTitle(event.role, text, cueLabel)
-  const narrative = text.length > NARRATIVE_MAX ? text.slice(0, NARRATIVE_MAX) + "..." : text
+  const narrative = text.length > opts.maxNarrativeChars
+    ? text.slice(0, opts.maxNarrativeChars) + "..."
+    : text
   const concepts = extractConcepts(text)
+
+  // Tool name maps 1:1 to the originating hook so downstream filters can
+  // query "all chat" with `tool_name IN ('message_received','message_sent')`
+  // or pull just one direction.
+  const toolName = event.role === "user" ? "message_received" : "message_sent"
 
   return {
     sessionId: event.sessionId,
@@ -95,7 +106,7 @@ export function extractChatObservation(
     concepts,
     filesRead: [],
     filesModified: [],
-    toolName: "chat",
+    toolName,
     promptNumber: event.promptNumber,
   }
 }

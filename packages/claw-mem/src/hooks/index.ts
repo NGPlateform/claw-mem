@@ -34,7 +34,7 @@ export function registerHooks(
   if (config.chatMemory.enabled) {
     logger.info(
       `[claw-mem] chat-memory enabled (explicitOnly=${config.chatMemory.explicitOnly}, ` +
-      `minLen=${config.chatMemory.minLen}, captureAssistant=${config.chatMemory.captureAssistantPromises})`,
+      `minChars=${config.chatMemory.minChars}, captureAssistant=${config.chatMemory.captureAssistant})`,
     )
   }
   logger.info(`[claw-mem] context recall mode=${config.contextRecall.mode}`)
@@ -143,7 +143,7 @@ export function registerHooks(
   const onMessageSent = async (event: unknown) => {
     try {
       if (!config.chatMemory.enabled) return
-      if (!config.chatMemory.captureAssistantPromises) return
+      if (!config.chatMemory.captureAssistant) return
       await captureChatMessage(event, "assistant")
     } catch (error) {
       logger.error(`[claw-mem] message_sent error: ${String(error)}`)

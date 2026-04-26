@@ -1,9 +1,24 @@
 {
   "id": "claw-mem",
   "name": "Claw-Mem: Persistent Memory",
-  "version": "1.1.15",
-  "description": "OpenClaw skill: persistent semantic memory (observation capture, summaries, context injection). COC node lifecycle and soul backup moved to the @chainofclaw/node and @chainofclaw/soul sibling skills.",
+  "version": "2.2.0",
+  "description": "OpenClaw skill: persistent semantic memory (chat + tool capture, FTS5 search, hybrid recall, context injection). COC node lifecycle moved to @chainofclaw/node; soul backup to @chainofclaw/soul. Both are optional companions — claw-mem works fully on its own.",
   "main": "dist/index.js",
+  "hooks": [
+    "session_start",
+    "before_prompt_build",
+    "after_tool_call",
+    "message_received",
+    "message_sent",
+    "agent_end",
+    "session_end",
+    "gateway_stop"
+  ],
+  "tools": [
+    "mem-search",
+    "mem-status",
+    "mem-forget"
+  ],
   "configSchema": {
     "type": "object",
     "properties": {
@@ -16,7 +31,99 @@
       "skipTools": {
         "type": "array",
         "items": { "type": "string" },
-        "default": ["TodoWrite", "AskUserQuestion", "Skill"]
+        "default": ["TodoWrite", "AskUserQuestion", "Skill"],
+        "description": "Tool names whose after_tool_call events the observer skips entirely."
+      },
+      "chatMemory": {
+        "type": "object",
+        "description": "Capture observations from chat messages (in addition to tool calls). Fires on message_received (user) and optionally message_sent (assistant).",
+        "properties": {
+          "enabled": { "type": "boolean", "default": true },
+          "explicitOnly": {
+            "type": "boolean",
+            "default": false,
+            "description": "Only capture when an explicit cue matches (suppresses preference + plain capture)."
+          },
+          "captureAssistant": {
+            "type": "boolean",
+            "default": false,
+            "description": "Also capture assistant messages (commitments / decisions) via message_sent. Off by default to avoid noise."
+          },
+          "minChars": {
+            "type": "number",
+            "default": 8,
+            "description": "Drop messages shorter than this many characters as chitchat."
+          },
+          "maxNarrativeChars": {
+            "type": "number",
+            "default": 500,
+            "description": "Truncate the captured narrative body at this many characters."
+          },
+          "cues": {
+            "type": "object",
+            "description": "Cue dictionaries that promote messages above the noise floor.",
+            "properties": {
+              "explicit": {
+                "type": "array",
+                "items": { "type": "string" },
+                "default": [
+                  "记一下",
+                  "记住",
+                  "长期记忆",
+                  "别忘了",
+                  "remember this",
+                  "note this",
+                  "for the record",
+                  "save this"
+                ]
+              },
+              "preference": {
+                "type": "array",
+                "items": { "type": "string" },
+                "default": [
+                  "我喜欢",
+                  "我不喜欢",
+                  "我不想",
+                  "我偏好",
+                  "以后都",
+                  "以后请",
+                  "i prefer",
+                  "from now on",
+                  "always use",
+                  "never use"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "contextRecall": {
+        "type": "object",
+        "description": "How before_prompt_build assembles the injected context.",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["recent", "hybrid"],
+            "default": "hybrid",
+            "description": "recent = chronological tail only; hybrid = FTS5 search on the latest user message merged with the recent tail."
+          },
+          "searchLimitRatio": {
+            "type": "number",
+            "default": 0.5,
+            "description": "Fraction of maxObservations reserved for search hits in hybrid mode (rest is recent)."
+          }
+        }
+      },
+      "summarizer": {
+        "type": "object",
+        "description": "Session-summary backend. Default uses the host OpenClaw inference surface (no extra API key needed).",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["heuristic", "llm", "openclaw"],
+            "default": "openclaw"
+          }
+        }
       },
       "bootstrap": {
         "type": "object",

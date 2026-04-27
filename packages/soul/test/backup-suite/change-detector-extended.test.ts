@@ -158,4 +158,40 @@ describe("change-detector extended rules", () => {
     assert.ok(memoryFile !== undefined)
     assert.equal(memoryFile!.category, "memory")
   })
+
+  it("picks up identity / memory / workspace markdowns under workspace/ subdir (1.2.7+)", async () => {
+    // OpenClaw moved IDENTITY.md / SOUL.md / MEMORY.md / etc. into
+    // ~/.openclaw/workspace/. Patterns must accept both root-level and
+    // workspace/-prefixed locations.
+    await mkdir(join(tempDir, "workspace"), { recursive: true })
+    await writeFile(join(tempDir, "workspace", "IDENTITY.md"), "# COCO\n\nname: COCO")
+    await writeFile(join(tempDir, "workspace", "SOUL.md"), "# Soul")
+    await writeFile(join(tempDir, "workspace", "MEMORY.md"), "# Memory")
+    await writeFile(join(tempDir, "workspace", "USER.md"), "# User")
+    await writeFile(join(tempDir, "workspace", "AGENTS.md"), "# Agents")
+
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+
+    const wsIdentity = changes.added.find((f) => f.relativePath === "workspace/IDENTITY.md")
+    const wsSoul = changes.added.find((f) => f.relativePath === "workspace/SOUL.md")
+    const wsMemory = changes.added.find((f) => f.relativePath === "workspace/MEMORY.md")
+    const wsUser = changes.added.find((f) => f.relativePath === "workspace/USER.md")
+    const wsAgents = changes.added.find((f) => f.relativePath === "workspace/AGENTS.md")
+
+    assert.ok(wsIdentity, "workspace/IDENTITY.md must be captured")
+    assert.equal(wsIdentity!.category, "identity")
+    assert.equal(wsIdentity!.encrypted, false)
+
+    assert.ok(wsSoul, "workspace/SOUL.md must be captured")
+    assert.equal(wsSoul!.category, "identity")
+
+    assert.ok(wsMemory, "workspace/MEMORY.md must be captured")
+    assert.equal(wsMemory!.category, "memory")
+
+    assert.ok(wsUser, "workspace/USER.md must be captured")
+    assert.equal(wsUser!.category, "memory")
+
+    assert.ok(wsAgents, "workspace/AGENTS.md must be captured")
+    assert.equal(wsAgents!.category, "workspace")
+  })
 })

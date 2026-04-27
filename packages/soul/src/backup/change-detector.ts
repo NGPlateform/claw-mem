@@ -9,34 +9,46 @@ import { sha256Hex } from "../crypto.ts"
 import type { FileState, FileCategory, ChangeSet, SnapshotManifest } from "../backup-types.ts"
 import type { CocBackupConfig } from "../backup-config-schema.ts"
 
-// File classification rules
+// File classification rules.
+//
+// Identity / memory / workspace markdowns historically lived at the root of
+// `~/.openclaw/`. OpenClaw later moved them into `~/.openclaw/workspace/`.
+// Patterns below accept BOTH layouts via the optional `(workspace/)?` prefix
+// so backups don't silently miss IDENTITY.md / SOUL.md / MEMORY.md / etc.
+// when they live under workspace/. Operator-side report (2026-04-26)
+// confirmed `workspace/IDENTITY.md` was being skipped by the old regex
+// `^IDENTITY\.md$`, leaving restored agents without their assigned name.
 const FILE_RULES: Array<{ pattern: RegExp; category: FileCategory; encrypt: boolean }> = [
-  { pattern: /^IDENTITY\.md$/, category: "identity", encrypt: false },
-  { pattern: /^SOUL\.md$/, category: "identity", encrypt: false },
+  // Identity-level markdown files (root-level OR under workspace/)
+  { pattern: /^(workspace\/)?IDENTITY\.md$/, category: "identity", encrypt: false },
+  { pattern: /^(workspace\/)?SOUL\.md$/, category: "identity", encrypt: false },
+  // Identity / config files at fixed locations
   { pattern: /^identity\/device\.json$/, category: "config", encrypt: true },
   { pattern: /^auth\.json$/, category: "config", encrypt: true },
-  { pattern: /^MEMORY\.md$/, category: "memory", encrypt: false },
+  // Memory markdown files (root-level OR under workspace/)
+  { pattern: /^(workspace\/)?MEMORY\.md$/, category: "memory", encrypt: false },
+  { pattern: /^(workspace\/)?USER\.md$/, category: "memory", encrypt: false },
   { pattern: /^memory\/.*\.md$/, category: "memory", encrypt: false },
-  { pattern: /^USER\.md$/, category: "memory", encrypt: false },
-  { pattern: /^agents\/.*\/sessions\/.*\.jsonl$/, category: "chat", encrypt: false },
+  // Recovery context (generated on restore for agent context injection)
+  { pattern: /^(workspace\/)?RECOVERY_CONTEXT\.md$/, category: "memory", encrypt: false },
+  // Workspace markdown / state
+  { pattern: /^(workspace\/)?AGENTS\.md$/, category: "workspace", encrypt: false },
   { pattern: /^workspace-state\.json$/, category: "workspace", encrypt: false },
-  { pattern: /^AGENTS\.md$/, category: "workspace", encrypt: false },
+  // Chat sessions
+  { pattern: /^agents\/.*\/sessions\/.*\.jsonl$/, category: "chat", encrypt: false },
+  { pattern: /^agents\/.*\/sessions\/sessions\.json$/, category: "chat", encrypt: false },
   // Database files (SQLite memory index, LanceDB vector store)
   { pattern: /^memory\/[^/]+\.sqlite$/, category: "database", encrypt: true },
   { pattern: /^memory\/lancedb\/.*/, category: "database", encrypt: true },
   // OpenClaw config and plugin manifests
   { pattern: /^openclaw\.json$/, category: "config", encrypt: true },
   { pattern: /^plugins\/.*\/openclaw\.plugin\.json$/, category: "config", encrypt: false },
-  // Session registry
-  { pattern: /^agents\/.*\/sessions\/sessions\.json$/, category: "chat", encrypt: false },
   // Credentials
   { pattern: /^credentials\/.*/, category: "config", encrypt: true },
   // Context snapshot
   { pattern: /^\.coc-backup\/context-snapshot\.json$/, category: "workspace", encrypt: false },
-  // Semantic snapshot (claude-mem observations + summaries)
+  // Semantic snapshot (claw-mem observations + summaries)
   { pattern: /^\.coc-backup\/semantic-snapshot\.json$/, category: "memory", encrypt: false },
-  // Recovery context (generated on restore for agent context injection)
-  { pattern: /^RECOVERY_CONTEXT\.md$/, category: "memory", encrypt: false },
 ]
 
 function classifyFile(relativePath: string): { category: FileCategory; encrypt: boolean } | null {

@@ -51,8 +51,11 @@ const FILE_RULES: Array<{ pattern: RegExp; category: FileCategory; encrypt: bool
   // Chat sessions
   { pattern: /^agents\/.*\/sessions\/.*\.jsonl$/, category: "chat", encrypt: false },
   { pattern: /^agents\/.*\/sessions\/sessions\.json$/, category: "chat", encrypt: false },
-  // Per-agent local config (LLM provider settings + literal API keys post-1.2.6)
-  { pattern: /^agents\/[^/]+\/agent\/models\.json$/, category: "config", encrypt: true },
+  // Note: agents/<id>/agent/models.json and auth-profiles.json are
+  // intentionally NOT backed up (1.2.10+). They hold host-local provider
+  // tokens / OAuth profiles that must NOT travel across hosts. Target
+  // host's operator owns this state and configures it locally per the
+  // gateway-auth preservation rule in references/backup.md.
   // Database files (SQLite memory index, LanceDB vector store)
   { pattern: /^memory\/[^/]+\.sqlite$/, category: "database", encrypt: true },
   { pattern: /^memory\/lancedb\/.*/, category: "database", encrypt: true },
@@ -69,7 +72,64 @@ const FILE_RULES: Array<{ pattern: RegExp; category: FileCategory; encrypt: bool
   { pattern: /^\.coc-backup\/semantic-snapshot\.json$/, category: "memory", encrypt: false },
 ]
 
+// ──────────────────────────────────────────────────────────────────────────
+// Denylist — paths that must NOT be backed up regardless of FILE_RULES.
+//
+// Most of these are already excluded simply because no whitelist pattern
+// matches them, but we encode them explicitly so:
+//  (a) the walker can prune entire dirs without reading their contents
+//      (huge IO savings for node_modules / install-backup trees), and
+//  (b) future additions to FILE_RULES can't accidentally pull them in.
+//
+// Categories of denylisted content:
+//   - operator audit copies          (*.bak, *.pre-*, *.rejected.<ts>, *.last-good)
+//   - install-time snapshots         (.openclaw-install-backups, stale-*-backup.tar.gz)
+//   - restore audit trail            (.restore-overwrite-backup-<ts>)
+//   - source-managed trees           (.git, node_modules)
+//   - circular-reference state       (.coc-backup/state.json — backup-chain head)
+// ──────────────────────────────────────────────────────────────────────────
+
+/** Directory names skipped at the walker level — never recurse into these. */
+const SKIP_DIRS_BY_NAME: ReadonlySet<string> = new Set([
+  ".git",                        // git repo state — versioned by git itself
+  "node_modules",                // dependency tree — re-installed per host
+  ".openclaw-install-backups",   // openclaw plugins install rotation copies
+])
+
+/** Directory-name patterns skipped at the walker level. */
+const SKIP_DIR_NAME_PATTERNS: readonly RegExp[] = [
+  /^\.restore-overwrite-backup-/,  // operator's pre-restore audit copy of openclaw home
+]
+
+/** File-name patterns skipped at the walker level — operator audit copies. */
+const SKIP_FILE_NAME_PATTERNS: readonly RegExp[] = [
+  /\.bak$/,                                       // openclaw.json.bak
+  /\.bak\.\d+$/,                                  // openclaw.json.bak.1
+  /\.pre-[a-zA-Z0-9-]+$/,                         // openclaw.json.pre-allowlist, models.json.pre-llm-config
+  /\.rejected\.[\dTZ:.\-]+$/,                     // openclaw.json.rejected.<iso-ts>
+  /\.last-good$/,                                 // openclaw.json.last-good
+  /^stale-.*backup.*\.tar\.gz$/,                  // stale-home-node-backup-<ts>.tar.gz
+]
+
+/** Specific file relative paths denied even if they would otherwise match a FILE_RULE. */
+const SKIP_FILE_RELATIVE_PATHS: ReadonlySet<string> = new Set([
+  ".coc-backup/state.json",  // backup chain head — circular reference if backed up
+])
+
+function shouldSkipDir(name: string): boolean {
+  if (SKIP_DIRS_BY_NAME.has(name)) return true
+  for (const re of SKIP_DIR_NAME_PATTERNS) if (re.test(name)) return true
+  return false
+}
+
+function shouldSkipFileByName(name: string): boolean {
+  for (const re of SKIP_FILE_NAME_PATTERNS) if (re.test(name)) return true
+  return false
+}
+
 function classifyFile(relativePath: string): { category: FileCategory; encrypt: boolean } | null {
+  // Hard-coded relative-path denylist wins over the whitelist.
+  if (SKIP_FILE_RELATIVE_PATHS.has(relativePath)) return null
   for (const rule of FILE_RULES) {
     if (rule.pattern.test(relativePath)) {
       return { category: rule.category, encrypt: rule.encrypt }
@@ -94,6 +154,9 @@ async function scanFiles(baseDir: string, config: CocBackupConfig): Promise<File
       if (entry.isSymbolicLink()) continue
       const fullPath = join(dir, entry.name)
       if (entry.isDirectory()) {
+        // Hard denylist wins (1.2.10+): skip operator audit / install /
+        // restore copies regardless of dotfile status.
+        if (shouldSkipDir(entry.name)) continue
         // Skip most hidden dirs by default. Allow-listed names get walked
         // because they hold real backup-eligible content:
         //   .claude     — historical agent state
@@ -108,6 +171,11 @@ async function scanFiles(baseDir: string, config: CocBackupConfig): Promise<File
         ) continue
         await walk(fullPath)
       } else if (entry.isFile()) {
+        // File-name denylist (1.2.10+): operator audit copies (*.bak,
+        // *.pre-*, *.rejected.<ts>, *.last-good, stale-*-backup.tar.gz)
+        // never enter the manifest, even if a future FILE_RULE would
+        // otherwise match a similarly-named file.
+        if (shouldSkipFileByName(entry.name)) continue
         const relPath = relative(baseDir, fullPath)
         const classification = classifyFile(relPath)
         if (!classification) continue

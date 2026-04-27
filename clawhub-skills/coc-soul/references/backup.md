@@ -246,9 +246,61 @@ The backup walks `~/.openclaw/` (or the configured `backup.sourceDir`) and captu
 - `.coc-backup/context-snapshot.json` (workspace, auto-generated)
 - `.coc-backup/semantic-snapshot.json` (memory, auto-generated)
 
-### Walker also descends into hidden dirs (`.`-prefixed) — allow-list
+### Walker descends into hidden dirs (`.`-prefixed) — allow-list
 
 Walker skips `.`-prefixed directories by default to avoid pulling `.git/`, `.cache/`, etc. Three names are allow-listed: `.claude` (historical), `.coc-backup` (snapshot metadata), `.openclaw` (workspace state — added 1.2.9 to reach `workspace/.openclaw/workspace-state.json`). To extend the allow-list, edit `scanFiles()` in `src/backup/change-detector.ts`.
+
+## What is intentionally excluded — denylist (1.2.10+)
+
+Even when files are in a backed-up directory, the walker / classifier explicitly excludes the following to avoid wasted IO, host-cross-contamination, and circular references:
+
+### Host-local secrets — must NEVER travel between hosts
+
+| File | Why |
+|---|---|
+| `agents/<id>/agent/models.json` | LLM provider config; post-1.2.6 holds literal API tokens (`ANTHROPIC_AUTH_TOKEN` etc.). Each host has its own provider keys; copying source's keys to target is at best a leak, at worst breaks the target host's auth. Restore the agent, then re-configure provider on target via `openclaw infer model auth login`. |
+| `agents/<id>/agent/auth-profiles.json` | OAuth profiles. Same reason — host-local credential state. |
+
+### Operator audit copies — file-name patterns skipped at walker level
+
+Skipped regardless of which directory they appear in:
+- `*.bak`, `*.bak.<n>` — operator's manual backups
+- `*.pre-<label>` — operator's pre-change snapshots (`openclaw.json.pre-allowlist`, `models.json.pre-llm-config`)
+- `*.rejected.<iso-ts>` — config writes the gateway rejected (`openclaw.json.rejected.2026-04-23T09-35-42-752Z`)
+- `*.last-good` — last known-good config marker
+- `stale-*-backup-*.tar.gz` — operator's self-archives
+
+### Install / restore audit dirs — pruned at walker level
+
+Walker never enters these directories:
+- `.git/` — git-managed history; backed up via git itself, not via soul
+- `node_modules/` — re-installed per host via `openclaw plugins install`
+- `.openclaw-install-backups/` — `openclaw plugins install` rotation copies
+- `.restore-overwrite-backup-<ts>/` — pre-restore audit copy of openclaw home (left behind by previous restore-overwrite operations)
+
+### Circular-reference state
+
+| File | Why |
+|---|---|
+| `.coc-backup/state.json` | Holds `lastManifestCid` + `incrementalCount` — the **head of the backup chain itself**. Including it in a new backup creates a circular reference: the chain head would point at a state that doesn't exist yet. The chain head is restored by reading the manifest hierarchy on the target host, not by copying the source's pointer. |
+
+### Already excluded by virtue of not matching FILE_RULES
+
+These are skipped because nothing in the whitelist matches them — they're listed here so the design intent is explicit:
+- `extensions/**` — plugin install dir; reinstalled per host
+- `flows/registry.sqlite`, `tasks/runs.sqlite` (+ WAL/SHM siblings) — operational state, not portable
+- `logs/**`, `canvas/**`, `update-check.json` — regenerable
+- `*.sqlite-wal`, `*.sqlite-shm` — SQLite write-ahead-log artifacts; the main `.sqlite` carries everything needed
+- `agents/*/sessions/*.jsonl.reset.<ts>` — operator-side session-reset markers
+- `workspace/.git/**` (also denylisted explicitly above for defense in depth)
+
+### Adding to the denylist
+
+If you find another file that's leaking into manifests it shouldn't, edit:
+- **dir-name skip**: `SKIP_DIRS_BY_NAME` or `SKIP_DIR_NAME_PATTERNS` in `src/backup/change-detector.ts`
+- **file-name skip**: `SKIP_FILE_NAME_PATTERNS`
+- **specific path skip**: `SKIP_FILE_RELATIVE_PATHS`
+- pair with a regression test in `test/backup-suite/change-detector-extended.test.ts`
 
 ### Files outside this whitelist are NOT backed up
 

@@ -202,37 +202,64 @@ openclaw coc-soul backup prune --older-than 30 --keep-latest 1 --dry-run
 openclaw coc-soul backup prune --older-than 30 --keep-latest 1
 ```
 
-## What gets backed up — file patterns (1.2.7+)
+## What gets backed up — file patterns (1.2.9)
 
 The backup walks `~/.openclaw/` (or the configured `backup.sourceDir`) and captures files that match a built-in classifier. Patterns explicitly support **both** the legacy root-level layout and the current `workspace/`-prefixed layout that OpenClaw uses, so the backup picks up identity / memory files no matter which version of OpenClaw wrote them.
 
-Identity-level markdown (root **or** `workspace/`):
-- `IDENTITY.md` — agent identity declaration (where the agent's name is defined)
+### Identity (markdowns; root **or** `workspace/`; not encrypted)
+- `IDENTITY.md` — agent identity declaration (where the agent's name lives)
 - `SOUL.md` — soul configuration
+- `BOOTSTRAP.md` — bootstrap / setup instructions (1.2.9+)
 
-Memory-level markdown (root **or** `workspace/`):
+### Memory (markdowns; root **or** `workspace/`; not encrypted)
 - `MEMORY.md`
 - `USER.md`
 - `RECOVERY_CONTEXT.md` (regenerated on restore)
-- plus everything under `memory/*.md`
+- everything under `memory/*.md` **or** `workspace/memory/*.md` (1.2.9+) — daily / per-topic notes (`workspace/memory/2026-04-27.md`, `workspace/memory/topic-foo.md`, etc.)
 
-Workspace markdown / state (root **or** `workspace/`):
+### Workspace (markdowns + state; root **or** `workspace/`; not encrypted)
 - `AGENTS.md`
-- `workspace-state.json` (root only)
+- `TOOLS.md` — tools manifest (1.2.9+)
+- `HEARTBEAT.md` — soul's own heartbeat file (1.2.9+; soul writes it, soul backs it up)
+- `workspace-state.json` (root location, legacy)
+- `workspace/.openclaw/workspace-state.json` (current OpenClaw layout, 1.2.9+)
 
-Other categories (paths fixed):
-- `identity/device.json` (config, encrypted)
-- `auth.json` (config, encrypted)
-- `openclaw.json` (config, encrypted)
+### Identity / config (fixed paths)
+- `identity/device.json` (config, **encrypted**)
+- `identity/device-auth.json` (config, **encrypted**, 1.2.9+ — paired with device.json for cross-device auth)
+- `auth.json` (config, **encrypted**)
+- `openclaw.json` (config, **encrypted**)
+- `agents/<id>/agent/models.json` (config, **encrypted**, 1.2.9+ — holds literal LLM API keys after the 1.2.6 persistence change; **MUST** stay encrypted)
+- `exec-approvals.json` (config, **encrypted**, 1.2.9+ — Bash / tool approval rules)
 - `plugins/*/openclaw.plugin.json` (config, not encrypted)
-- `agents/*/sessions/*.jsonl` + `agents/*/sessions/sessions.json` (chat)
-- `memory/*.sqlite`, `memory/lancedb/*` (database, encrypted)
-- `credentials/*` (config, encrypted)
-- `.coc-backup/context-snapshot.json`, `.coc-backup/semantic-snapshot.json` (auto-generated metadata)
+- `credentials/*` (config, **encrypted**)
 
-Files outside this whitelist are not backed up. If you put important state in `~/.openclaw/<custom-dir>/` and the path doesn't match any pattern above, it will be silently skipped — extend the pattern set in `src/backup/change-detector.ts` and bump soul minor version if you need a new shape covered.
+### Chat (not encrypted)
+- `agents/*/sessions/*.jsonl`
+- `agents/*/sessions/sessions.json`
 
-**Pre-1.2.7 note for upgraders**: earlier versions only matched root-level `IDENTITY.md` etc. and would skip `workspace/IDENTITY.md`, leaving restored agents nameless. After upgrading to 1.2.7+ the next `backup create --full` will pick these files up; verify by checking `backup list --json` for the new manifest's file count, then test-restore to `/tmp` and confirm `workspace/IDENTITY.md` shows up in the restored tree.
+### Database (encrypted)
+- `memory/*.sqlite` (and SQLite WAL/SHM siblings)
+- `memory/lancedb/*`
+
+### Metadata
+- `.coc-backup/context-snapshot.json` (workspace, auto-generated)
+- `.coc-backup/semantic-snapshot.json` (memory, auto-generated)
+
+### Walker also descends into hidden dirs (`.`-prefixed) — allow-list
+
+Walker skips `.`-prefixed directories by default to avoid pulling `.git/`, `.cache/`, etc. Three names are allow-listed: `.claude` (historical), `.coc-backup` (snapshot metadata), `.openclaw` (workspace state — added 1.2.9 to reach `workspace/.openclaw/workspace-state.json`). To extend the allow-list, edit `scanFiles()` in `src/backup/change-detector.ts`.
+
+### Files outside this whitelist are NOT backed up
+
+If you put important state in `~/.openclaw/<custom-dir>/` and the path doesn't match any pattern above, it will be silently skipped — extend the pattern set in `src/backup/change-detector.ts` and bump soul minor version if you need a new shape covered. **Always pair a pattern addition with a regression test** in `test/backup-suite/change-detector-extended.test.ts`.
+
+### Upgrade notes
+
+| From | What to do after upgrade |
+|---|---|
+| **pre-1.2.7** (no workspace/ prefix support) | Run `openclaw coc-soul backup create --full` once. Verify `workspace/IDENTITY.md` shows up in `backup list --json` file count + restore-to-`/tmp` smoke. |
+| **1.2.7 / 1.2.8** | Run `backup create --full` once. New 1.2.9 patterns (`TOOLS.md`, `HEARTBEAT.md`, `BOOTSTRAP.md`, `workspace/memory/*.md`, `workspace/.openclaw/workspace-state.json`, `identity/device-auth.json`, `agents/<id>/agent/models.json`, `exec-approvals.json`) will be added to the manifest. |
 
 ## Categories & semantic snapshot
 

@@ -18,31 +18,49 @@ import type { CocBackupConfig } from "../backup-config-schema.ts"
 // when they live under workspace/. Operator-side report (2026-04-26)
 // confirmed `workspace/IDENTITY.md` was being skipped by the old regex
 // `^IDENTITY\.md$`, leaving restored agents without their assigned name.
+//
+// 1.2.9 audit added: TOOLS / HEARTBEAT / BOOTSTRAP markdowns under
+// workspace/, daily memory entries under workspace/memory/, the actual
+// `workspace-state.json` location (`workspace/.openclaw/...`), the paired
+// `device-auth.json`, the agent's `models.json` (now holds literal LLM
+// API keys post-1.2.6 — encrypted!), and `exec-approvals.json`.
 const FILE_RULES: Array<{ pattern: RegExp; category: FileCategory; encrypt: boolean }> = [
   // Identity-level markdown files (root-level OR under workspace/)
   { pattern: /^(workspace\/)?IDENTITY\.md$/, category: "identity", encrypt: false },
   { pattern: /^(workspace\/)?SOUL\.md$/, category: "identity", encrypt: false },
+  { pattern: /^(workspace\/)?BOOTSTRAP\.md$/, category: "identity", encrypt: false },
   // Identity / config files at fixed locations
   { pattern: /^identity\/device\.json$/, category: "config", encrypt: true },
+  { pattern: /^identity\/device-auth\.json$/, category: "config", encrypt: true },
   { pattern: /^auth\.json$/, category: "config", encrypt: true },
   // Memory markdown files (root-level OR under workspace/)
   { pattern: /^(workspace\/)?MEMORY\.md$/, category: "memory", encrypt: false },
   { pattern: /^(workspace\/)?USER\.md$/, category: "memory", encrypt: false },
-  { pattern: /^memory\/.*\.md$/, category: "memory", encrypt: false },
+  // Daily / per-topic memory entries: memory/*.md OR workspace/memory/*.md
+  { pattern: /^(workspace\/)?memory\/.*\.md$/, category: "memory", encrypt: false },
   // Recovery context (generated on restore for agent context injection)
   { pattern: /^(workspace\/)?RECOVERY_CONTEXT\.md$/, category: "memory", encrypt: false },
   // Workspace markdown / state
   { pattern: /^(workspace\/)?AGENTS\.md$/, category: "workspace", encrypt: false },
+  { pattern: /^(workspace\/)?TOOLS\.md$/, category: "workspace", encrypt: false },
+  { pattern: /^(workspace\/)?HEARTBEAT\.md$/, category: "workspace", encrypt: false },
+  // Workspace state — historical root-level layout AND current
+  // `workspace/.openclaw/workspace-state.json` location
   { pattern: /^workspace-state\.json$/, category: "workspace", encrypt: false },
+  { pattern: /^workspace\/\.openclaw\/workspace-state\.json$/, category: "workspace", encrypt: false },
   // Chat sessions
   { pattern: /^agents\/.*\/sessions\/.*\.jsonl$/, category: "chat", encrypt: false },
   { pattern: /^agents\/.*\/sessions\/sessions\.json$/, category: "chat", encrypt: false },
+  // Per-agent local config (LLM provider settings + literal API keys post-1.2.6)
+  { pattern: /^agents\/[^/]+\/agent\/models\.json$/, category: "config", encrypt: true },
   // Database files (SQLite memory index, LanceDB vector store)
   { pattern: /^memory\/[^/]+\.sqlite$/, category: "database", encrypt: true },
   { pattern: /^memory\/lancedb\/.*/, category: "database", encrypt: true },
   // OpenClaw config and plugin manifests
   { pattern: /^openclaw\.json$/, category: "config", encrypt: true },
   { pattern: /^plugins\/.*\/openclaw\.plugin\.json$/, category: "config", encrypt: false },
+  // Bash / tool approval rules — operator-curated, expensive to rebuild
+  { pattern: /^exec-approvals\.json$/, category: "config", encrypt: true },
   // Credentials
   { pattern: /^credentials\/.*/, category: "config", encrypt: true },
   // Context snapshot
@@ -76,8 +94,18 @@ async function scanFiles(baseDir: string, config: CocBackupConfig): Promise<File
       if (entry.isSymbolicLink()) continue
       const fullPath = join(dir, entry.name)
       if (entry.isDirectory()) {
-        // Skip hidden dirs except .claude
-        if (entry.name.startsWith(".") && entry.name !== ".claude" && entry.name !== ".coc-backup") continue
+        // Skip most hidden dirs by default. Allow-listed names get walked
+        // because they hold real backup-eligible content:
+        //   .claude     — historical agent state
+        //   .coc-backup — context-snapshot.json + semantic-snapshot.json
+        //   .openclaw   — OpenClaw's per-workspace state dir (e.g.
+        //                 workspace/.openclaw/workspace-state.json) — 1.2.9+
+        if (
+          entry.name.startsWith(".") &&
+          entry.name !== ".claude" &&
+          entry.name !== ".coc-backup" &&
+          entry.name !== ".openclaw"
+        ) continue
         await walk(fullPath)
       } else if (entry.isFile()) {
         const relPath = relative(baseDir, fullPath)

@@ -265,23 +265,6 @@ describe("change-detector extended rules", () => {
     assert.equal(auth!.encrypted, true)
   })
 
-  it("picks up agents/<id>/agent/models.json AS ENCRYPTED (1.2.9+ — contains literal API keys)", async () => {
-    // Post-1.2.6 the OpenClaw operator is encouraged to persist literal
-    // ANTHROPIC_AUTH_TOKEN into models.json so gateway boots without env
-    // vars. That makes models.json secret-bearing — must encrypt.
-    await mkdir(join(tempDir, "agents", "main", "agent"), { recursive: true })
-    await writeFile(
-      join(tempDir, "agents", "main", "agent", "models.json"),
-      '{"providers":{"anthropic":{"apiKey":"sk-..."}}}',
-    )
-
-    const changes = await detectChanges(tempDir, defaultConfig, null)
-    const models = changes.added.find((f) => f.relativePath === "agents/main/agent/models.json")
-    assert.ok(models, "agents/<id>/agent/models.json must be captured")
-    assert.equal(models!.category, "config")
-    assert.equal(models!.encrypted, true, "models.json contains API keys — MUST be encrypted")
-  })
-
   it("picks up exec-approvals.json AS ENCRYPTED (1.2.9+)", async () => {
     await writeFile(
       join(tempDir, "exec-approvals.json"),
@@ -293,5 +276,91 @@ describe("change-detector extended rules", () => {
     assert.ok(approvals, "exec-approvals.json must be captured")
     assert.equal(approvals!.category, "config")
     assert.equal(approvals!.encrypted, true, "approval rules touch security — encrypt")
+  })
+
+  // ── 1.2.10: denylist + walker dir-skip + host-local exclusions ──
+
+  it("does NOT back up agents/<id>/agent/models.json (1.2.10+ — host-local LLM token, must not travel)", async () => {
+    await mkdir(join(tempDir, "agents", "main", "agent"), { recursive: true })
+    await writeFile(
+      join(tempDir, "agents", "main", "agent", "models.json"),
+      '{"providers":{"anthropic":{"apiKey":"sk-test"}}}',
+    )
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const models = changes.added.find((f) => f.relativePath === "agents/main/agent/models.json")
+    assert.equal(models, undefined, "models.json contains host-local API tokens — must NOT enter the backup manifest")
+  })
+
+  it("does NOT back up agents/<id>/agent/auth-profiles.json (1.2.10+ — host-local OAuth state)", async () => {
+    await mkdir(join(tempDir, "agents", "main", "agent"), { recursive: true })
+    await writeFile(
+      join(tempDir, "agents", "main", "agent", "auth-profiles.json"),
+      '{"profiles":[{"provider":"anthropic","kind":"oauth"}]}',
+    )
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const auth = changes.added.find((f) => f.relativePath === "agents/main/agent/auth-profiles.json")
+    assert.equal(auth, undefined, "auth-profiles.json holds host-local OAuth profiles — must NOT enter the backup manifest")
+  })
+
+  it("does NOT back up .coc-backup/state.json (1.2.10+ — circular reference)", async () => {
+    await mkdir(join(tempDir, ".coc-backup"), { recursive: true })
+    await writeFile(
+      join(tempDir, ".coc-backup", "state.json"),
+      '{"version":1,"lastManifestCid":"bafy...","incrementalCount":3}',
+    )
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const state = changes.added.find((f) => f.relativePath === ".coc-backup/state.json")
+    assert.equal(state, undefined, ".coc-backup/state.json is the backup chain head — backing it up creates a circular reference")
+  })
+
+  it("does NOT back up operator audit copies (*.bak, *.pre-*, *.rejected.<ts>, *.last-good) (1.2.10+)", async () => {
+    await writeFile(join(tempDir, "openclaw.json"), '{}')
+    await writeFile(join(tempDir, "openclaw.json.bak"), '{}')
+    await writeFile(join(tempDir, "openclaw.json.bak.1"), '{}')
+    await writeFile(join(tempDir, "openclaw.json.pre-allowlist"), '{}')
+    await writeFile(join(tempDir, "openclaw.json.pre-llm-literal"), '{}')
+    await writeFile(join(tempDir, "openclaw.json.rejected.2026-04-23T09-35-42-752Z"), '{}')
+    await writeFile(join(tempDir, "openclaw.json.last-good"), '{}')
+
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const captured = changes.added.map((f) => f.relativePath)
+
+    assert.ok(captured.includes("openclaw.json"), "the live config IS captured")
+    assert.ok(!captured.some((p) => p.endsWith(".bak")), "*.bak skipped")
+    assert.ok(!captured.some((p) => p.match(/\.bak\.\d+$/)), "*.bak.<n> skipped")
+    assert.ok(!captured.some((p) => p.match(/\.pre-/)), "*.pre-* skipped")
+    assert.ok(!captured.some((p) => p.includes(".rejected.")), "*.rejected.<ts> skipped")
+    assert.ok(!captured.some((p) => p.endsWith(".last-good")), "*.last-good skipped")
+  })
+
+  it("does NOT back up stale-*-backup-*.tar.gz (1.2.10+ — operator's tarball self-archives)", async () => {
+    await writeFile(join(tempDir, "stale-home-node-backup-20260426-144215.tar.gz"), "tar bytes")
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const tarball = changes.added.find((f) => f.relativePath.endsWith(".tar.gz"))
+    assert.equal(tarball, undefined, "stale-*-backup-*.tar.gz is operator's self-archive, never re-back-up")
+  })
+
+  it("walker skips .git / node_modules / .openclaw-install-backups / .restore-overwrite-backup-* (1.2.10+)", async () => {
+    // Each of these dirs holds many files; the walker should never enter them.
+    await mkdir(join(tempDir, "workspace", ".git"), { recursive: true })
+    await writeFile(join(tempDir, "workspace", ".git", "HEAD"), "ref: refs/heads/main\n")
+    await writeFile(join(tempDir, "workspace", ".git", "config"), "[core]")
+
+    await mkdir(join(tempDir, "node_modules", "ethers"), { recursive: true })
+    await writeFile(join(tempDir, "node_modules", "ethers", "package.json"), '{}')
+
+    await mkdir(join(tempDir, "extensions", ".openclaw-install-backups", "old-coc-soul"), { recursive: true })
+    await writeFile(join(tempDir, "extensions", ".openclaw-install-backups", "old-coc-soul", "openclaw.plugin.json"), '{}')
+
+    await mkdir(join(tempDir, ".restore-overwrite-backup-20260426T145726Z"), { recursive: true })
+    await writeFile(join(tempDir, ".restore-overwrite-backup-20260426T145726Z", "openclaw.json"), '{}')
+
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const captured = changes.added.map((f) => f.relativePath)
+
+    assert.ok(!captured.some((p) => p.includes(".git/")), ".git/ contents skipped")
+    assert.ok(!captured.some((p) => p.includes("node_modules/")), "node_modules/ contents skipped")
+    assert.ok(!captured.some((p) => p.includes(".openclaw-install-backups/")), ".openclaw-install-backups/ contents skipped")
+    assert.ok(!captured.some((p) => p.includes(".restore-overwrite-backup-")), ".restore-overwrite-backup-* contents skipped")
   })
 })

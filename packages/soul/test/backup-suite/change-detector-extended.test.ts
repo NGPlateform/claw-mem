@@ -194,4 +194,104 @@ describe("change-detector extended rules", () => {
     assert.ok(wsAgents, "workspace/AGENTS.md must be captured")
     assert.equal(wsAgents!.category, "workspace")
   })
+
+  it("picks up TOOLS.md / HEARTBEAT.md / BOOTSTRAP.md under workspace/ (1.2.9+)", async () => {
+    await mkdir(join(tempDir, "workspace"), { recursive: true })
+    await writeFile(join(tempDir, "workspace", "TOOLS.md"), "# Tools manifest")
+    await writeFile(join(tempDir, "workspace", "HEARTBEAT.md"), "# Heartbeat\nlast: 2026-04-27T08:00:00Z")
+    await writeFile(join(tempDir, "workspace", "BOOTSTRAP.md"), "# Bootstrap\n## Step 1: ...")
+
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+
+    const tools = changes.added.find((f) => f.relativePath === "workspace/TOOLS.md")
+    const heartbeat = changes.added.find((f) => f.relativePath === "workspace/HEARTBEAT.md")
+    const bootstrap = changes.added.find((f) => f.relativePath === "workspace/BOOTSTRAP.md")
+
+    assert.ok(tools, "workspace/TOOLS.md must be captured")
+    assert.equal(tools!.category, "workspace")
+    assert.equal(tools!.encrypted, false)
+
+    assert.ok(heartbeat, "workspace/HEARTBEAT.md must be captured (soul writes its own heartbeat there)")
+    assert.equal(heartbeat!.category, "workspace")
+
+    assert.ok(bootstrap, "workspace/BOOTSTRAP.md must be captured (identity-shaping setup doc)")
+    assert.equal(bootstrap!.category, "identity")
+  })
+
+  it("picks up daily / per-topic memory entries under workspace/memory/ (1.2.9+)", async () => {
+    await mkdir(join(tempDir, "workspace", "memory"), { recursive: true })
+    await writeFile(join(tempDir, "workspace", "memory", "2026-04-27.md"), "# 2026-04-27\n- did X")
+    await writeFile(join(tempDir, "workspace", "memory", "topic-foo.md"), "# Topic\nnotes...")
+
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+
+    const daily = changes.added.find((f) => f.relativePath === "workspace/memory/2026-04-27.md")
+    const topic = changes.added.find((f) => f.relativePath === "workspace/memory/topic-foo.md")
+
+    assert.ok(daily, "workspace/memory/<date>.md must be captured")
+    assert.equal(daily!.category, "memory")
+    assert.equal(daily!.encrypted, false)
+
+    assert.ok(topic, "workspace/memory/<topic>.md must be captured")
+    assert.equal(topic!.category, "memory")
+  })
+
+  it("picks up real workspace-state.json location at workspace/.openclaw/ (1.2.9+)", async () => {
+    // Bug pre-1.2.9: rule only matched root-level workspace-state.json,
+    // but OpenClaw writes it at workspace/.openclaw/workspace-state.json.
+    // Backups silently missed the actual workspace state.
+    await mkdir(join(tempDir, "workspace", ".openclaw"), { recursive: true })
+    await writeFile(
+      join(tempDir, "workspace", ".openclaw", "workspace-state.json"),
+      '{"activeSessionId":"abc","layout":"split"}',
+    )
+
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const state = changes.added.find((f) => f.relativePath === "workspace/.openclaw/workspace-state.json")
+    assert.ok(state, "workspace/.openclaw/workspace-state.json must be captured")
+    assert.equal(state!.category, "workspace")
+    assert.equal(state!.encrypted, false)
+  })
+
+  it("picks up identity/device-auth.json paired with device.json (1.2.9+)", async () => {
+    await mkdir(join(tempDir, "identity"), { recursive: true })
+    await writeFile(join(tempDir, "identity", "device.json"), '{"deviceId":"d1"}')
+    await writeFile(join(tempDir, "identity", "device-auth.json"), '{"token":"redacted"}')
+
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const auth = changes.added.find((f) => f.relativePath === "identity/device-auth.json")
+    assert.ok(auth, "identity/device-auth.json must be captured")
+    assert.equal(auth!.category, "config")
+    assert.equal(auth!.encrypted, true)
+  })
+
+  it("picks up agents/<id>/agent/models.json AS ENCRYPTED (1.2.9+ — contains literal API keys)", async () => {
+    // Post-1.2.6 the OpenClaw operator is encouraged to persist literal
+    // ANTHROPIC_AUTH_TOKEN into models.json so gateway boots without env
+    // vars. That makes models.json secret-bearing — must encrypt.
+    await mkdir(join(tempDir, "agents", "main", "agent"), { recursive: true })
+    await writeFile(
+      join(tempDir, "agents", "main", "agent", "models.json"),
+      '{"providers":{"anthropic":{"apiKey":"sk-..."}}}',
+    )
+
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const models = changes.added.find((f) => f.relativePath === "agents/main/agent/models.json")
+    assert.ok(models, "agents/<id>/agent/models.json must be captured")
+    assert.equal(models!.category, "config")
+    assert.equal(models!.encrypted, true, "models.json contains API keys — MUST be encrypted")
+  })
+
+  it("picks up exec-approvals.json AS ENCRYPTED (1.2.9+)", async () => {
+    await writeFile(
+      join(tempDir, "exec-approvals.json"),
+      '{"approvals":[{"command":"git status","scope":"session"}]}',
+    )
+
+    const changes = await detectChanges(tempDir, defaultConfig, null)
+    const approvals = changes.added.find((f) => f.relativePath === "exec-approvals.json")
+    assert.ok(approvals, "exec-approvals.json must be captured")
+    assert.equal(approvals!.category, "config")
+    assert.equal(approvals!.encrypted, true, "approval rules touch security — encrypt")
+  })
 })

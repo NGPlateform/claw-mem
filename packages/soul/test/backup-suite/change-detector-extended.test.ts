@@ -164,7 +164,7 @@ describe("change-detector extended rules", () => {
     // ~/.openclaw/workspace/. Patterns must accept both root-level and
     // workspace/-prefixed locations.
     await mkdir(join(tempDir, "workspace"), { recursive: true })
-    await writeFile(join(tempDir, "workspace", "IDENTITY.md"), "# COCO\n\nname: COCO")
+    await writeFile(join(tempDir, "workspace", "IDENTITY.md"), "# Test Identity\nname: test-agent")
     await writeFile(join(tempDir, "workspace", "SOUL.md"), "# Soul")
     await writeFile(join(tempDir, "workspace", "MEMORY.md"), "# Memory")
     await writeFile(join(tempDir, "workspace", "USER.md"), "# User")

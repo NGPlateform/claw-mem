@@ -202,6 +202,38 @@ openclaw coc-soul backup prune --older-than 30 --keep-latest 1 --dry-run
 openclaw coc-soul backup prune --older-than 30 --keep-latest 1
 ```
 
+## What gets backed up — file patterns (1.2.7+)
+
+The backup walks `~/.openclaw/` (or the configured `backup.sourceDir`) and captures files that match a built-in classifier. Patterns explicitly support **both** the legacy root-level layout and the current `workspace/`-prefixed layout that OpenClaw uses, so the backup picks up identity / memory files no matter which version of OpenClaw wrote them.
+
+Identity-level markdown (root **or** `workspace/`):
+- `IDENTITY.md` — agent identity declaration (where the agent's name is defined)
+- `SOUL.md` — soul configuration
+
+Memory-level markdown (root **or** `workspace/`):
+- `MEMORY.md`
+- `USER.md`
+- `RECOVERY_CONTEXT.md` (regenerated on restore)
+- plus everything under `memory/*.md`
+
+Workspace markdown / state (root **or** `workspace/`):
+- `AGENTS.md`
+- `workspace-state.json` (root only)
+
+Other categories (paths fixed):
+- `identity/device.json` (config, encrypted)
+- `auth.json` (config, encrypted)
+- `openclaw.json` (config, encrypted)
+- `plugins/*/openclaw.plugin.json` (config, not encrypted)
+- `agents/*/sessions/*.jsonl` + `agents/*/sessions/sessions.json` (chat)
+- `memory/*.sqlite`, `memory/lancedb/*` (database, encrypted)
+- `credentials/*` (config, encrypted)
+- `.coc-backup/context-snapshot.json`, `.coc-backup/semantic-snapshot.json` (auto-generated metadata)
+
+Files outside this whitelist are not backed up. If you put important state in `~/.openclaw/<custom-dir>/` and the path doesn't match any pattern above, it will be silently skipped — extend the pattern set in `src/backup/change-detector.ts` and bump soul minor version if you need a new shape covered.
+
+**Pre-1.2.7 note for upgraders**: earlier versions only matched root-level `IDENTITY.md` etc. and would skip `workspace/IDENTITY.md`, leaving restored agents nameless. After upgrading to 1.2.7+ the next `backup create --full` will pick these files up; verify by checking `backup list --json` for the new manifest's file count, then test-restore to `/tmp` and confirm `workspace/IDENTITY.md` shows up in the restored tree.
+
 ## Categories & semantic snapshot
 
 `backup.categories.*` controls what gets bundled:

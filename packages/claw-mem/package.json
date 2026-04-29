@@ -29,8 +29,8 @@
     }
   },
   "scripts": {
-    "test": "node --experimental-strip-types --test test/*.test.ts",
-    "test:watch": "node --experimental-strip-types --test --watch test/*.test.ts",
+    "test": "node --experimental-strip-types --test test/*.test.ts test/poc/*.test.ts",
+    "test:watch": "node --experimental-strip-types --test --watch test/*.test.ts test/poc/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "rm -rf dist && tsc --project tsconfig.build.json",
     "prepublishOnly": "npm run build"

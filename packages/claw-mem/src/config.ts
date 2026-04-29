@@ -203,6 +203,26 @@ export const ContextRecallConfigSchema = z.object({
 })
 
 // ──────────────────────────────────────────────────────────────────────────
+// PoC: multi-channel / multi-user markdown engine (3.0 preview)
+//
+// Off by default. When enabled, registers a separate hook handler chain
+// that routes by (channelId, senderId) into per-(channel,user) markdown
+// files (SOUL.md / MEMORY.md / USER.md). Coexists with the existing SQLite
+// observation pipeline — does not replace it.
+// ──────────────────────────────────────────────────────────────────────────
+
+export const PocConfigSchema = z.object({
+  enabled: z.boolean().default(false)
+    .describe("Enable the PoC multi-channel markdown memory layer (3.0 preview)."),
+  rootDir: z.string().default("")
+    .describe("Override PoC root dir; default ~/.openclaw/.claw-mem-poc/. Empty = auto."),
+  fallbackChannel: z.string().default("default")
+    .describe("Channel name used when ctx.channelId is missing."),
+  fallbackUser: z.string().default("default")
+    .describe("User segment used when ctx.senderId is missing."),
+})
+
+// ──────────────────────────────────────────────────────────────────────────
 // Bootstrap (dev-mode auto stack)
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -243,6 +263,7 @@ export const ClawMemConfigSchema = z.object({
   summarizer: SummarizerConfigSchema.default({}),
   chatMemory: ChatMemoryConfigSchema.default({}),
   contextRecall: ContextRecallConfigSchema.default({}),
+  poc: PocConfigSchema.default({}),
 })
 
 export type ClawMemConfig = z.infer<typeof ClawMemConfigSchema>
@@ -258,6 +279,7 @@ export type ChatMemoryConfig = z.infer<typeof ChatMemoryConfigSchema>
 export type ChatMemoryCues = z.infer<typeof ChatMemoryCuesSchema>
 export type ChatCompactionConfig = z.infer<typeof ChatCompactionConfigSchema>
 export type ContextRecallConfig = z.infer<typeof ContextRecallConfigSchema>
+export type PocConfig = z.infer<typeof PocConfigSchema>
 
 // ──────────────────────────────────────────────────────────────────────────
 // Path resolvers

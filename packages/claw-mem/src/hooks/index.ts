@@ -14,6 +14,7 @@ import { extractChatObservation, type ChatRole } from "../observer/extractor-cha
 import { CompactionTrigger, runChatCompaction } from "../observer/chat-compactor.ts"
 import { createSummarizer } from "../observer/index.ts"
 import { buildContext } from "../context/builder.ts"
+import { registerPocHooks } from "../poc/hooks.ts"
 
 export function registerHooks(
   api: PluginApi,
@@ -329,6 +330,9 @@ export function registerHooks(
     api.on("message_sent", onMessageSent)
     api.on("agent_end", onAgentEnd)
     api.on("session_end", onSessionEnd)
+    // PoC multi-channel markdown engine — opt-in via config.poc.enabled.
+    // Runs in addition to the existing SQLite pipeline above.
+    registerPocHooks(api, config, logger)
   } else if (api.registerHook) {
     // Legacy hook registration: legacy API expects Promise<void>; wrap to discard
     // the structured return value of before_prompt_build (only the new `on()` API
@@ -342,6 +346,7 @@ export function registerHooks(
     api.registerHook("message_sent", onMessageSent)
     api.registerHook("agent_end", onAgentEnd)
     api.registerHook("session_end", onSessionEnd)
+    registerPocHooks(api, config, logger)
   }
 }
 

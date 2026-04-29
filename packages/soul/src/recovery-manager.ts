@@ -8,7 +8,9 @@ import { restoreFromManifestCid } from "./recovery/state-restorer.ts"
 import { autoRestore } from "./recovery/orchestrator.ts"
 import { createCidResolver } from "./recovery/cid-resolver.ts"
 import { searchMemories, type MemorySearchResult } from "./recovery/memory-search.ts"
+import { verifyManifest, type ManifestVerifyResult } from "./recovery/manifest-verifier.ts"
 import { resolveHomePath } from "./backup-utils.ts"
+import { readBackupState } from "./local-state.ts"
 import type { BackupManager } from "./backup-manager.ts"
 import type { Logger } from "./types.ts"
 
@@ -83,6 +85,21 @@ export class RecoveryManager {
     const ipfs = this.backupManager.getIpfsClient()
     const soul = this.backupManager.getSoulClient()
     return buildDoctorReport(coc, soul, ipfs)
+  }
+
+  async verify(params: { manifestCid?: string; latest?: boolean }): Promise<ManifestVerifyResult> {
+    const coc = this.backupManager.getCocConfig()
+    const ipfs = this.backupManager.getIpfsClient()
+    const soul = this.backupManager.getSoulClient()
+    let cid = params.manifestCid
+    if (!cid) {
+      const state = await readBackupState(resolveHomePath(coc.dataDir))
+      if (!state.lastManifestCid) {
+        throw new Error("No local backup state found — pass --cid <manifestCid> or run a backup first")
+      }
+      cid = state.lastManifestCid
+    }
+    return verifyManifest(cid, ipfs, this.logger, soul)
   }
 
   async searchMemories(opts: { query: string; limit?: number; type?: string }): Promise<MemorySearchResult> {

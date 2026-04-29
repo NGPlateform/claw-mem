@@ -6,6 +6,8 @@ import type { IpfsClient } from "../ipfs-client.ts"
 import type {
   BackupReceipt,
   BackupRecoveryPackage,
+  ChangeSet,
+  ChangeSetSummary,
   SemanticDigest,
   SnapshotManifest,
 } from "../backup-types.ts"
@@ -23,6 +25,44 @@ interface Logger {
   info(msg: string): void
   error(msg: string): void
   warn(msg: string): void
+}
+
+export interface RunBackupOptions {
+  /** Force a full backup even if an incremental would suffice. */
+  full?: boolean
+  /** Compute the changeset and return it, but skip upload + on-chain anchor. */
+  dryRun?: boolean
+  /** Ephemeral category enable/disable, applied in-memory only. Does not
+   *  persist to config. Use to scope a one-shot run (e.g. config-only). */
+  categoryOverride?: Partial<CocBackupConfig["categories"]>
+}
+
+function summarizeChangeSet(changes: ChangeSet, isFullBackup: boolean): ChangeSetSummary {
+  const byCategory: ChangeSetSummary["byCategory"] = {}
+  let bytesToUpload = 0
+  for (const f of changes.added) {
+    bytesToUpload += f.sizeBytes
+    const slot = byCategory[f.category] ?? { added: 0, modified: 0, bytes: 0 }
+    slot.added += 1
+    slot.bytes += f.sizeBytes
+    byCategory[f.category] = slot
+  }
+  for (const f of changes.modified) {
+    bytesToUpload += f.sizeBytes
+    const slot = byCategory[f.category] ?? { added: 0, modified: 0, bytes: 0 }
+    slot.modified += 1
+    slot.bytes += f.sizeBytes
+    byCategory[f.category] = slot
+  }
+  return {
+    isFullBackup,
+    added: changes.added.length,
+    modified: changes.modified.length,
+    deleted: changes.deleted.length,
+    unchanged: changes.unchanged.length,
+    bytesToUpload,
+    byCategory,
+  }
 }
 
 export class BackupScheduler {
@@ -93,8 +133,11 @@ export class BackupScheduler {
     }
   }
 
-  /** Run a single backup cycle (reentrance-guarded) */
-  async runBackup(forceFullBackup = false): Promise<BackupReceipt> {
+  /** Run a single backup cycle (reentrance-guarded). Accepts either a
+   *  legacy boolean (forceFullBackup) or an options object so existing
+   *  callers keep working. */
+  async runBackup(arg: boolean | RunBackupOptions = false): Promise<BackupReceipt> {
+    const opts: RunBackupOptions = typeof arg === "boolean" ? { full: arg } : arg
     await this.ensureInitialized()
 
     if (this.running) {
@@ -110,7 +153,7 @@ export class BackupScheduler {
 
     this.running = true
     try {
-      return await this._executeBackup(forceFullBackup)
+      return await this._executeBackup(opts)
     } finally {
       this.running = false
     }
@@ -191,8 +234,39 @@ export class BackupScheduler {
     })
   }
 
-  private async _executeBackup(forceFullBackup: boolean): Promise<BackupReceipt> {
-    const baseDir = resolveHomePath(this.config.dataDir)
+  private async _executeBackup(opts: RunBackupOptions): Promise<BackupReceipt> {
+    const forceFullBackup = opts.full ?? false
+    const dryRun = opts.dryRun ?? false
+    // Apply ephemeral category override (in-memory only — never persisted).
+    const effectiveConfig: CocBackupConfig = opts.categoryOverride
+      ? {
+          ...this.config,
+          categories: { ...this.config.categories, ...opts.categoryOverride },
+        }
+      : this.config
+
+    const baseDir = resolveHomePath(effectiveConfig.dataDir)
+
+    // Determine if we should do full or incremental
+    const isFullBackup = forceFullBackup ||
+      !this.lastManifest ||
+      this.incrementalCount >= effectiveConfig.maxIncrementalChain
+
+    const previousManifest = isFullBackup ? null : this.lastManifest
+
+    // Dry-run short-circuits before any side effect (no on-chain lookup,
+    // no context/semantic snapshot capture, no IPFS upload).
+    if (dryRun) {
+      const changes = await detectChanges(baseDir, effectiveConfig, previousManifest)
+      return {
+        status: "dry_run",
+        reason: null,
+        heartbeatStatus: "not_attempted",
+        heartbeatError: null,
+        backup: null,
+        changeset: summarizeChangeSet(changes, isFullBackup),
+      }
+    }
 
     // Resolve agentId from on-chain
     const agentId = await this.soul.getAgentIdForOwner()
@@ -216,20 +290,13 @@ export class BackupScheduler {
 
     // Capture semantic snapshot from claude-mem database
     try {
-      await captureSemanticSnapshot(baseDir, this.config.semanticSnapshot)
+      await captureSemanticSnapshot(baseDir, effectiveConfig.semanticSnapshot)
     } catch (error) {
       this.logger.warn(`Semantic snapshot failed (non-fatal): ${String(error)}`)
     }
 
-    // Determine if we should do full or incremental
-    const isFullBackup = forceFullBackup ||
-      !this.lastManifest ||
-      this.incrementalCount >= this.config.maxIncrementalChain
-
-    const previousManifest = isFullBackup ? null : this.lastManifest
-
     // 1. Detect changes
-    const changes = await detectChanges(baseDir, this.config, previousManifest)
+    const changes = await detectChanges(baseDir, effectiveConfig, previousManifest)
     const changedFiles = [...changes.added, ...changes.modified]
 
     if (changedFiles.length === 0 && changes.deleted.length === 0 && !isFullBackup) {

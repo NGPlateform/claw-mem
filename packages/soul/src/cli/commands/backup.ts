@@ -28,20 +28,137 @@ import {
   formatBytes,
   resolveHomePath,
 } from "../../backup-utils.ts"
-import type { BackupReceipt, DoctorReport } from "../../backup-types.ts"
+import type { BackupReceipt, DoctorReport, FileCategory } from "../../backup-types.ts"
+import type { BackupManager } from "../../backup-manager.ts"
+import type { CocBackupConfig } from "../../backup-config-schema.ts"
+
+const VALID_CATEGORIES: ReadonlyArray<FileCategory> = [
+  "identity", "memory", "chat", "config", "workspace", "database",
+]
+
+function parseCategoryList(raw: string, flagName: string): FileCategory[] {
+  const items = raw.split(",").map((s) => s.trim()).filter(Boolean)
+  const invalid = items.filter((s) => !VALID_CATEGORIES.includes(s as FileCategory))
+  if (invalid.length > 0) {
+    throw new Error(
+      `${flagName} contains unknown categories: ${invalid.join(", ")}. ` +
+      `Valid: ${VALID_CATEGORIES.join(", ")}`,
+    )
+  }
+  return items as FileCategory[]
+}
+
+/** Translate --only/--skip into a Partial<CocBackupConfig.categories> override. */
+function parseCategoryOverride(only?: string, skip?: string): Partial<CocBackupConfig["categories"]> | undefined {
+  if (only) {
+    const allow = new Set(parseCategoryList(only, "--only"))
+    const out: Partial<CocBackupConfig["categories"]> = {}
+    for (const cat of VALID_CATEGORIES) out[cat] = allow.has(cat)
+    return out
+  }
+  if (skip) {
+    const deny = new Set(parseCategoryList(skip, "--skip"))
+    const out: Partial<CocBackupConfig["categories"]> = {}
+    for (const cat of deny) out[cat] = false
+    return out
+  }
+  return undefined
+}
+
+/** Emit a JSON receipt for `backup create` (machine-readable output for alerting). */
+async function emitCreateJson(receipt: BackupReceipt, backupManager: BackupManager): Promise<void> {
+  if (receipt.status === "dry_run") {
+    console.log(JSON.stringify({
+      status: "dry_run",
+      changeset: receipt.changeset,
+    }, null, 2))
+    return
+  }
+  if (receipt.status !== "completed") {
+    console.log(JSON.stringify({
+      status: receipt.status,
+      reason: receipt.reason,
+    }, null, 2))
+    return
+  }
+  const b = receipt.backup!
+  const sourceDir = resolveHomePath(backupManager.getCocConfig().dataDir)
+  const recoveryPkgPath = getLatestRecoveryPackagePath(sourceDir)
+  const recoveryPkg = await readLatestRecoveryPackage(sourceDir).catch(() => null)
+  const key = backupManager.getKeyMaterial()
+  console.log(JSON.stringify({
+    status: "completed",
+    backupType: b.backupType === 0 ? "full" : "incremental",
+    manifestCid: b.manifestCid,
+    fileCount: b.fileCount,
+    totalBytes: b.totalBytes,
+    dataMerkleRoot: b.dataMerkleRoot,
+    txHash: b.txHash,
+    parentManifestCid: b.parentManifestCid,
+    anchoredAt: b.anchoredAt,
+    encryptionMode: recoveryPkg?.encryptionMode ?? null,
+    requiresPassword: recoveryPkg?.requiresPassword ?? null,
+    recoveryPackagePath: recoveryPkgPath,
+    signerAddress: key.address ?? null,
+    heartbeatStatus: receipt.heartbeatStatus,
+  }, null, 2))
+}
 
 export function registerBackupCommands(program: Command, deps: SoulCommandDeps): void {
   const { backupManager, recoveryManager, archiveStore, logger } = deps
   const backup = program.command("backup").description("Soul backup, restore, and inspection")
 
-  // ─── claw-mem backup create [--full] ──────────────────────
+  // ─── claw-mem backup create [--full] [--dry-run] [--json] [--only|--skip] ──
   backup
     .command("create")
     .description("Create a new soul backup")
     .option("--full", "Force a full backup", false)
-    .action(async (opts: { full?: boolean }) => {
+    .option("--dry-run", "Compute the changeset but skip upload + on-chain anchor", false)
+    .option("--json", "Output JSON (suitable for cron + jq + alerting pipelines)", false)
+    .option("--only <categories>", "Comma-separated category allowlist (e.g. config,memory). Mutually exclusive with --skip.")
+    .option("--skip <categories>", "Comma-separated category denylist. Mutually exclusive with --only.")
+    .action(async (opts: {
+      full?: boolean
+      dryRun?: boolean
+      json?: boolean
+      only?: string
+      skip?: string
+    }) => {
       try {
-        const r = await backupManager.runBackup(opts.full ?? false)
+        if (opts.only && opts.skip) {
+          throw new Error("--only and --skip are mutually exclusive")
+        }
+        const categoryOverride = parseCategoryOverride(opts.only, opts.skip)
+        const r = await backupManager.runBackup({
+          full: opts.full ?? false,
+          dryRun: opts.dryRun ?? false,
+          categoryOverride,
+        })
+
+        if (opts.json) {
+          await emitCreateJson(r, backupManager)
+          if (r.status !== "completed" && r.status !== "dry_run") process.exit(1)
+          return
+        }
+
+        if (r.status === "dry_run") {
+          const cs = r.changeset!
+          console.log(`Dry run (${cs.isFullBackup ? "full" : "incremental"}) — nothing uploaded:`)
+          console.log(`  added:        ${cs.added}`)
+          console.log(`  modified:     ${cs.modified}`)
+          console.log(`  deleted:      ${cs.deleted}`)
+          console.log(`  unchanged:    ${cs.unchanged}`)
+          console.log(`  bytesToUpload: ${cs.bytesToUpload}`)
+          if (Object.keys(cs.byCategory).length > 0) {
+            console.log(`  byCategory:`)
+            for (const [cat, info] of Object.entries(cs.byCategory)) {
+              if (!info) continue
+              console.log(`    ${cat.padEnd(10)} added=${info.added} modified=${info.modified} bytes=${info.bytes}`)
+            }
+          }
+          return
+        }
+
         if (r.status !== "completed") {
           console.log(`Backup ${r.status}: ${r.reason ?? "(no reason given)"}`)
           return
@@ -91,7 +208,11 @@ export function registerBackupCommands(program: Command, deps: SoulCommandDeps):
           console.log(`  openclaw coc-soul backup restore --latest-local --target-dir /tmp/openclaw-restore-test${recoveryPkg.requiresPassword ? " --password '<pw>'" : ""}`)
         }
       } catch (error) {
-        logger.error(`Backup failed: ${String(error)}`)
+        if (opts.json) {
+          console.log(JSON.stringify({ status: "failed", reason: String(error) }))
+        } else {
+          logger.error(`Backup failed: ${String(error)}`)
+        }
         process.exit(1)
       }
     })
@@ -203,6 +324,59 @@ export function registerBackupCommands(program: Command, deps: SoulCommandDeps):
         console.log(`  manifestCid:  ${result.requestedManifestCid}`)
       } catch (error) {
         logger.error(`Restore failed: ${String(error)}`)
+        process.exit(1)
+      }
+    })
+
+  // ─── coc-soul backup verify ───────────────────────────────
+  // Lightweight integrity audit for an existing backup: walks the parent
+  // chain, recomputes each manifest's Merkle root, and (when SoulClient
+  // is available) confirms the latest manifest's root matches the
+  // on-chain anchor. Does NOT decrypt or re-hash file blobs — that's
+  // restore's job, and verify is meant to run without the decryption
+  // key for routine "is this backup still recoverable?" audits.
+  backup
+    .command("verify")
+    .description("Verify integrity of an existing backup (manifest chain + on-chain anchor)")
+    .option("--cid <manifestCid>", "Manifest CID to verify (defaults to latest local)")
+    .option("--latest", "Verify the latest local backup (default behavior; flag is for symmetry)")
+    .option("--json", "Output JSON")
+    .action(async (opts: { cid?: string; latest?: boolean; json?: boolean }) => {
+      try {
+        const result = await recoveryManager.verify({
+          manifestCid: opts.cid,
+          latest: opts.latest,
+        })
+        if (opts.json) {
+          console.log(JSON.stringify(result, null, 2))
+        } else {
+          console.log(`Manifest:           ${result.manifestCid}`)
+          console.log(`  ok:               ${result.ok}`)
+          console.log(`  agentId:          ${result.agentId ?? "(unknown)"}`)
+          console.log(`  chainResolved:    ${result.chainResolved}`)
+          console.log(`  chainLength:      ${result.chainLength}`)
+          console.log(`  manifestRoots:    ${result.manifestRootsValid ? "valid" : "INVALID"}`)
+          console.log(`  fileCount:        ${result.fileCount}`)
+          console.log(`  totalBytes:       ${result.totalBytes}`)
+          console.log(`  anchorAttempted:  ${result.anchorCheckAttempted}`)
+          console.log(`  anchorPassed:     ${result.anchorCheckPassed}`)
+          if (result.anchorCheckReason) {
+            console.log(`  anchorReason:     ${result.anchorCheckReason}`)
+          }
+          if (result.reason) {
+            console.log(`  reason:           ${result.reason}`)
+          }
+        }
+        if (!result.ok) process.exit(1)
+      } catch (error) {
+        if (opts.json) {
+          console.log(JSON.stringify({
+            ok: false,
+            reason: String(error),
+          }, null, 2))
+        } else {
+          logger.error(`Verify failed: ${String(error)}`)
+        }
         process.exit(1)
       }
     })

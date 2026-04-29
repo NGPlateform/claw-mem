@@ -60,11 +60,27 @@ export interface BackupResult {
 }
 
 export interface BackupReceipt {
-  status: "completed" | "skipped" | "registration_required"
+  status: "completed" | "skipped" | "registration_required" | "dry_run"
   reason: string | null
   heartbeatStatus: "sent" | "not_configured" | "failed" | "not_attempted"
   heartbeatError: string | null
   backup: BackupResult | null
+  /** Populated only on dry_run — what would be uploaded if the backup ran for real. */
+  changeset?: ChangeSetSummary
+}
+
+export interface ChangeSetSummary {
+  isFullBackup: boolean
+  added: number
+  modified: number
+  deleted: number
+  unchanged: number
+  bytesToUpload: number
+  byCategory: Partial<Record<FileCategory, {
+    added: number
+    modified: number
+    bytes: number
+  }>>
 }
 
 export interface RecoveryResult {

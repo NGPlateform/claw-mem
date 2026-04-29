@@ -1,7 +1,7 @@
 ---
 name: coc-soul
 description: Give an AI agent a persistent on-chain soul — register and manage a decentralized identity (DID), encrypt and anchor agent state to IPFS + SoulRegistry, configure guardians for social recovery, and enable cross-carrier resurrection so the agent can resume on a different device if the host dies. **Pairs with `claw-mem2db` to deliver "digital / silicon-based persistence" for AI agents**: when claw-mem is co-installed, every backup automatically captures claw-mem's chat history + tool-call observations + session summaries as a token-budgeted semantic snapshot, so an agent recovered on a fresh host can replay its memory context — not just its files. Soul also runs fully standalone (without claw-mem), in which case backups still cover identity / config / workspace / chat files but skip the semantic snapshot. Use when the user wants their AI agent to survive device loss, transfer ownership, delegate capabilities, run a guardian / carrier node, inspect on-chain identity state, or get persistent cross-device memory paired with claw-mem. Zero-config on COC testnet — installation auto-generates an EOA keystore (~/.claw-mem/keys, shared with claw-mem; or $OPENCLAW_STATE_DIR/coc-soul/keys in sandboxed hosts), auto-drips testnet COC from the public faucet for gas, and pre-fills RPC + IPFS + contract addresses for the live testnet. The first `openclaw coc-soul backup init` works with no manual setup.
-version: 1.2.10
+version: 1.3.0
 metadata:
   openclaw:
     homepage: https://www.npmjs.com/package/@chainofclaw/soul
@@ -15,7 +15,7 @@ metadata:
     install:
       - kind: node
         package: "@chainofclaw/soul"
-        version: "1.2.6"
+        version: "1.3.0"
         bins:
           - coc-soul
 ---
@@ -84,6 +84,22 @@ Rule: when a user asks "what's your CID?", first confirm whether they mean the *
 | `plugins.allow is empty ... may auto-load` warning | gateway has no trusted-plugin allow list | Add `"plugins": {"allow": ["claw-mem","coc-soul","coc-node"]}` to `~/.openclaw/openclaw.json` |
 
 Full per-command troubleshooting lives at the end of `references/backup.md` and `references/config.md`.
+
+## CLI flags added in 1.3.0 (alerting, dry-run, verify, category override)
+
+Operators wanted parity with standalone backup tools (`--output`, `--only-config`, `--verify`, JSON status for cron + jq + webhook). The features that make sense for an on-chain-anchored backup landed in 1.3.0:
+
+| Flag / subcommand | What it does |
+|---|---|
+| `backup verify [--cid <cid>] [--latest] [--json]` | Walks the manifest's parent chain, recomputes each merkle root, and confirms the latest manifest's root matches the on-chain anchor. Does **not** decrypt file blobs — runs without the decryption key. Use as a routine "is this backup still recoverable?" audit. |
+| `backup create --json` | Machine-readable receipt: `{status, manifestCid, fileCount, totalBytes, dataMerkleRoot, txHash, encryptionMode, recoveryPackagePath, signerAddress, heartbeatStatus}`. Pipe to `jq` and your own webhook / Slack / etc. |
+| `backup create --dry-run [--json]` | Computes the changeset (added / modified / deleted / unchanged + bytes per category) without uploading or anchoring. Safe to run any time to preview what *would* be backed up. |
+| `backup create --only <cat>[,<cat>]` | Ephemeral category allowlist for one run. Maps to "config-only emergency backup" without editing the config file. Mutually exclusive with `--skip`. |
+| `backup create --skip <cat>[,<cat>]` | Inverse: ephemeral denylist. E.g. `--skip workspace,database` to back up only identity / memory / config / chat. |
+
+Categories valid in `--only` / `--skip`: `identity, memory, chat, config, workspace, database`. The override is in-memory and never persists to `~/.openclaw/openclaw.json`.
+
+What's deliberately **not** here (vs. legacy local-tarball backup tools): a `--output <tarball-path>` for offline archival. coc-soul backups go to IPFS + on-chain anchor; bypassing both with a local tarball would skip the integrity guarantees we lean on. If air-gapped operators need it, file an issue.
 
 ## Cross-host restore — read BEFORE you blanket-overwrite (1.2.4+)
 

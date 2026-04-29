@@ -11,7 +11,7 @@ import type { BackupConfig } from "./backup-config-adapter.ts"
 import { SoulClient } from "./soul-client.ts"
 import { IpfsClient } from "./ipfs-client.ts"
 import { DIDClient } from "./did-client.ts"
-import { BackupScheduler } from "./backup/scheduler.ts"
+import { BackupScheduler, type RunBackupOptions } from "./backup/scheduler.ts"
 import type { BackupReceipt } from "./backup-types.ts"
 import {
   BackupConfigError,
@@ -139,10 +139,12 @@ export class BackupManager {
   /**
    * Run a backup once. `full=true` forces a full backup; otherwise the
    * scheduler decides incremental vs full based on its own policy.
+   * Pass an options object instead of a boolean to opt into dry-run /
+   * category-override flows used by the new CLI flags.
    */
-  async runBackup(full = false): Promise<BackupReceipt> {
+  async runBackup(arg: boolean | RunBackupOptions = false): Promise<BackupReceipt> {
     const { scheduler, soul } = this.build()
-    const receipt = await scheduler.runBackup(full)
+    const receipt = await scheduler.runBackup(arg)
     const b = receipt.backup
     if (b) {
       let agentId = ""

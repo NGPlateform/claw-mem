@@ -58,11 +58,178 @@ The same fields are persisted in `<sourceDir>/.coc-backup/latest-recovery.json` 
 
 Treat both `latest-recovery.json` AND the signing-key file as a pair — back them up together (the manifest CID is also visible on-chain via the SoulRegistry contract, so even losing `latest-recovery.json` is recoverable from `backup find-recoverable --on-chain`, but losing the key means the encrypted payload is permanently unreadable).
 
+## New flags & subcommands (1.3.0+)
+
+`backup verify`, `backup create --json`, `backup create --dry-run`, `backup create --only`, `backup create --skip` landed in 1.3.0 to support cron-driven alerting pipelines, pre-upload changeset previews, and one-shot category overrides.
+
+### `backup verify` — standalone integrity audit
+
+```bash
+# Verify the latest local backup
+openclaw coc-soul backup verify
+
+# Verify a specific manifest
+openclaw coc-soul backup verify --cid bafy...
+
+# Machine-readable
+openclaw coc-soul backup verify --json | jq '.ok'
+```
+
+Walks the manifest's parent-CID chain, recomputes each merkle root against the file entries, and (when `SoulClient` is available) confirms the latest manifest's root matches the on-chain anchor. **Does not decrypt or re-hash file blobs** — runs without the decryption key. Exits non-zero on `ok=false`.
+
+JSON shape:
+
+```jsonc
+{
+  "ok": true,
+  "manifestCid": "bafy...",
+  "agentId": "0x...",
+  "chainResolved": true,
+  "chainLength": 3,
+  "manifestRootsValid": true,
+  "fileCount": 127,
+  "totalBytes": 4194304,
+  "anchorCheckAttempted": true,
+  "anchorCheckPassed": true,
+  "anchorCheckReason": "verified",
+  "reason": null
+}
+```
+
+`anchorCheckReason` values: `verified`, `manifest_not_latest_on_chain`, `anchor_root_mismatch`, `missing_manifest_agent_id`, `verification_unavailable`, `no_soul_client`. The first three say "we ran the check and here's the result"; the last three explain why we couldn't.
+
+### `backup create --json` — alerting hook
+
+```bash
+openclaw coc-soul backup create --json | jq -e '.status == "completed"' \
+  || curl -X POST $WEBHOOK -d "soul backup failed"
+```
+
+JSON shape (success):
+
+```jsonc
+{
+  "status": "completed",
+  "backupType": "incremental",
+  "manifestCid": "bafy...",
+  "fileCount": 12,
+  "totalBytes": 8192,
+  "dataMerkleRoot": "0x...",
+  "txHash": "0x...",
+  "parentManifestCid": "bafy...",
+  "anchoredAt": 1777180566,
+  "encryptionMode": "privateKey",
+  "requiresPassword": false,
+  "recoveryPackagePath": "/home/.../latest-recovery.json",
+  "signerAddress": "0x...",
+  "heartbeatStatus": "sent"
+}
+```
+
+Failure path: `{"status":"failed","reason":"<message>"}` with exit code 1. Other terminal statuses: `skipped` (`reason: "already_running"` or `"no_changes"`), `registration_required`.
+
+### `backup create --dry-run` — preview the changeset
+
+```bash
+openclaw coc-soul backup create --dry-run --json | jq '.changeset'
+```
+
+```jsonc
+{
+  "status": "dry_run",
+  "changeset": {
+    "isFullBackup": false,
+    "added": 2,
+    "modified": 1,
+    "deleted": 0,
+    "unchanged": 124,
+    "bytesToUpload": 4096,
+    "byCategory": {
+      "memory":  { "added": 1, "modified": 1, "bytes": 2048 },
+      "config":  { "added": 1, "modified": 0, "bytes": 2048 }
+    }
+  }
+}
+```
+
+`--dry-run` skips `getAgentIdForOwner` lookup, IPFS upload, and on-chain anchor — safe to run anywhere there's read access to the data dir, even with no chain connectivity.
+
+### `backup create --only` / `--skip` — ephemeral category override
+
+```bash
+# Quick config-only emergency backup, no edit to ~/.openclaw/openclaw.json
+openclaw coc-soul backup create --only config
+
+# Skip the heavy database category for one run
+openclaw coc-soul backup create --skip database,workspace
+```
+
+Valid categories: `identity, memory, chat, config, workspace, database`. Mutually exclusive with each other. The override is **in-memory and never persists** — the next scheduled backup runs with the original config.
+
+## Permission posture (1.3.0+)
+
+coc-soul is an OpenClaw skill running with the gateway's process privileges. Operators reasonably want to know exactly what files it touches, what endpoints it calls, and how the signing key is handled — especially after the early-2026 ClawHub vetting tightening. The full surface:
+
+### What coc-soul reads
+
+- The configured `backup.dataDir` tree (default `~/.openclaw/`), subject to `FILE_RULES` (whitelist) **and** the 1.2.10+ denylist (`agents/<id>/agent/models.json`, `auth-profiles.json`, operator audit copies, install/restore audit dirs, `.coc-backup/state.json`).
+- The keystore file at `~/.claw-mem/keys/agent.key` (or whichever path the resolution chain in SKILL.md picks). Mode `0600`, only readable by the agent owner.
+- The optional claw-mem SQLite DB (read-only, two tables) for the semantic snapshot. Skipped silently if absent.
+
+It does NOT read anything outside `backup.dataDir`. It does NOT read `~/.ssh`, `/etc`, the parent shell's env beyond the documented `*_DATA_DIR` / `*_PATH` vars, or any other agent's home tree.
+
+### What coc-soul writes
+
+Only inside `<dataDir>/.coc-backup/`:
+
+- `state.json` — backup chain head (`lastManifestCid`, `incrementalCount`); explicitly denylisted from being uploaded.
+- `latest-recovery.json` — operator-friendly recovery package with the manifest CID, encryption mode, and copy-paste restore command.
+- `context-snapshot.json`, `semantic-snapshot.json` — per-backup metadata; uploaded as part of the manifest.
+
+It does NOT write to source files, the keystore (after first generation), config files, or anywhere outside `<dataDir>/.coc-backup/`.
+
+### Network endpoints
+
+| Endpoint | Configured via | Purpose |
+|---|---|---|
+| COC RPC URL | `backup.rpcUrl` (testnet default `http://199.192.16.79:28780`) | On-chain reads (latest backup, soul info) and writes (anchor, heartbeat, register) |
+| IPFS API URL | `backup.ipfsUrl` (default `http://127.0.0.1:5001`) | Upload/download manifest + file blobs |
+| Faucet URL | `backup.faucetUrl` (testnet default `http://199.192.16.79:3003`; **set to empty string for mainnet**) | One-time gas drip on first activation when the auto-generated EOA has zero balance |
+| ClawHub | — | Skill metadata only (read at install time by `openclaw plugins install`); coc-soul itself never calls ClawHub at runtime |
+
+No telemetry. No third-party callouts. No analytics. The only outbound HTTP traffic is to the three operator-configured endpoints above.
+
+### Signing-key handling
+
+The agent's signing private key is one of:
+
+1. `backup.privateKey` in `~/.openclaw/openclaw.json` (operator-managed; takes precedence)
+2. Auto-generated keystore at `~/.claw-mem/keys/agent.key` (mode `0600`, written once on first activation if `backup.privateKey` is unset)
+
+Either way, the key is:
+
+- Used **in-process** to sign on-chain transactions and (in `privateKey` encryption mode) derive the AES-GCM data-encryption key
+- **Never** included in the backup itself (the key needs to live somewhere safe outside the backup)
+- **Never** logged in plaintext — only the derived address is logged at `info` level
+- **Never** transmitted off-host except as the signature attached to RPC calls
+
+Operators rotating the key: stop the gateway, replace the keystore file, restart. The next backup will be encrypted under the new key — operators must keep the old key alongside any pre-rotation backups they may need to restore.
+
+### Untrusted-skill operating model
+
+coc-soul is open-source ([repo](https://github.com/NGPlateform/claw-mem/tree/main/packages/soul)) — operators should pin a vetted version and audit before installing. Two specific concerns:
+
+- **Spoofing**: a hostile package could publish under a similar name (`@chainofclaw/soul-fast`, etc.). Always install from the canonical npm spec `@chainofclaw/soul`. The skill's `openclaw.plugin.json` declares `"id": "coc-soul"` — anything else is not us.
+- **Plugin allowlist**: in OpenClaw 0.5.0+, `plugins.allow` in `~/.openclaw/openclaw.json` should explicitly enumerate trusted skill IDs. coc-soul will run without an allowlist but emits a warning; operators with multiple skills installed should set `"plugins": {"allow": ["claw-mem", "coc-soul", "coc-node"]}` to harden against drive-by skill loads.
+
+Operators wanting deeper isolation can run coc-soul under a dedicated user account whose `$HOME` is `~coc-soul-runner` and whose `dataDir` is owned `0700` by that user, rather than the gateway's main user.
+
 ## Inspect
 
 - `backup status` — concise: chain registration state, last backup time, IPFS reachability
 - `backup doctor` — structured diagnosis with actionable `recommended actions`. Use when something feels off.
 - `backup list` / `backup history` — local archive table
+- `backup verify` — standalone manifest-chain integrity check (1.3.0+, see above)
 
 ## Restore (safety-first)
 
@@ -229,7 +396,6 @@ The backup walks `~/.openclaw/` (or the configured `backup.sourceDir`) and captu
 - `identity/device-auth.json` (config, **encrypted**, 1.2.9+ — paired with device.json for cross-device auth)
 - `auth.json` (config, **encrypted**)
 - `openclaw.json` (config, **encrypted**)
-- `agents/<id>/agent/models.json` (config, **encrypted**, 1.2.9+ — holds literal LLM API keys after the 1.2.6 persistence change; **MUST** stay encrypted)
 - `exec-approvals.json` (config, **encrypted**, 1.2.9+ — Bash / tool approval rules)
 - `plugins/*/openclaw.plugin.json` (config, not encrypted)
 - `credentials/*` (config, **encrypted**)
@@ -311,7 +477,8 @@ If you put important state in `~/.openclaw/<custom-dir>/` and the path doesn't m
 | From | What to do after upgrade |
 |---|---|
 | **pre-1.2.7** (no workspace/ prefix support) | Run `openclaw coc-soul backup create --full` once. Verify `workspace/IDENTITY.md` shows up in `backup list --json` file count + restore-to-`/tmp` smoke. |
-| **1.2.7 / 1.2.8** | Run `backup create --full` once. New 1.2.9 patterns (`TOOLS.md`, `HEARTBEAT.md`, `BOOTSTRAP.md`, `workspace/memory/*.md`, `workspace/.openclaw/workspace-state.json`, `identity/device-auth.json`, `agents/<id>/agent/models.json`, `exec-approvals.json`) will be added to the manifest. |
+| **1.2.7 / 1.2.8** | Run `backup create --full` once. New 1.2.9 patterns (`TOOLS.md`, `HEARTBEAT.md`, `BOOTSTRAP.md`, `workspace/memory/*.md`, `workspace/.openclaw/workspace-state.json`, `identity/device-auth.json`, `exec-approvals.json`) will be added to the manifest. |
+| **1.2.9** | 1.2.10 reverts the 1.2.9 inclusion of `agents/<id>/agent/models.json` (host-local LLM tokens). After upgrade, `backup verify --latest` should confirm the latest manifest no longer references it. |
 
 ## Categories & semantic snapshot
 

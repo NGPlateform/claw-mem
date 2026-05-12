@@ -10,6 +10,7 @@ import {
   patchConfigFile,
   setDotPath,
 } from "@chainofclaw/soul"
+import { createAuthedProvider } from "../../services/rpc-auth.ts"
 
 export interface ProdBootstrapOptions {
   nonInteractive?: boolean
@@ -43,8 +44,10 @@ export async function runProdBootstrap(services: CliServices, opts: ProdBootstra
     }),
   ))
 
-  // Validate RPC
-  const provider = new JsonRpcProvider(rpcUrl)
+  // Validate RPC — attach Bearer auth from config or COC_RPC_AUTH_TOKEN env
+  // so the wizard can validate admin-gated endpoints behind a node with
+  // enableAdminRpc=true.
+  const provider = createAuthedProvider(rpcUrl, services.config.backup.rpcAuthToken)
   let chainId: bigint
   try {
     const net = await provider.getNetwork()
@@ -164,7 +167,7 @@ async function runNonInteractive(services: CliServices, opts: ProdBootstrapOptio
   if (opts.cidRegistry && !ADDR_RE.test(opts.cidRegistry)) throw new Error("--cid-registry is not a valid 0x address")
   if (!KEY_RE.test(opts.privateKey!)) throw new Error("--private-key must be 0x + 64 hex chars")
 
-  const provider = new JsonRpcProvider(opts.rpc!)
+  const provider = createAuthedProvider(opts.rpc!, services.config.backup.rpcAuthToken)
   const net = await provider.getNetwork()
   for (const [label, addr] of [
     ["pose-manager", opts.poseManager!],

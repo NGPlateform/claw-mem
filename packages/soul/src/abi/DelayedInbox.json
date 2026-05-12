@@ -1,0 +1,279 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "inclusionDelaySeconds",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "sequencerAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "queueIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "AlreadyIncluded",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      }
+    ],
+    "name": "NotSequencer",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "queueIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "enqueuedAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint256",
+        "name": "inclusionDelay",
+        "type": "uint256"
+      }
+    ],
+    "name": "NotYetForceable",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "provided",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "queueLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "QueueIndexOutOfRange",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "queueIndex",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "txHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "enqueuedAt",
+        "type": "uint64"
+      }
+    ],
+    "name": "TransactionEnqueued",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "queueIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransactionForceIncluded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "queueIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransactionIncluded",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "INCLUSION_DELAY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "l2Tx",
+        "type": "bytes"
+      }
+    ],
+    "name": "enqueueTransaction",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "queueIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "forceInclude",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQueueItem",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes",
+            "name": "l2Tx",
+            "type": "bytes"
+          },
+          {
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "enqueuedAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "included",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct RollupTypes.ForcedTx",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getQueueLength",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "queueIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "markIncluded",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "sequencer",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newSequencer",
+        "type": "address"
+      }
+    ],
+    "name": "setSequencer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

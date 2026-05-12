@@ -2,6 +2,7 @@
 // Wraps DIDRegistry write operations with EIP-712 signing
 
 import { Contract, FetchRequest, JsonRpcProvider, Wallet } from "ethers"
+import { getContractAddress } from "./manifests/index.ts"
 
 const DID_REGISTRY_ABI = [
   // Write (EIP-712 signed)
@@ -47,6 +48,20 @@ export class DIDClient {
     this.wallet = new Wallet(privateKey, this.provider)
     this.contract = new Contract(contractAddress, DID_REGISTRY_ABI, this.wallet)
     this.contractAddress = contractAddress
+  }
+
+  /**
+   * Construct a DIDClient resolving the DIDRegistry address from the
+   * packaged deployed-contracts manifest for `chainId`.
+   */
+  static fromChainId(
+    chainId: number,
+    rpcUrl: string,
+    privateKey: string,
+    opts: { rpcAuthToken?: string; contractAddress?: string } = {},
+  ): DIDClient {
+    const address = opts.contractAddress ?? getContractAddress(chainId, "DIDRegistry")
+    return new DIDClient(rpcUrl, address, privateKey, opts.rpcAuthToken)
   }
 
   private async getDomain() {

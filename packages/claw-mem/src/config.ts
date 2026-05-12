@@ -2,6 +2,7 @@ import { z } from "zod"
 import { join, dirname } from "node:path"
 import { homedir } from "node:os"
 import { existsSync, accessSync, mkdirSync, constants as fsConst } from "node:fs"
+import { DEFAULT_CHAIN_ID, SUPPORTED_CHAIN_IDS } from "@chainofclaw/soul"
 
 import { DEFAULT_CHAT_CUES } from "./observer/extractor-chat.ts"
 
@@ -51,8 +52,8 @@ export const NodeConfigSchema = z.object({
   enabled: z.boolean().default(true),
   runtimeDir: z.string().optional(),
   defaultType: z.enum(["validator", "fullnode", "archive", "gateway", "dev"]).default("dev"),
-  defaultNetwork: z.enum(["testnet", "mainnet", "local", "custom"]).default("local"),
-  port: z.number().int().min(1).max(65535).default(18780),
+  defaultNetwork: z.enum(["testnet", "prowl-testnet", "mainnet", "local", "custom"]).default("local"),
+  port: z.number().int().min(1).max(65535).default(28780),
   bind: z.string().default("127.0.0.1"),
   agent: NodeAgentConfigSchema.default({}),
   relayer: NodeRelayerConfigSchema.default({}),
@@ -100,12 +101,28 @@ export const BackupConfigSchema = z.object({
   enabled: z.boolean().default(true),
   /** Source directory to back up (the agent's home). Defaults to ~/.openclaw. */
   sourceDir: z.string().default("~/.openclaw"),
-  rpcUrl: z.string().default("http://199.192.16.79:28780"),
-  ipfsUrl: z.string().default("http://199.192.16.79:28786"),
-  contractAddress: z.string().default("0x1291Be112d480055DaFd8a610b7d1e203891C274"),
-  didRegistryAddress: z.string().default("0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154"),
-  faucetUrl: z.string().default("http://199.192.16.79:3003"),
-  rpcAuthToken: z.string().optional(),
+  /**
+   * COC chainId selecting the deployed-contracts manifest. Defaults to the
+   * currently active COC testnet (88780, R3.2). Pass 18780 to point at the
+   * decommissioned prowl-testnet for archival reads only.
+   */
+  chainId: z.number().int().default(DEFAULT_CHAIN_ID).describe(
+    `COC chainId. Supported: ${SUPPORTED_CHAIN_IDS.join(", ")}.`,
+  ),
+  rpcUrl: z.string().default("http://127.0.0.1:28780"),
+  ipfsUrl: z.string().default("http://127.0.0.1:5001"),
+  contractAddress: z.string().optional().describe(
+    "SoulRegistry address override. When omitted, resolved from chainId via packaged manifest.",
+  ),
+  didRegistryAddress: z.string().optional().describe(
+    "DIDRegistry address override. When omitted, resolved from chainId via packaged manifest.",
+  ),
+  faucetUrl: z.string().default("").describe(
+    "Faucet URL for auto-drip on fresh-EOA generation. Empty = disabled.",
+  ),
+  rpcAuthToken: z.string().optional().describe(
+    "Bearer token for admin RPC. Falls back to COC_RPC_AUTH_TOKEN env var when not set.",
+  ),
   privateKey: z.string().optional(),
   autoBackup: z.boolean().default(true),
   autoBackupIntervalMs: z.number().int().min(1000).default(3_600_000),

@@ -1,0 +1,1329 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_soulRegistry",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "CredentialAlreadyRevoked",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CredentialNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DelegationAlreadyRevoked",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DelegationExpired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DelegationLimitReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DelegationNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DelegationRateLimited",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DelegationTooDeep",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EphemeralAlreadyExists",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EphemeralNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAgentId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidCredentialHash",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidExpiry",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidKeyAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidKeyId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "KeyAlreadyExists",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "KeyLimitReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "KeyNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SoulNotActive",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "capabilities",
+        "type": "uint16"
+      }
+    ],
+    "name": "CapabilitiesUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "credentialId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "issuer",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "subject",
+        "type": "bytes32"
+      }
+    ],
+    "name": "CredentialAnchored",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "credentialId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "CredentialRevoked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "newCid",
+        "type": "bytes32"
+      }
+    ],
+    "name": "DIDDocumentUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "delegationId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "delegator",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "delegatee",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "expiresAt",
+        "type": "uint64"
+      }
+    ],
+    "name": "DelegationGranted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "delegationId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "DelegationRevoked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "parentAgentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "ephemeralId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "EphemeralIdentityCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "ephemeralId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "EphemeralIdentityDeactivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "epoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "GlobalRevocationSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "parentAgentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "generation",
+        "type": "uint8"
+      }
+    ],
+    "name": "LineageRecorded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "keyId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "keyAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "purpose",
+        "type": "uint8"
+      }
+    ],
+    "name": "VerificationMethodAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "keyId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "VerificationMethodRevoked",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "ADD_VERIFICATION_METHOD_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ANCHOR_CREDENTIAL_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CREATE_EPHEMERAL_IDENTITY_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DOMAIN_SEPARATOR",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DOMAIN_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GRANT_DELEGATION_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_DELEGATIONS_PER_AGENT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_DELEGATION_DEPTH",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_VERIFICATION_METHODS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_DELEGATION_INTERVAL",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PURPOSE_ASSERTION",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PURPOSE_AUTH",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PURPOSE_CAP_DELEGATION",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PURPOSE_CAP_INVOCATION",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REVOKE_DELEGATION_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REVOKE_VERIFICATION_METHOD_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UPDATE_DID_DOCUMENT_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "keyId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "keyAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "keyPurpose",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "addVerificationMethod",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "agentCapabilities",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "agentLineage",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "parentAgentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "forkHeight",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "generation",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "credentialHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "issuerAgentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "subjectAgentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "credentialCid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "expiresAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "anchorCredential",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "parentAgentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "ephemeralId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "ephemeralAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "scopeHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "expiresAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "createEphemeralIdentity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "credentials",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "credentialHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "issuerAgentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "subjectAgentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "credentialCid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "issuedAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "expiresAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "revoked",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "ephemeralId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "deactivateEphemeralIdentity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "delegations",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "delegator",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "delegatee",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "parentDelegation",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "scopeHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "issuedAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "expiresAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "depth",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "revoked",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "didDocumentCid",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "didDocumentUpdatedAt",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ephemeralIdentities",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "parentAgentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "ephemeralAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "scopeHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "createdAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "expiresAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getActiveVerificationMethods",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "keyId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "keyAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "keyPurpose",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint64",
+            "name": "addedAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "revokedAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct DIDRegistry.VerificationMethod[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getAgentDelegations",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getVerificationMethods",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "keyId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "keyAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "keyPurpose",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint64",
+            "name": "addedAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "revokedAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct DIDRegistry.VerificationMethod[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "globalRevocationEpoch",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "delegator",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "delegatee",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "parentDelegation",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "scopeHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "expiresAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "depth",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "grantDelegation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "delegationId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isDelegationValid",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "lastDelegationTimestamp",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "nonces",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "parentAgentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "forkHeight",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "generation",
+        "type": "uint8"
+      }
+    ],
+    "name": "recordLineage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "revokeAllDelegations",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "credentialId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "revokeCredential",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "delegationId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "revokeDelegation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "keyId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "revokeVerificationMethod",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "soulRegistry",
+    "outputs": [
+      {
+        "internalType": "contract ISoulRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint16",
+        "name": "capabilities",
+        "type": "uint16"
+      }
+    ],
+    "name": "updateCapabilities",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "newDocumentCid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "updateDIDDocument",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -9,6 +9,44 @@
 export { SoulClient } from "./soul-client.ts"
 export { DIDClient } from "./did-client.ts"
 export { IpfsClient } from "./ipfs-client.ts"
+export {
+  ValidatorMonitor,
+  type ValidatorMonitorOptions,
+  type ValidatorMonitorHandlers,
+  type ValidatorRegisteredEvent,
+  type ValidatorActivatedEvent,
+  type ValidatorDeactivatedEvent,
+  type ValidatorSlashedEvent,
+  type SlashDistributedEvent,
+} from "./validator-monitor.ts"
+
+// ── Deployed-contracts manifests ───────────────────────────────
+export {
+  DEFAULT_CHAIN_ID,
+  SUPPORTED_CHAIN_IDS,
+  getDeployedContracts,
+  getContractAddress,
+  type DeployedManifest,
+} from "./manifests/index.ts"
+
+// ── Contract ABIs (raw Hardhat artifacts, pinned per release) ──
+export {
+  CONTRACT_ABIS,
+  CidRegistryAbi,
+  DIDRegistryAbi,
+  DelayedInboxAbi,
+  EquivocationDetectorAbi,
+  FactionRegistryAbi,
+  GovernanceDAOAbi,
+  InsuranceFundAbi,
+  PoSeManagerAbi,
+  PoSeManagerV2Abi,
+  RollupStateManagerAbi,
+  SoulRegistryAbi,
+  TreasuryAbi,
+  ValidatorRegistryAbi,
+  type ContractName,
+} from "./abi/index.ts"
 
 // ── Managers ───────────────────────────────────────────────────
 export { BackupManager, type BackupManagerOptions } from "./backup-manager.ts"

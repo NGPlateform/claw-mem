@@ -7,21 +7,49 @@
 import { z } from "zod"
 import { CocBackupConfigSchema, type CocBackupConfig } from "./backup-config-schema.ts"
 import type { BackupConfig } from "./config.ts"
+import { getDeployedContracts } from "./manifests/index.ts"
 
 export type { BackupConfig } from "./config.ts"
 
 export class BackupConfigError extends Error {}
 
-const BACKUP_LIFECYCLE_KEYS = [
-  "rpcUrl",
-  "contractAddress",
-  "privateKey",
-] as const
-
 const _BackupCoreSchema = z.object({
   contractAddress: z.string(),
   privateKey: z.string(),
 })
+
+/**
+ * Resolve `contractAddress` / `didRegistryAddress` for a config. When the user
+ * has not overridden these, fall back to the deployed-contracts manifest for
+ * the selected chainId. Returns `{ contractAddress, didRegistryAddress }`
+ * where either may still be undefined if the manifest has no entry (manifests
+ * include all known governance contracts so this is mostly a defensive guard).
+ */
+function resolveContractAddresses(config: BackupConfig): {
+  contractAddress: string | undefined
+  didRegistryAddress: string | undefined
+} {
+  if (config.contractAddress && config.didRegistryAddress) {
+    return {
+      contractAddress: config.contractAddress,
+      didRegistryAddress: config.didRegistryAddress,
+    }
+  }
+  try {
+    const manifest = getDeployedContracts(config.chainId)
+    return {
+      contractAddress: config.contractAddress ?? manifest.contracts.SoulRegistry,
+      didRegistryAddress: config.didRegistryAddress ?? manifest.contracts.DIDRegistry,
+    }
+  } catch {
+    // Unknown chainId — return whatever the user passed; downstream will error
+    // with a clearer message when it actually tries to use the address.
+    return {
+      contractAddress: config.contractAddress,
+      didRegistryAddress: config.didRegistryAddress,
+    }
+  }
+}
 
 /**
  * Build a CocBackupConfig from the user-facing claw-mem config.
@@ -35,15 +63,21 @@ export function buildCocBackupConfig(
   opts: { strict?: boolean } = {},
 ): CocBackupConfig {
   const { strict = false } = opts
+  const resolved = resolveContractAddresses(config)
 
   if (strict) {
-    const missing = BACKUP_LIFECYCLE_KEYS.filter((k) => !config[k as keyof BackupConfig])
+    const missing: string[] = []
+    if (!config.rpcUrl) missing.push("rpcUrl")
+    if (!resolved.contractAddress) missing.push("contractAddress")
+    if (!config.privateKey) missing.push("privateKey")
     if (missing.length > 0) {
       throw new BackupConfigError(
         `Backup not configured. Missing required fields: ${missing.join(", ")}.\n\n` +
           `Run \`claw-mem backup configure\` (interactive) or \`claw-mem config set backup.<field> <value>\` to fix.\n` +
-          `Hint: rpcUrl + contract addresses default to the COC testnet; privateKey is auto-generated to ` +
-          `~/.claw-mem/keys/agent.key on first use. ipfsUrl is only required for backup create / restore.`,
+          `Hint: contractAddress is normally auto-resolved from chainId (currently ${config.chainId}); ` +
+          `set it explicitly only when targeting a custom deployment. ` +
+          `privateKey is auto-generated to ~/.claw-mem/keys/agent.key on first use. ` +
+          `ipfsUrl is only required for backup create / restore.`,
       )
     }
   }
@@ -58,7 +92,7 @@ export function buildCocBackupConfig(
     enabled: config.enabled,
     rpcUrl: config.rpcUrl,
     ipfsUrl: config.ipfsUrl,
-    contractAddress: config.contractAddress ?? placeholderAddr,
+    contractAddress: resolved.contractAddress ?? placeholderAddr,
     rpcAuthToken: config.rpcAuthToken,
     privateKey: config.privateKey ?? placeholderKey,
     dataDir: config.sourceDir,
@@ -67,7 +101,7 @@ export function buildCocBackupConfig(
     encryptMemory: config.encryptMemory,
     encryptionPassword: config.encryptionPassword,
     maxIncrementalChain: config.maxIncrementalChain,
-    didRegistryAddress: config.didRegistryAddress,
+    didRegistryAddress: resolved.didRegistryAddress,
     backupOnSessionEnd: config.backupOnSessionEnd,
     semanticSnapshot: {
       enabled: config.semanticSnapshot.enabled,
@@ -101,5 +135,6 @@ export function buildCocBackupConfig(
 }
 
 export function isBackupConfigured(config: BackupConfig): boolean {
-  return Boolean(config.contractAddress && config.privateKey && config.rpcUrl && config.ipfsUrl)
+  const { contractAddress } = resolveContractAddresses(config)
+  return Boolean(contractAddress && config.privateKey && config.rpcUrl && config.ipfsUrl)
 }

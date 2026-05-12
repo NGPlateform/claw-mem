@@ -1,0 +1,555 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "challengeWindowSeconds",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "proposerBondWei",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "challengerBondWei",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "insuranceFundAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "AlreadyChallenged",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "provided",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "lastSubmitted",
+        "type": "uint64"
+      }
+    ],
+    "name": "BlockNumberNotIncreasing",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "ChallengeAlreadyResolved",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "ChallengeNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "ChallengeWindowElapsed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "ChallengeWindowNotElapsed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "required",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "provided",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientBond",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "OutputAlreadyFinalized",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "OutputAlreadySubmitted",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "OutputNotFound",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "proposerFault",
+        "type": "bool"
+      }
+    ],
+    "name": "ChallengeResolved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "challenger",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "bond",
+        "type": "uint256"
+      }
+    ],
+    "name": "OutputChallenged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "outputRoot",
+        "type": "bytes32"
+      }
+    ],
+    "name": "OutputFinalized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "outputRoot",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "proposer",
+        "type": "address"
+      }
+    ],
+    "name": "OutputProposed",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "CHALLENGER_BOND",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CHALLENGE_WINDOW",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PROPOSER_BOND",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_BURN_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_CHALLENGER_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_INSURANCE_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "challengeOutputRoot",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "finalizeOutput",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "getChallenge",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "l2BlockNumber",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "challenger",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "bond",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint64",
+            "name": "createdAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "resolveDeadline",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "resolved",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "proposerFault",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct RollupTypes.OutputChallenge",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLatestFinalizedL2Block",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "getOutputProposal",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "outputRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "l2StateRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "l2BlockNumber",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "l1Timestamp",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "proposer",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "challenged",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "finalized",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct RollupTypes.OutputProposal",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "insuranceFund",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      }
+    ],
+    "name": "isOutputFinalized",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "lastSubmittedBlock",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "correctStateRoot",
+        "type": "bytes32"
+      }
+    ],
+    "name": "resolveChallenge",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "l2BlockNumber",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "outputRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "l2StateRoot",
+        "type": "bytes32"
+      }
+    ],
+    "name": "submitOutputRoot",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  }
+]

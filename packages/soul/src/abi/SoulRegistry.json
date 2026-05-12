@@ -1,0 +1,1918 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "AgentIdTaken",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyApproved",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CannotGuardSelf",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CarrierAlreadyRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CarrierNotAvailable",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CarrierNotConfirmed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CarrierNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "GuardianAlreadyAdded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "GuardianLimitReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "GuardianNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAgentId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidBackupType",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidCid",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidKeyHash",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotCarrierOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotGuardian",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotOffline",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ParentCidRequired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RecoveryAlreadyExecuted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RecoveryNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RecoveryNotReady",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ResurrectionAlreadyExecuted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ResurrectionNotConfigured",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ResurrectionNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ResurrectionNotReady",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SoulNotActive",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "manifestCid",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "dataMerkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "backupType",
+        "type": "uint8"
+      }
+    ],
+    "name": "BackupAnchored",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "CarrierConfirmed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "CarrierDeregistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "endpoint",
+        "type": "string"
+      }
+    ],
+    "name": "CarrierRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "GuardianAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "GuardianRemoved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "Heartbeat",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "newIdentityCid",
+        "type": "bytes32"
+      }
+    ],
+    "name": "IdentityUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "RecoveryApproved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "RecoveryCancelled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "RecoveryCompleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "RecoveryInitiated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "ResurrectionApproved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ResurrectionCancelled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ResurrectionCompleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "resurrectionKeyHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "maxOfflineDuration",
+        "type": "uint64"
+      }
+    ],
+    "name": "ResurrectionConfigured",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum SoulRegistry.ResurrectionTrigger",
+        "name": "trigger",
+        "type": "uint8"
+      }
+    ],
+    "name": "ResurrectionInitiated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "SoulDeactivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "identityCid",
+        "type": "bytes32"
+      }
+    ],
+    "name": "SoulRegistered",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "ANCHOR_BACKUP_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CURRENT_VERSION",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DOMAIN_SEPARATOR",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DOMAIN_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "HEARTBEAT_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_GUARDIANS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RECOVERY_DELAY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REGISTER_SOUL_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RESURRECTION_DELAY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RESURRECT_SOUL_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UPDATE_IDENTITY_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "addGuardian",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "manifestCid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "dataMerkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "fileCount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "totalBytes",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "backupType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "parentManifestCid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "anchorBackup",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "approveRecovery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "approveResurrection",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "cancelRecovery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "cancelResurrection",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "carriers",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "endpoint",
+        "type": "string"
+      },
+      {
+        "internalType": "uint64",
+        "name": "registeredAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "cpuMillicores",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "memoryMB",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "storageMB",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "available",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "completeRecovery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "completeResurrection",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "resurrectionKeyHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "maxOfflineDuration",
+        "type": "uint64"
+      }
+    ],
+    "name": "configureResurrection",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "confirmCarrier",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "deactivateSoul",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "deregisterCarrier",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getActiveGuardianCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getBackupCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "limit",
+        "type": "uint256"
+      }
+    ],
+    "name": "getBackupHistory",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "manifestCid",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "dataMerkleRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "anchoredAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "fileCount",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "totalBytes",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint8",
+            "name": "backupType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "parentManifestCid",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct SoulRegistry.BackupAnchor[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getCarrier",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "carrierId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "endpoint",
+            "type": "string"
+          },
+          {
+            "internalType": "uint64",
+            "name": "registeredAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "cpuMillicores",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "memoryMB",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "storageMB",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "available",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct SoulRegistry.Carrier",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getGuardians",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "guardian",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "addedAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct SoulRegistry.RecoveryGuardian[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getLatestBackup",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "manifestCid",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "dataMerkleRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "anchoredAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "fileCount",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "totalBytes",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint8",
+            "name": "backupType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "parentManifestCid",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct SoulRegistry.BackupAnchor",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getResurrectionConfig",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "resurrectionKeyHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "maxOfflineDuration",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "lastHeartbeat",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "configured",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct SoulRegistry.ResurrectionConfig",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getResurrectionReadiness",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "exists",
+        "type": "bool"
+      },
+      {
+        "internalType": "enum SoulRegistry.ResurrectionTrigger",
+        "name": "trigger",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "approvalCount",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "approvalThreshold",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "carrierConfirmed",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "offlineNow",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint64",
+        "name": "readyAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "canComplete",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getSoul",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "agentId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "identityCid",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "latestSnapshotCid",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "registeredAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "lastBackupAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "backupCount",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "version",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct SoulRegistry.SoulIdentity",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "timestamp",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "heartbeat",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "initiateGuardianResurrection",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "initiateRecovery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "initiateResurrection",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isOffline",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "nonces",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "ownerToAgent",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "recoveryApprovals",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "recoveryRequests",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "initiator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "initiatedAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "approvalCount",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "guardianSnapshot",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "executed",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "endpoint",
+        "type": "string"
+      },
+      {
+        "internalType": "uint64",
+        "name": "cpuMillicores",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "memoryMB",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "storageMB",
+        "type": "uint64"
+      }
+    ],
+    "name": "registerCarrier",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "identityCid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ownershipSig",
+        "type": "bytes"
+      }
+    ],
+    "name": "registerSoul",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "removeGuardian",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "resurrectionApprovals",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "resurrectionConfigs",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "resurrectionKeyHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "maxOfflineDuration",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "lastHeartbeat",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "configured",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "resurrectionRequests",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "initiator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "initiatedAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint8",
+        "name": "approvalCount",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "guardianSnapshot",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "executed",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "carrierConfirmed",
+        "type": "bool"
+      },
+      {
+        "internalType": "enum SoulRegistry.ResurrectionTrigger",
+        "name": "trigger",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "soulCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "souls",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "identityCid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "latestSnapshotCid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "registeredAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "lastBackupAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint32",
+        "name": "backupCount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint16",
+        "name": "version",
+        "type": "uint16"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "carrierId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bool",
+        "name": "available",
+        "type": "bool"
+      }
+    ],
+    "name": "updateCarrierAvailability",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "newIdentityCid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sig",
+        "type": "bytes"
+      }
+    ],
+    "name": "updateIdentity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

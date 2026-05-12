@@ -1,6 +1,6 @@
 {
   "name": "chainofclaw-monorepo",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "private": true,
   "description": "Monorepo root for @chainofclaw/node + @chainofclaw/soul + @chainofclaw/claw-mem (umbrella).",
   "type": "module",

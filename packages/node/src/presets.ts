@@ -1,34 +1,81 @@
 // Network and node-type presets for COC blockchain nodes.
 // Migrated from COC/extensions/coc-nodeops/src/{network-presets,node-types}.ts.
+//
+// As of @chainofclaw/node v2, the canonical testnet is COC R3.2 (chainId
+// 88780); the legacy prowl-testnet (chainId 18780) was decommissioned
+// 2026-05-12 but is retained here as `prowl-testnet` for archival reads
+// and historical replay.
 
 // ──────────────────────────────────────────────────────────────────────────
 // Network presets
 // ──────────────────────────────────────────────────────────────────────────
 
-export type NetworkId = "testnet" | "mainnet" | "local" | "custom"
+export type NetworkId = "testnet" | "prowl-testnet" | "mainnet" | "local" | "custom"
 
 export interface NetworkPreset {
   chainId: number
   bootstrapPeers: Array<{ id: string; url: string }>
   dhtBootstrapPeers: Array<{ id: string; address: string; port: number }>
   validators: string[]
-  // Genesis prefund — required to match the upstream chain's genesis stateRoot.
-  // Without this, a fullnode joining an existing network fails block signature
-  // verification after snap sync, because its initial state diverges.
+  /**
+   * Genesis prefund — must match the upstream chain's genesis stateRoot.
+   * Without this a fullnode joining an existing network fails block signature
+   * verification after snap sync, because its initial state diverges.
+   */
   prefund?: Array<{ address: string; balanceEth: string }>
+  /** Optional validator stakes (matches ValidatorRegistry seed). */
+  validatorStakes?: Array<{ id: string; address: string; stake: string }>
   rpcPort: number
   p2pPort: number
   wirePort: number
   wsPort: number
   ipfsPort: number
+  /** True when the network is end-of-life — clients may warn but not refuse. */
+  deprecated?: boolean
+  deprecationNote?: string
 }
 
 export const NETWORK_PRESETS: Record<Exclude<NetworkId, "custom">, NetworkPreset> = {
-  // Live testnet at server1.clawchain.io (199.192.16.79). The node cluster
-  // runs under docker, so external ports are remapped: the coc-sync-node
-  // container's internal 19780/19781 are reachable on 19880/19881, and each
-  // coc-node-{1,2,3} occupies 29780-29785 on the host.
+  // COC R3.2 prod-candidate testnet (chainId 88780). 5 validators + 2 observers
+  // across multiple hosts; public bootstrap peers are deployment-specific and
+  // are NOT pinned in the preset — pass `bootstrapPeers` explicitly via the
+  // node CLI (`--peer <id>@<url>`) or `peers` in your node config.
   testnet: {
+    chainId: 88780,
+    bootstrapPeers: [],
+    dhtBootstrapPeers: [],
+    validators: [
+      "0xde4e7889aa9007318ff261b1ee675f1305153590",
+      "0xb939e5a68abd2e000e78876bd86edd1cbba49eb9",
+      "0xdefc8430388093fdfacb0a929fedc14d2e631d19",
+      "0xcc64096600c1759d7aaea91166837a5873175867",
+      "0x5e773c9359a6bb416bdfffe0c9aac9f568bd11ae",
+    ],
+    validatorStakes: [
+      { id: "0xde4e7889aa9007318ff261b1ee675f1305153590", address: "0xde4e7889aa9007318ff261b1ee675f1305153590", stake: "32000000000000000000" },
+      { id: "0xb939e5a68abd2e000e78876bd86edd1cbba49eb9", address: "0xb939e5a68abd2e000e78876bd86edd1cbba49eb9", stake: "32000000000000000000" },
+      { id: "0xdefc8430388093fdfacb0a929fedc14d2e631d19", address: "0xdefc8430388093fdfacb0a929fedc14d2e631d19", stake: "32000000000000000000" },
+      { id: "0xcc64096600c1759d7aaea91166837a5873175867", address: "0xcc64096600c1759d7aaea91166837a5873175867", stake: "32000000000000000000" },
+      { id: "0x5e773c9359a6bb416bdfffe0c9aac9f568bd11ae", address: "0x5e773c9359a6bb416bdfffe0c9aac9f568bd11ae", stake: "32000000000000000000" },
+    ],
+    prefund: [
+      { address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", balanceEth: "10000000" },
+      { address: "0xde4e7889aa9007318ff261b1ee675f1305153590", balanceEth: "100" },
+      { address: "0xb939e5a68abd2e000e78876bd86edd1cbba49eb9", balanceEth: "100" },
+      { address: "0xdefc8430388093fdfacb0a929fedc14d2e631d19", balanceEth: "100" },
+      { address: "0xcc64096600c1759d7aaea91166837a5873175867", balanceEth: "100" },
+      { address: "0x5e773c9359a6bb416bdfffe0c9aac9f568bd11ae", balanceEth: "100" },
+    ],
+    rpcPort: 28780,
+    p2pPort: 29780,
+    wirePort: 29781,
+    wsPort: 28790,
+    ipfsPort: 28800,
+  },
+  // Legacy COC prowl-testnet (chainId 18780). Decommissioned 2026-05-12; data
+  // dirs on operator-1/2/3 have been wiped. Retained for archival snapshots
+  // and historical state replay only — live RPC may not respond.
+  "prowl-testnet": {
     chainId: 18780,
     bootstrapPeers: [
       { id: "coc-sync-node", url: "http://199.192.16.79:19880" },
@@ -59,40 +106,49 @@ export const NETWORK_PRESETS: Record<Exclude<NetworkId, "custom">, NetworkPreset
     wirePort: 19781,
     wsPort: 18781,
     ipfsPort: 5001,
+    deprecated: true,
+    deprecationNote: "chainId 18780 (prowl-testnet) decommissioned 2026-05-12 — replaced by chainId 88780 (R3.2). Live RPC may not respond; preset retained for historical replay only.",
   },
   mainnet: {
     chainId: 1,
     bootstrapPeers: [],
     dhtBootstrapPeers: [],
     validators: [],
-    rpcPort: 18780,
-    p2pPort: 19780,
-    wirePort: 19781,
-    wsPort: 18781,
-    ipfsPort: 5001,
+    rpcPort: 28780,
+    p2pPort: 29780,
+    wirePort: 29781,
+    wsPort: 28790,
+    ipfsPort: 28800,
   },
   local: {
-    chainId: 18780,
+    chainId: 88780,
     bootstrapPeers: [],
     dhtBootstrapPeers: [],
     validators: ["node-1"],
-    rpcPort: 18780,
-    p2pPort: 19780,
-    wirePort: 19781,
-    wsPort: 18781,
-    ipfsPort: 5001,
+    rpcPort: 28780,
+    p2pPort: 29780,
+    wirePort: 29781,
+    wsPort: 28790,
+    ipfsPort: 28800,
   },
 }
 
 export const NETWORK_LABELS: Record<NetworkId, string> = {
-  testnet: "Testnet (public test network)",
+  testnet: "Testnet R3.2 (chainId 88780 — current public test network)",
+  "prowl-testnet": "Prowl testnet (chainId 18780 — DECOMMISSIONED, archive only)",
   mainnet: "Mainnet (not yet launched)",
   local: "Local (localhost, auto ports)",
   custom: "Custom (specify all parameters)",
 }
 
 export function isValidNetworkId(value: string): value is NetworkId {
-  return value === "testnet" || value === "mainnet" || value === "local" || value === "custom"
+  return (
+    value === "testnet" ||
+    value === "prowl-testnet" ||
+    value === "mainnet" ||
+    value === "local" ||
+    value === "custom"
+  )
 }
 
 export function getNetworkPreset(id: Exclude<NetworkId, "custom">): NetworkPreset {

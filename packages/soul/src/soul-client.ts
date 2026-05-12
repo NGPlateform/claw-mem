@@ -10,6 +10,7 @@ import type {
   ResurrectionRequestInfo,
   ResurrectionStartResult,
 } from "./backup-types.ts"
+import { getContractAddress } from "./manifests/index.ts"
 
 // Minimal ABI for SoulRegistry
 const SOUL_REGISTRY_ABI = [
@@ -95,6 +96,21 @@ export class SoulClient {
     this.wallet = new Wallet(privateKey, this.provider)
     this.contract = new Contract(contractAddress, SOUL_REGISTRY_ABI, this.wallet)
     this.contractAddress = contractAddress
+  }
+
+  /**
+   * Construct a SoulClient resolving the SoulRegistry address from the
+   * packaged deployed-contracts manifest for `chainId`. Saves callers from
+   * having to hardcode addresses when targeting a known COC network.
+   */
+  static fromChainId(
+    chainId: number,
+    rpcUrl: string,
+    privateKey: string,
+    opts: { rpcAuthToken?: string; contractAddress?: string } = {},
+  ): SoulClient {
+    const address = opts.contractAddress ?? getContractAddress(chainId, "SoulRegistry")
+    return new SoulClient(rpcUrl, address, privateKey, opts.rpcAuthToken)
   }
 
   get address(): string {

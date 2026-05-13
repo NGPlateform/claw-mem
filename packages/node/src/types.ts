@@ -89,7 +89,7 @@ export interface NodeBlockLifecycleConfig {
   enabled: boolean
   runtimeDir?: string
   defaultType: "validator" | "fullnode" | "archive" | "gateway" | "dev"
-  defaultNetwork: "testnet" | "mainnet" | "local" | "custom"
+  defaultNetwork: "testnet" | "prowl-testnet" | "mainnet" | "local" | "custom"
   port: number
   bind: string
   agent: NodeAgentLifecycleConfig

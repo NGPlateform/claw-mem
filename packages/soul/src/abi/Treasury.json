@@ -1,0 +1,470 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address[5]",
+        "name": "_signers",
+        "type": "address[5]"
+      },
+      {
+        "internalType": "address",
+        "name": "_governance",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyConfirmed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyExecuted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ExceedsSpendingCap",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidProposal",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotEnoughConfirmations",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotGovernance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotSigner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAmount",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Deposit",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newGovernance",
+        "type": "address"
+      }
+    ],
+    "name": "GovernanceUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      }
+    ],
+    "name": "ProposalConfirmed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProposalCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProposalExecuted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "index",
+        "type": "uint8"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldSigner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newSigner",
+        "type": "address"
+      }
+    ],
+    "name": "SignerUpdated",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_SIGNERS",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REQUIRED_CONFIRMATIONS",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SPENDING_CAP_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      }
+    ],
+    "name": "confirmWithdrawal",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      }
+    ],
+    "name": "executeWithdrawal",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "governance",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      }
+    ],
+    "name": "governanceApprove",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isSigner",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "proposalCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "proposals",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "confirmations",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "executed",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "governanceApproved",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "proposeWithdrawal",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "index",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "newSigner",
+        "type": "address"
+      }
+    ],
+    "name": "replaceSigner",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_governance",
+        "type": "address"
+      }
+    ],
+    "name": "setGovernance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "signers",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  }
+]

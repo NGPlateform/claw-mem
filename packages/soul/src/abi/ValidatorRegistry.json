@@ -1,0 +1,779 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "AlreadyDeactivated",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "AlreadyRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "length",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidPubkey",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "expected",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "actual",
+        "type": "bytes32"
+      }
+    ],
+    "name": "NodeIdMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "NotActive",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "NotOperator",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "NotRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlySlasher",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "provided",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "required",
+        "type": "uint256"
+      }
+    ],
+    "name": "StakeTooLow",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "unlockTime",
+        "type": "uint64"
+      }
+    ],
+    "name": "StillLockedUp",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "cap",
+        "type": "uint256"
+      }
+    ],
+    "name": "ValidatorSetFull",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAddress",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldSink",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newSink",
+        "type": "address"
+      }
+    ],
+    "name": "BurnSinkUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldFund",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newFund",
+        "type": "address"
+      }
+    ],
+    "name": "InsuranceFundUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnerUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "burnAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "reporterAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "insuranceAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "SlashDistributed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldRecipient",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newRecipient",
+        "type": "address"
+      }
+    ],
+    "name": "SlashRecipientUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldSlasher",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newSlasher",
+        "type": "address"
+      }
+    ],
+    "name": "SlasherUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ValidatorActivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "unstakeRequestedAt",
+        "type": "uint64"
+      }
+    ],
+    "name": "ValidatorDeactivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "stake",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "pubkeyNode",
+        "type": "bytes"
+      }
+    ],
+    "name": "ValidatorRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "reason",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ValidatorSlashed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "ValidatorWithdrew",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "BPS_DENOM",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_VALIDATORS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_STAKE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_BURN_SHARE_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_REPORTER_SHARE_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UNSTAKE_LOCKUP",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "activeValidatorCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "burnSink",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getActiveValidators",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getValidator",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "nodeId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "operator",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "stake",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint64",
+            "name": "registeredAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "unstakeRequestedAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct ValidatorRegistry.Validator",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "insuranceFund",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isActive",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "requestUnstake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newSink",
+        "type": "address"
+      }
+    ],
+    "name": "setBurnSink",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newFund",
+        "type": "address"
+      }
+    ],
+    "name": "setInsuranceFund",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newRecipient",
+        "type": "address"
+      }
+    ],
+    "name": "setSlashRecipient",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newSlasher",
+        "type": "address"
+      }
+    ],
+    "name": "setSlasher",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "slashRecipient",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "reason",
+        "type": "bytes32"
+      }
+    ],
+    "name": "slashValidator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "slasher",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "pubkeyNode",
+        "type": "bytes"
+      }
+    ],
+    "name": "stake",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "withdrawStake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  }
+]

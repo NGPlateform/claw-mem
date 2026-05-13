@@ -26,22 +26,39 @@ describe("network-presets", () => {
     }
   })
 
-  it("testnet has correct chainId and bootstrap peers", () => {
+  it("testnet has correct chainId (88780 R3.2)", () => {
     const t = NETWORK_PRESETS.testnet
-    assert.strictEqual(t.chainId, 18780)
-    assert.ok(t.bootstrapPeers.length > 0)
-    assert.ok(t.dhtBootstrapPeers.length > 0)
+    assert.strictEqual(t.chainId, 88780)
   })
 
-  it("testnet points at real endpoints, not placeholder domains", () => {
+  it("testnet has no hardcoded bootstrap peers — deployment-specific", () => {
+    // R3.2 (88780) cluster endpoints are deployment-specific; the preset
+    // intentionally ships empty arrays so callers provide their own peers
+    // via --peer / config.peers rather than baking in stale IPs.
     const t = NETWORK_PRESETS.testnet
+    assert.ok(Array.isArray(t.bootstrapPeers))
+    assert.ok(Array.isArray(t.dhtBootstrapPeers))
+  })
+
+  it("prowl-testnet (18780) is retained as deprecated legacy preset", () => {
+    const p = NETWORK_PRESETS["prowl-testnet"]
+    assert.strictEqual(p.chainId, 18780)
+    assert.strictEqual(p.deprecated, true)
+    assert.ok(p.deprecationNote && p.deprecationNote.length > 0)
+    // Legacy bootstrap peers preserved for archival replay
+    assert.ok(p.bootstrapPeers.length > 0)
+    assert.ok(p.dhtBootstrapPeers.length > 0)
+  })
+
+  it("prowl-testnet points at real endpoints, not placeholder domains", () => {
+    const p = NETWORK_PRESETS["prowl-testnet"]
     // Guard against regression to the fake testnet-boot{1,2}.coc.network
     // placeholders that never resolved.
-    for (const p of t.bootstrapPeers) {
-      assert.ok(!p.url.includes("testnet-boot"), `stale placeholder in peer url: ${p.url}`)
+    for (const peer of p.bootstrapPeers) {
+      assert.ok(!peer.url.includes("testnet-boot"), `stale placeholder in peer url: ${peer.url}`)
     }
-    for (const p of t.dhtBootstrapPeers) {
-      assert.ok(!p.address.includes("testnet-boot"), `stale placeholder in dht addr: ${p.address}`)
+    for (const peer of p.dhtBootstrapPeers) {
+      assert.ok(!peer.address.includes("testnet-boot"), `stale placeholder in dht addr: ${peer.address}`)
     }
   })
 
@@ -61,12 +78,12 @@ describe("network-presets", () => {
     }
   })
 
-  it("local has localhost defaults", () => {
+  it("local has localhost defaults (88780-compatible ports)", () => {
     const l = NETWORK_PRESETS.local
-    assert.strictEqual(l.chainId, 18780)
-    assert.strictEqual(l.rpcPort, 18780)
-    assert.strictEqual(l.p2pPort, 19780)
-    assert.strictEqual(l.wirePort, 19781)
+    assert.strictEqual(l.chainId, 88780)
+    assert.strictEqual(l.rpcPort, 28780)
+    assert.strictEqual(l.p2pPort, 29780)
+    assert.strictEqual(l.wirePort, 29781)
   })
 
   it("mainnet is placeholder with chainId 1", () => {
@@ -76,7 +93,7 @@ describe("network-presets", () => {
   })
 
   it("labels cover all network ids", () => {
-    const allIds: NetworkId[] = ["testnet", "mainnet", "local", "custom"]
+    const allIds: NetworkId[] = ["testnet", "prowl-testnet", "mainnet", "local", "custom"]
     for (const id of allIds) {
       assert.ok(NETWORK_LABELS[id], `Missing label for ${id}`)
     }
@@ -84,6 +101,7 @@ describe("network-presets", () => {
 
   it("isValidNetworkId validates correctly", () => {
     assert.strictEqual(isValidNetworkId("testnet"), true)
+    assert.strictEqual(isValidNetworkId("prowl-testnet"), true)
     assert.strictEqual(isValidNetworkId("mainnet"), true)
     assert.strictEqual(isValidNetworkId("local"), true)
     assert.strictEqual(isValidNetworkId("custom"), true)
@@ -92,8 +110,8 @@ describe("network-presets", () => {
   })
 
   it("getNetworkPreset returns correct preset", () => {
-    const preset = getNetworkPreset("testnet")
-    assert.strictEqual(preset.chainId, 18780)
+    assert.strictEqual(getNetworkPreset("testnet").chainId, 88780)
+    assert.strictEqual(getNetworkPreset("prowl-testnet").chainId, 18780)
   })
 })
 

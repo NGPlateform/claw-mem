@@ -1,0 +1,280 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "registry",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "unlockBlock",
+        "type": "uint256"
+      }
+    ],
+    "name": "CooldownActive",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "HashesEqual",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SignerNotNodeIdTrailer",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SignersDiffer",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAddress",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "height",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "hashA",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "hashB",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "evidenceHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "EquivocationProven",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnerUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldCooldown",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newCooldown",
+        "type": "uint256"
+      }
+    ],
+    "name": "SlashCooldownUpdated",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "DEFAULT_SLASH_COOLDOWN_BLOCKS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "lastSlashedAtBlock",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "blocks_",
+        "type": "uint256"
+      }
+    ],
+    "name": "setSlashCooldown",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "slashCooldownBlocks",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "phase",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "height",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "hashA",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sigA",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "hashB",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "sigB",
+        "type": "bytes"
+      }
+    ],
+    "name": "submitEvidence",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "validatorRegistry",
+    "outputs": [
+      {
+        "internalType": "contract IValidatorRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

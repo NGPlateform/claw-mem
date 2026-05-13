@@ -1,0 +1,1940 @@
+[
+  {
+    "inputs": [],
+    "name": "AdjudicationWindowNotElapsed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyClaimed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyUnbonding",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BatchAlreadySubmitted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BondTooLow",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ChallengeAlreadySettled",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ChallengeNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ChallengeNotRevealed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CommitHashMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DisputeWindowNotElapsed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EndpointAlreadyRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EpochAlreadyFinalized",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EpochNonceAlreadySet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientBond",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidBatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidFaultProof",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidFaultType",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidMerkleProof",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidNodeId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidOwnershipProof",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidWitnessQuorum",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoBondToWithdraw",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NodeAlreadyRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NodeNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotChallengeOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotNodeOperator",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RevealWindowMissed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RewardBudgetExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RewardPoolInsufficient",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SlashCapExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TooManyNodes",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UnlockNotReached",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "merkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "witnessBitmap",
+        "type": "uint32"
+      }
+    ],
+    "name": "BatchSubmittedV2",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "challengeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "challenger",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "bond",
+        "type": "uint256"
+      }
+    ],
+    "name": "ChallengeOpened",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "challengeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "targetNodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "faultType",
+        "type": "uint8"
+      }
+    ],
+    "name": "ChallengeRevealed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "challengeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "faultConfirmed",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "slashAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "ChallengeSettled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "EmissionMinted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "rewardRoot",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalReward",
+        "type": "uint256"
+      }
+    ],
+    "name": "EpochFinalizedV2",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ],
+    "name": "EpochNonceSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "toFoundation",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "burned",
+        "type": "uint256"
+      }
+    ],
+    "name": "ExpiredRewardsSwept",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "depositor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsuranceDeposited",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "serviceFlags",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "bondAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "NodeRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "RewardClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "burned",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "challenger",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "insurance",
+        "type": "uint256"
+      }
+    ],
+    "name": "SlashDistributed",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "ADJUDICATION_WINDOW_EPOCHS",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DISPUTE_WINDOW_EPOCHS",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DOMAIN_SEPARATOR",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EPOCH_SECONDS",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXPIRED_FOUNDATION_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_NODES_PER_OPERATOR",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_REWARD_PER_NODE_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_BOND",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REVEAL_WINDOW_EPOCHS",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REWARD_CLAIM_WINDOW",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASHER_ROLE",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_BURN_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_CHALLENGER_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_EPOCH_CAP_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASH_INSURANCE_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UNBOND_DELAY_EPOCHS",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "allowEmptyWitnessSubmission",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "challengeBondMin",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "challengeFaultConfirmed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "challengeFaultEpochPlusOne",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "challengeNonces",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "challenges",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "commitHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "challenger",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bond",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "commitEpoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "revealDeadlineEpoch",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "revealed",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "settled",
+        "type": "bool"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "targetNodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint8",
+        "name": "faultType",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "merkleProof",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "claim",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "cocToken",
+    "outputs": [
+      {
+        "internalType": "contract ICOCToken",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "consumedFaultEvidence",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "depositInsurance",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "depositRewardPool",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "emissionEnabled",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_genesisEpoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "enableEmission",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "endpointCommitmentUsed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochClaimedReward",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochFinalized",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochFinalizedAt",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "epochNodeSlashed",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochRewardRoots",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochRewardsDistributed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochSettlementRoot",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochSlashTotal",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochSwept",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochTotalReward",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochTreasuryDelta",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochValidBatchCount",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "rewardRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalReward",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "slashTotal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "treasuryDelta",
+        "type": "uint256"
+      }
+    ],
+    "name": "finalizeEpochV2",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "foundationAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "genesisEpoch",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getActiveNodeCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "limit",
+        "type": "uint256"
+      }
+    ],
+    "name": "getActiveNodeIds",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getBatch",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "epochId",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "merkleRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "summaryHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "aggregator",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "submittedAtEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "disputeDeadlineEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "finalized",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "disputed",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct PoSeTypes.BatchRecord",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "challengeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getChallenge",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "commitHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "challenger",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "bond",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint64",
+            "name": "commitEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "revealDeadlineEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "revealed",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "settled",
+            "type": "bool"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "targetNodeId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "faultType",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct PoSeTypesV2.ChallengeRecord",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      }
+    ],
+    "name": "getEpochBatchIds",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getNode",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "nodeId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "pubkeyNode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint8",
+            "name": "serviceFlags",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "serviceCommitment",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "endpointCommitment",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "bondAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "metadataHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "registeredAtEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "unlockEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct PoSeTypes.NodeRecord",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      }
+    ],
+    "name": "getRequiredWitnessCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      }
+    ],
+    "name": "getWitnessSet",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      }
+    ],
+    "name": "initEpochNonce",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "verifyingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_challengeBondMin",
+        "type": "uint256"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "insuranceBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "nodeOperator",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "commitHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "openChallenge",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "challengeId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "operatorNodeCount",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "pendingRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "pubkeyNode",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint8",
+        "name": "serviceFlags",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "serviceCommitment",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "endpointCommitment",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "metadataHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ownershipSig",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "endpointAttestation",
+        "type": "bytes"
+      }
+    ],
+    "name": "registerNode",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "challengeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "targetNodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint8",
+        "name": "faultType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "evidenceLeafHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "evidenceData",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "challengerSig",
+        "type": "bytes"
+      }
+    ],
+    "name": "revealChallenge",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "rewardClaimed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rewardPoolBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "name": "setAllowEmptyWitnessSubmission",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newMin",
+        "type": "uint256"
+      }
+    ],
+    "name": "setChallengeBondMin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_foundation",
+        "type": "address"
+      }
+    ],
+    "name": "setFoundationAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "challengeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "settleChallenge",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "merkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "summaryHash",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "leaf",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "merkleProof",
+            "type": "bytes32[]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "leafIndex",
+            "type": "uint32"
+          }
+        ],
+        "internalType": "struct PoSeTypes.SampleProof[]",
+        "name": "sampleProofs",
+        "type": "tuple[]"
+      },
+      {
+        "internalType": "uint32",
+        "name": "witnessBitmap",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "witnessSignatures",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "submitBatchV2",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      }
+    ],
+    "name": "sweepExpiredRewards",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "unbondRequested",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  }
+]

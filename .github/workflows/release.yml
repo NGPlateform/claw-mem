@@ -1,0 +1,73 @@
+name: Release
+
+# Tag-triggered npm publish. Tag conventions (preserved across v1.x history):
+#   node-vX.Y.Z      → packages/node       publishes @chainofclaw/node
+#   soul-vX.Y.Z      → packages/soul       publishes @chainofclaw/soul
+#   vX.Y.Z (no pfx)  → packages/claw-mem   publishes @chainofclaw/claw-mem
+#
+# Requires repo secret NPM_TOKEN (automation token from the `chainofclaw`
+# npm account with `publish` permission on the @chainofclaw scope).
+# Provenance is enabled via OIDC; no extra setup needed beyond the
+# `id-token: write` permission below.
+
+on:
+  push:
+    tags:
+      - "node-v*"
+      - "soul-v*"
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Resolve target workspace
+        id: target
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          case "$TAG" in
+            node-v*)
+              echo "pkg=packages/node" >> "$GITHUB_OUTPUT"
+              echo "name=@chainofclaw/node" >> "$GITHUB_OUTPUT"
+              ;;
+            soul-v*)
+              echo "pkg=packages/soul" >> "$GITHUB_OUTPUT"
+              echo "name=@chainofclaw/soul" >> "$GITHUB_OUTPUT"
+              ;;
+            v*)
+              echo "pkg=packages/claw-mem" >> "$GITHUB_OUTPUT"
+              echo "name=@chainofclaw/claw-mem" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unrecognized tag: $TAG — expected node-v*, soul-v*, or v*" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Build target package
+        run: npm run build --workspace=${{ steps.target.outputs.name }}
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public --workspace=${{ steps.target.outputs.name }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,1171 @@
+[
+  {
+    "inputs": [],
+    "name": "AlreadyUnbonding",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BatchAlreadyDisputed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BatchAlreadyFinalized",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BatchAlreadySubmitted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DisputeWindowClosed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DisputeWindowNotElapsed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EndpointAlreadyRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EpochAlreadyFinalized",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EvidenceAlreadyUsed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientBond",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidBatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidEpoch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidNodeId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidOwnershipProof",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidSlashEvidence",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoBondToWithdraw",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoFinalizableBatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NodeAlreadyRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NodeNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NodeNotSlashable",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotNodeOperator",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TooManyNodes",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UnlockNotReached",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "challenger",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "leaf",
+        "type": "bytes32"
+      }
+    ],
+    "name": "BatchChallenged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "merkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "summaryHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "BatchSubmitted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      }
+    ],
+    "name": "EpochFinalized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "newCommitment",
+        "type": "bytes32"
+      }
+    ],
+    "name": "NodeCommitmentUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "serviceFlags",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "bondAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "NodeRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "slashAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "reasonCode",
+        "type": "uint8"
+      }
+    ],
+    "name": "NodeSlashed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "RewardClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "depositor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "RewardPoolDeposited",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalDistributed",
+        "type": "uint256"
+      }
+    ],
+    "name": "RewardsDistributed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "unlockEpoch",
+        "type": "uint64"
+      }
+    ],
+    "name": "UnbondRequested",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Withdrawn",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "DISPUTE_WINDOW_EPOCHS",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EPOCH_SECONDS",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_NODES_PER_OPERATOR",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_REWARD_PER_NODE_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_BOND",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SLASHER_ROLE",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UNBOND_DELAY_EPOCHS",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "receiptLeaf",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "merkleProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "invalidityEvidence",
+        "type": "bytes"
+      }
+    ],
+    "name": "challengeBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "claimReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "depositRewardPool",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "nodeId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct PoSeTypes.EpochReward[]",
+        "name": "rewards",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "distributeRewards",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "endpointCommitmentUsed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochFinalized",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochRewardsDistributed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochSettlementRoot",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "epochValidBatchCount",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      }
+    ],
+    "name": "finalizeEpoch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getBatch",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "epochId",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "merkleRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "summaryHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "aggregator",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "submittedAtEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "disputeDeadlineEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "finalized",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "disputed",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct PoSeTypes.BatchRecord",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getBatchSampleInfo",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "sampleCount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "sampleCommitment",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      }
+    ],
+    "name": "getEpochBatchIds",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getNode",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "nodeId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "pubkeyNode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint8",
+            "name": "serviceFlags",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "serviceCommitment",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "endpointCommitment",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "bondAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "metadataHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "registeredAtEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "unlockEpoch",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct PoSeTypes.NodeRecord",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "leaf",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isSampleLeaf",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "nodeOperator",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "operatorNodeCount",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "pendingRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "pubkeyNode",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint8",
+        "name": "serviceFlags",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "serviceCommitment",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "endpointCommitment",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "metadataHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ownershipSig",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "endpointAttestation",
+        "type": "bytes"
+      }
+    ],
+    "name": "registerNode",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "requestUnbond",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "requiredBond",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rewardPoolBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "enabled",
+        "type": "bool"
+      }
+    ],
+    "name": "setSlasher",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "nodeId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "evidenceHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "reasonCode",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes",
+            "name": "rawEvidence",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct PoSeTypes.SlashEvidence",
+        "name": "evidence",
+        "type": "tuple"
+      }
+    ],
+    "name": "slash",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "merkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "summaryHash",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "leaf",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "merkleProof",
+            "type": "bytes32[]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "leafIndex",
+            "type": "uint32"
+          }
+        ],
+        "internalType": "struct PoSeTypes.SampleProof[]",
+        "name": "sampleProofs",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "submitBatch",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "unbondRequested",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "newCommitment",
+        "type": "bytes32"
+      }
+    ],
+    "name": "updateCommitment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "nodeId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

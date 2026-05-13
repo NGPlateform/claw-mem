@@ -124,7 +124,7 @@ describe("NodeManager", () => {
     await h.manager.install({ type: "dev", network: "local", name: "cfg-test" })
     const cfg = await h.manager.getNodeConfig("cfg-test")
     assert.equal(cfg.advertisedStorageBytes, 268_435_456)
-    assert.equal(cfg.chainId, 18780)
+    assert.equal(cfg.chainId, 88780)
     assert.ok(typeof cfg.nodeId === "string")
     assert.ok((cfg.nodeId as string).startsWith("0x"))  // ETH-derived
   })

@@ -38,6 +38,13 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
+      # Build every workspace before running tests — the claw-mem package's
+      # tests import @chainofclaw/node and @chainofclaw/soul from `dist/`,
+      # so without an up-front build the symlinked workspaces have nothing
+      # to resolve and tests fail with ERR_MODULE_NOT_FOUND.
+      - name: Build all workspaces
+        run: npm run build
+
       - name: Test
         run: npm test
 
@@ -64,6 +71,9 @@ jobs:
               ;;
           esac
 
+      # `npm run build` above already built every workspace; this step is
+      # a defensive rebuild of just the target package to guarantee a clean
+      # dist/ regardless of caching quirks.
       - name: Build target package
         run: npm run build --workspace=${{ steps.target.outputs.name }}
 

@@ -1,5 +1,58 @@
 # Migration Guide — @chainofclaw v2 / claw-mem v3
 
+## v2.1 / v3.1 — independent on-chain witness quorum verification (#667)
+
+`@chainofclaw/soul@2.1.0` + `@chainofclaw/claw-mem@3.1.0` ship the new
+`submitBatchV2WithMetadata` contract surface (COC PR #710 + #713). This is
+**additive** — every v2.0 / v3.0 API still works unchanged.
+
+What's new:
+
+- The packaged `PoSeManagerV2.json` ABI now includes `submitBatchV2WithMetadata`
+  + the `ReceiptBatchMetadataSubmitted` event and the new errors
+  (`WitnessNotActive`, `WitnessSigReplay`, `MerkleRootMismatch`,
+  `MetadataLengthMismatch`, `BadReceiptIndex`).
+- The `WitnessAttestationV2` typehash (`bytes32 challengeId, bytes32 nodeId,
+  bytes32 responseBodyHash, uint8 witnessIndex, uint64 epochId`) — binds a
+  witness signature to the epoch in which it was collected.
+
+This is an additive ABI bump (no struct removed, no method removed), so any
+caller that decoded the v2.0 ABI continues to decode correctly. To use the
+new path:
+
+```ts
+import { CONTRACT_ABIS } from "@chainofclaw/soul"
+import { ethers } from "ethers"
+
+const pose = new ethers.Contract(addr, CONTRACT_ABIS.PoSeManagerV2, signer)
+await pose.submitBatchV2WithMetadata(
+  epochId,
+  merkleRoot,
+  summaryHash,
+  sampleProofs,
+  witnessBitmap,
+  witnessSignatures,
+  {
+    challengeIds,
+    nodeIds,
+    responseBodyHashes,
+    leafHashes,
+    witnessReceiptIndex,  // uint16[32], unused slots = 0xffff
+  },
+)
+```
+
+If you only consume `BatchSubmittedV2` events: no change. If you also want
+to index per-receipt metadata, subscribe to `ReceiptBatchMetadataSubmitted`
+emitted by the same tx.
+
+Live 88780 deployments will keep accepting the legacy `submitBatchV2`
+during the rollout window (PR-D upgrade); the v1 typehash sunset is
+COC PR-E (~30 days after PR-D).
+
+---
+
+
 This release tracks the **COC R3.2 (chainId 88780) production-candidate testnet**
 that came online on 2026-05-11 and replaces the now-decommissioned prowl-testnet
 (chainId 18780, retired 2026-05-12). Every package in the monorepo bumps a

@@ -1,6 +1,22 @@
 [
   {
     "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      }
+    ],
+    "name": "AddressEmptyCode",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "AdjudicationWindowNotElapsed",
     "type": "error"
   },
@@ -11,12 +27,27 @@
   },
   {
     "inputs": [],
+    "name": "AlreadyInitialized",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "AlreadyUnbonding",
     "type": "error"
   },
   {
     "inputs": [],
+    "name": "BadReceiptIndex",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "BatchAlreadySubmitted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BatchesNotProcessed",
     "type": "error"
   },
   {
@@ -50,6 +81,22 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "implementation",
+        "type": "address"
+      }
+    ],
+    "name": "ERC1967InvalidImplementation",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ERC1967NonPayable",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "EndpointAlreadyRegistered",
     "type": "error"
@@ -62,6 +109,11 @@
   {
     "inputs": [],
     "name": "EpochNonceAlreadySet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FailedCall",
     "type": "error"
   },
   {
@@ -86,6 +138,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidInitialization",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidMerkleProof",
     "type": "error"
   },
@@ -106,7 +163,22 @@
   },
   {
     "inputs": [],
+    "name": "MerkleRootMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MetadataLengthMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "NoBondToWithdraw",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoPendingWithdrawal",
     "type": "error"
   },
   {
@@ -122,6 +194,11 @@
   {
     "inputs": [],
     "name": "NotChallengeOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotInitializing",
     "type": "error"
   },
   {
@@ -161,7 +238,38 @@
   },
   {
     "inputs": [],
+    "name": "UUPSUnauthorizedCallContext",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "slot",
+        "type": "bytes32"
+      }
+    ],
+    "name": "UUPSUnsupportedProxiableUUID",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "UnlockNotReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WitnessNotActive",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WitnessSigReplay",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAddress",
     "type": "error"
   },
   {
@@ -362,6 +470,44 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "version",
+        "type": "uint64"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "verifyingContract",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "challengeBondMin",
+        "type": "uint256"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "depositor",
@@ -406,6 +552,68 @@
       }
     ],
     "name": "NodeRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnerUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "challengeIds",
+        "type": "bytes32[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "nodeIds",
+        "type": "bytes32[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "responseBodyHashes",
+        "type": "bytes32[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "leafHashes",
+        "type": "bytes32[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16[32]",
+        "name": "witnessReceiptIndex",
+        "type": "uint16[32]"
+      }
+    ],
+    "name": "ReceiptBatchMetadataSubmitted",
     "type": "event"
   },
   {
@@ -462,6 +670,57 @@
       }
     ],
     "name": "SlashDistributed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "implementation",
+        "type": "address"
+      }
+    ],
+    "name": "Upgraded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payee",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "WithdrawalClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payee",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "WithdrawalCredited",
     "type": "event"
   },
   {
@@ -524,6 +783,19 @@
         "internalType": "uint16",
         "name": "",
         "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "FINALIZE_BATCH_BUDGET",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -667,6 +939,19 @@
         "internalType": "uint64",
         "name": "",
         "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UPGRADE_INTERFACE_VERSION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -946,6 +1231,25 @@
         "type": "uint64"
       }
     ],
+    "name": "epochBatchCursor",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
     "name": "epochClaimedReward",
     "outputs": [
       {
@@ -990,6 +1294,30 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "epochMerkleRootUsed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -1402,6 +1730,25 @@
         "type": "uint64"
       }
     ],
+    "name": "getEpochBatchCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      }
+    ],
     "name": "getEpochBatchIds",
     "outputs": [
       {
@@ -1539,23 +1886,31 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "chainId",
+        "name": "_challengeBondMin",
         "type": "uint256"
       },
       {
         "internalType": "address",
-        "name": "verifyingContract",
+        "name": "initialOwner",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_challengeBondMin",
-        "type": "uint256"
       }
     ],
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "initialized",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1655,6 +2010,56 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "pendingWithdrawals",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxBatches",
+        "type": "uint256"
+      }
+    ],
+    "name": "processEpochBatches",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "proxiableUUID",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",
@@ -1907,9 +2312,115 @@
         "internalType": "uint64",
         "name": "epochId",
         "type": "uint64"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "merkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "summaryHash",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "leaf",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "merkleProof",
+            "type": "bytes32[]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "leafIndex",
+            "type": "uint32"
+          }
+        ],
+        "internalType": "struct PoSeTypes.SampleProof[]",
+        "name": "sampleProofs",
+        "type": "tuple[]"
+      },
+      {
+        "internalType": "uint32",
+        "name": "witnessBitmap",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "witnessSignatures",
+        "type": "bytes[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32[]",
+            "name": "challengeIds",
+            "type": "bytes32[]"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "nodeIds",
+            "type": "bytes32[]"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "responseBodyHashes",
+            "type": "bytes32[]"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "leafHashes",
+            "type": "bytes32[]"
+          },
+          {
+            "internalType": "uint16[32]",
+            "name": "witnessReceiptIndex",
+            "type": "uint16[32]"
+          }
+        ],
+        "internalType": "struct PoSeTypesV2.ReceiptBatchMetadata",
+        "name": "metadata",
+        "type": "tuple"
+      }
+    ],
+    "name": "submitBatchV2WithMetadata",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "epochId",
+        "type": "uint64"
       }
     ],
     "name": "sweepExpiredRewards",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1931,6 +2442,31 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newImplementation",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "upgradeToAndCall",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "withdrawPayments",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
